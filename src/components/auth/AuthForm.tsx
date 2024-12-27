@@ -84,13 +84,35 @@ const AuthForm = () => {
       }
 
       const username = email.split('@')[0];
-      const { isSignedIn, nextStep } = await signIn({ username, password });
+      console.log('Attempting login with:', { 
+        username, 
+        email,
+        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
+        region: import.meta.env.VITE_AWS_REGION
+      });
+      
+      const signInInput = {
+        username,
+        password,
+        options: {
+          userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+          userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID
+        }
+      };
+      
+      const { isSignedIn, nextStep } = await signIn(signInInput);
       console.log('Sign in result:', { isSignedIn, nextStep });
       
       if (isSignedIn) {
         const user = await getCurrentUser();
+        console.log('Current user:', user);
+        
         const userAttributes = await fetchUserAttributes();
+        console.log('User attributes:', userAttributes);
+        
         const userRole = userAttributes['custom:role'] as UserRole;
+        console.log('User role:', userRole);
         
         localStorage.setItem('userRole', userRole);
 
@@ -127,11 +149,20 @@ const AuthForm = () => {
 
     try {
       const username = email.split('@')[0];
+      console.log('Attempting registration with:', { 
+        username, 
+        email,
+        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
+        region: import.meta.env.VITE_AWS_REGION
+      });
       
-      const { userId, isSignUpComplete } = await signUp({
+      const signUpInput = {
         username,
         password,
         options: {
+          userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+          userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
           userAttributes: {
             email,
             'custom:role': role,
@@ -139,7 +170,10 @@ const AuthForm = () => {
             name: username
           }
         }
-      });
+      };
+      
+      const { userId, isSignUpComplete } = await signUp(signUpInput);
+      console.log('Sign up result:', { userId, isSignUpComplete });
       
       await addUserToGroup(username, role);
       
@@ -174,25 +208,25 @@ const AuthForm = () => {
   };
 
   const addUserToGroup = async (username: string, groupName: string) => {
-    if (!import.meta.env.AWS_REGION || 
-        !import.meta.env.AWS_ACCESS_KEY_ID || 
-        !import.meta.env.AWS_SECRET_ACCESS_KEY || 
-        !import.meta.env.COGNITO_USER_POOL_ID) {
+    if (!import.meta.env.VITE_AWS_REGION || 
+        !import.meta.env.VITE_AWS_ACCESS_KEY_ID || 
+        !import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || 
+        !import.meta.env.VITE_COGNITO_USER_POOL_ID) {
       console.error('AWS 설정이 누락되었습니다.');
       return;
     }
 
     try {
       const cognitoClient = new CognitoIdentityProviderClient({
-        region: import.meta.env.AWS_REGION,
+        region: import.meta.env.VITE_AWS_REGION,
         credentials: {
-          accessKeyId: import.meta.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: import.meta.env.AWS_SECRET_ACCESS_KEY
+          accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+          secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY
         }
       });
       
       const addToGroupCommand = new AdminAddUserToGroupCommand({
-        UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
+        UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
         Username: username,
         GroupName: groupName
       });

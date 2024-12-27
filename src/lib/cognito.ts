@@ -28,10 +28,10 @@ const getCognitoClient = async () => {
     }
 
     return new CognitoIdentityProviderClient({
-      region: import.meta.env.AWS_REGION,
+      region: import.meta.env.VITE_AWS_REGION,
       credentials: {
-        accessKeyId: import.meta.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: import.meta.env.AWS_SECRET_ACCESS_KEY
+        accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+        secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY
       }
     });
   } catch (error) {
@@ -96,7 +96,7 @@ export const listAllUsers = async (): Promise<CognitoUser[]> => {
     console.log('Current user:', currentUser);
 
     const userGroups = await client.send(new AdminListGroupsForUserCommand({
-      UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
+      UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       Username: currentUser.username
     }));
     console.log('User groups:', userGroups.Groups);
@@ -108,7 +108,7 @@ export const listAllUsers = async (): Promise<CognitoUser[]> => {
     }
 
     const command = new ListUsersCommand({
-      UserPoolId: import.meta.env.COGNITO_USER_POOL_ID
+      UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID
     });
     
     const response = await client.send(command);
@@ -133,7 +133,7 @@ export const listStudentsInGroup = async (groupName: string): Promise<CognitoUse
     console.log('Current user:', currentUser);
 
     const userGroups = await client.send(new AdminListGroupsForUserCommand({
-      UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
+      UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       Username: currentUser.username
     }));
     console.log('User groups:', userGroups.Groups);
@@ -151,7 +151,7 @@ export const listStudentsInGroup = async (groupName: string): Promise<CognitoUse
     }
 
     const command = new ListUsersInGroupCommand({
-      UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
+      UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       GroupName: groupName
     });
     
@@ -187,7 +187,7 @@ export const getCurrentUserDetails = async (username: string): Promise<CognitoUs
     }
 
     const command = new AdminGetUserCommand({
-      UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
+      UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
       Username: username
     });
     

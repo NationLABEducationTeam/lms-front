@@ -12,10 +12,10 @@ export interface DBUser {
 }
 
 const dynamoClient = new DynamoDBClient({
-  region: import.meta.env.AWS_REGION,
+  region: import.meta.env.VITE_AWS_REGION,
   credentials: {
-    accessKeyId: import.meta.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: import.meta.env.AWS_SECRET_ACCESS_KEY,
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
   },
 });
 
