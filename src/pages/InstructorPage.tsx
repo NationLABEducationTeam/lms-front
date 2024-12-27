@@ -96,7 +96,7 @@ const InstructorPage = () => {
             </div>
           )}
           {loading ? (
-            <div className="text-white text-center py-4">로딩 중...</div>
+            <div className="text-white text-center py-4">로딩 중.....</div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
