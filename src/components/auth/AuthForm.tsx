@@ -174,25 +174,25 @@ const AuthForm = () => {
   };
 
   const addUserToGroup = async (username: string, groupName: string) => {
-    if (!import.meta.env.VITE_AWS_REGION || 
-        !import.meta.env.VITE_AWS_ACCESS_KEY_ID || 
-        !import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || 
-        !import.meta.env.VITE_COGNITO_USER_POOL_ID) {
+    if (!import.meta.env.AWS_REGION || 
+        !import.meta.env.AWS_ACCESS_KEY_ID || 
+        !import.meta.env.AWS_SECRET_ACCESS_KEY || 
+        !import.meta.env.COGNITO_USER_POOL_ID) {
       console.error('AWS 설정이 누락되었습니다.');
       return;
     }
 
     try {
       const cognitoClient = new CognitoIdentityProviderClient({
-        region: import.meta.env.VITE_AWS_REGION,
+        region: import.meta.env.AWS_REGION,
         credentials: {
-          accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
-          secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY
+          accessKeyId: import.meta.env.AWS_ACCESS_KEY_ID,
+          secretAccessKey: import.meta.env.AWS_SECRET_ACCESS_KEY
         }
       });
       
       const addToGroupCommand = new AdminAddUserToGroupCommand({
-        UserPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        UserPoolId: import.meta.env.COGNITO_USER_POOL_ID,
         Username: username,
         GroupName: groupName
       });
