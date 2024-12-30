@@ -36,10 +36,10 @@ jobs:
           VITE_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           VITE_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           VITE_AWS_REGION: 'ap-northeast-2'
-          VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID }}
-          VITE_COGNITO_APP_CLIENT_ID: ${{ secrets.VITE_COGNITO_APP_CLIENT_ID }}
-          VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID }}
-          VITE_IDENTITY_POOL_ID: ${{ secrets.VITE_IDENTITY_POOL_ID }}
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.COGNITO_USER_POOL_ID }}
+          VITE_COGNITO_APP_CLIENT_ID: ${{ secrets.COGNITO_APP_CLIENT_ID }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
+          VITE_IDENTITY_POOL_ID: ${{ secrets.IDENTITY_POOL_ID }}
 
       - name: Deploy to S3
         run: aws s3 sync dist s3://nationslab-lms --delete 
