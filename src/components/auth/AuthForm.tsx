@@ -87,17 +87,17 @@ const AuthForm = () => {
       console.log('Attempting login with:', { 
         username, 
         email,
-        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-        userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
-        region: import.meta.env.VITE_AWS_REGION
+        userPoolId: 'ap-northeast-2_RWIv2Yp2f',
+        userPoolClientId: '45f6aee3q7vgs7cj332i59897o',
+        region: 'ap-northeast-2'
       });
-      
+
       const signInInput = {
         username,
         password,
         options: {
-          userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-          userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID
+          userPoolId: 'ap-northeast-2_RWIv2Yp2f',
+          userPoolClientId: '45f6aee3q7vgs7cj332i59897o'
         }
       };
       
