@@ -41,5 +41,12 @@ jobs:
           VITE_COGNITO_CLIENT_ID: ${{ secrets.COGNITO_CLIENT_ID }}
           VITE_IDENTITY_POOL_ID: ${{ secrets.IDENTITY_POOL_ID }}
 
+      - name: Verify build output
+        run: |
+          echo "=== Checking dist directory ==="
+          ls -la dist/
+          echo "=== Checking for environment variables in built files ==="
+          grep -r "VITE_" dist/ || echo "No environment variables found in build output"
+
       - name: Deploy to S3
         run: aws s3 sync dist s3://nationslab-lms --delete 
