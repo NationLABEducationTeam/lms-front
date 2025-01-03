@@ -10,8 +10,8 @@ import { Button } from "@/components/common/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/ui/tabs";
 import { CourseList } from "@/components/courses/CourseList";
 import { CategoryList } from "@/components/courses/CategoryList";
-import { MainCategory } from "@/types/category";
 import { S3Structure } from "@/types/s3";
+import { Category } from "@/types/course";
 import { fetchCategories, fetchCoursesByCategory } from "@/store/features/courses/coursesSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/store";
@@ -19,21 +19,30 @@ import { AppDispatch, RootState } from "@/store/store";
 const InstructorDashboard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { courses, loading, error } = useSelector((state: RootState) => state.courses);
-  const [selectedCategory, setSelectedCategory] = useState<MainCategory | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    const loadCategories = async () => {
+      try {
+        const result = await dispatch(fetchCategories()).unwrap();
+        setCategories(result);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+      }
+    };
+    loadCategories();
   }, [dispatch]);
 
-  const handleCategorySelect = async (category: MainCategory, subcategory?: string) => {
+  const handleCategorySelect = async (category: Category) => {
     setSelectedCategory(category);
-    setSelectedSubCategory(subcategory || null);
+    setSelectedSubCategory(null);
     
     try {
       await dispatch(fetchCoursesByCategory({
-        mainCategory: category,
-        subCategory: subcategory || 'all'
+        mainCategory: category.path,
+        subCategory: 'all'
       })).unwrap();
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -59,7 +68,7 @@ const InstructorDashboard = () => {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
-                내 강의
+                강의
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -132,7 +141,11 @@ const InstructorDashboard = () => {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold tracking-tight">카테고리</h2>
             </div>
-            <CategoryList onSelectCategory={handleCategorySelect} />
+            <CategoryList 
+              categories={categories} 
+              onCategorySelect={handleCategorySelect}
+              selectedCategory={selectedCategory}
+            />
           </TabsContent>
         </Tabs>
       </div>

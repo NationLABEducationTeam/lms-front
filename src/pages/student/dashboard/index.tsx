@@ -1,11 +1,12 @@
 import { FC, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { fetchCategories } from '@/store/features/courses/coursesSlice';
+import { fetchCategories, fetchSubCategories, fetchCoursesByCategory, clearCourses } from '@/store/features/courses/coursesSlice';
 import { CourseList } from '@/components/courses/CourseList';
 import { TodoCalendar } from '../calendar/TodoCalendar';
 import AssignmentList from '../assignments/AssignmentList';
-import BoardList from '../board/BoardList';
+import { BoardTabs } from '@/components/board/BoardTabs';
+import MyNote from '../note/Mynote';
 import DashboardLayout from '@/components/common/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui/tabs';
@@ -20,11 +21,39 @@ const fadeInUp = {
 
 const StudentDashboard: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
-  const { courses, loading, error } = useSelector((state: RootState) => state.courses);
+  const { categories, courses, loading, error } = useSelector((state: RootState) => state.courses);
 
   useEffect(() => {
-    dispatch(fetchCategories());
+    const loadCourses = async () => {
+      try {
+        dispatch(clearCourses());
+        
+        const categoriesResult = await dispatch(fetchCategories()).unwrap();
+        console.log('Loaded categories:', categoriesResult);
+        
+        for (const category of categoriesResult) {
+          const subCatsResult = await dispatch(fetchSubCategories(category.path)).unwrap();
+          console.log(`Loaded sub categories for ${category.name}:`, subCatsResult);
+          
+          for (const subCat of subCatsResult) {
+            await dispatch(fetchCoursesByCategory({
+              mainCategory: category.path,
+              subCategory: subCat.name
+            })).unwrap();
+          }
+        }
+      } catch (error) {
+        console.error('Error loading courses:', error);
+      }
+    };
+
+    loadCourses();
   }, [dispatch]);
+
+  const handleJoinClass = (coursePath: string) => {
+    // TODO: 강의실 입장 로직 구현
+    console.log('Joining class:', coursePath);
+  };
 
   if (loading) {
     return (
@@ -43,7 +72,7 @@ const StudentDashboard: FC = () => {
   }
 
   return (
-    <DashboardLayout title="학생 대시보드">
+    <DashboardLayout title="Nations LAB LMS">
       <div className="space-y-8">
         {/* 상단 카드 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -55,7 +84,7 @@ const StudentDashboard: FC = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  수강 중인 강의
+                  내 강의
                 </CardTitle>
                 <BookOpen className="h-4 w-4 text-blue-500" />
               </CardHeader>
@@ -135,17 +164,18 @@ const StudentDashboard: FC = () => {
         {/* 탭 섹션 */}
         <Tabs defaultValue="courses" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="courses">수강 중인 강의</TabsTrigger>
+            <TabsTrigger value="courses">내 강의</TabsTrigger>
             <TabsTrigger value="assignments">과제</TabsTrigger>
             <TabsTrigger value="calendar">일정</TabsTrigger>
             <TabsTrigger value="board">게시판</TabsTrigger>
+            <TabsTrigger value="chat">나만의 노트</TabsTrigger>
           </TabsList>
 
           <TabsContent value="courses" className="space-y-4">
             <CourseList
               courses={courses}
               userRole="STUDENT"
-              onJoinClass={() => {}}
+              onJoinClass={handleJoinClass}
               onEdit={() => {}}
               onDelete={() => {}}
             />
@@ -160,7 +190,11 @@ const StudentDashboard: FC = () => {
           </TabsContent>
 
           <TabsContent value="board" className="space-y-4">
-            <BoardList />
+            <BoardTabs />
+          </TabsContent>
+
+          <TabsContent value="chat" className="space-y-4">
+            <MyNote />
           </TabsContent>
         </Tabs>
       </div>

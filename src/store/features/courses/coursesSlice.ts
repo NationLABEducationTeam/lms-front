@@ -1,18 +1,16 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { 
-  Course,
-  S3Structure,
-  listCourses,
   listMainCategories,
   listSubCategories,
   listCoursesByCategory,
   getCourseDetails
 } from '@/services/api/courses';
+import { S3Structure } from '@/types/s3';
 
 interface CoursesState {
   categories: S3Structure[];
   subCategories: S3Structure[];
-  courses: Course[];
+  courses: S3Structure[];
   selectedCourse: {
     meta: any;
     weeks: S3Structure[];
@@ -33,7 +31,9 @@ const initialState: CoursesState = {
 export const fetchCategories = createAsyncThunk(
   'courses/fetchCategories',
   async () => {
+    console.log('Fetching main categories...');
     const categories = await listMainCategories();
+    console.log('Fetched categories:', categories);
     return categories;
   }
 );
@@ -41,7 +41,9 @@ export const fetchCategories = createAsyncThunk(
 export const fetchSubCategories = createAsyncThunk(
   'courses/fetchSubCategories',
   async (mainCategory: string) => {
+    console.log('Fetching sub categories for:', mainCategory);
     const subCategories = await listSubCategories(mainCategory);
+    console.log('Fetched sub categories:', subCategories);
     return subCategories;
   }
 );
@@ -49,7 +51,9 @@ export const fetchSubCategories = createAsyncThunk(
 export const fetchCoursesByCategory = createAsyncThunk(
   'courses/fetchCoursesByCategory',
   async ({ mainCategory, subCategory }: { mainCategory: string; subCategory: string }) => {
+    console.log('Fetching courses for:', { mainCategory, subCategory });
     const courses = await listCoursesByCategory(mainCategory, subCategory);
+    console.log('Fetched courses:', courses);
     return courses;
   }
 );
@@ -57,7 +61,9 @@ export const fetchCoursesByCategory = createAsyncThunk(
 export const fetchCourseDetails = createAsyncThunk(
   'courses/fetchCourseDetails',
   async (coursePath: string) => {
+    console.log('Fetching course details for:', coursePath);
     const details = await getCourseDetails(coursePath);
+    console.log('Fetched course details:', details);
     return details;
   }
 );
@@ -68,6 +74,9 @@ const coursesSlice = createSlice({
   reducers: {
     clearSelectedCourse: (state) => {
       state.selectedCourse = null;
+    },
+    clearCourses: (state) => {
+      state.courses = [];
     },
   },
   extraReducers: (builder) => {
@@ -105,22 +114,14 @@ const coursesSlice = createSlice({
       })
       .addCase(fetchCoursesByCategory.fulfilled, (state, action) => {
         state.loading = false;
-        state.courses = action.payload.map((item: S3Structure) => ({
-          id: item.path,
-          name: item.name,
-          title: item.name,
-          description: '',
-          instructor: {
-            id: '',
-            name: '',
-            email: ''
-          },
-          category: '',
-          subcategory: '',
-          totalWeeks: 0,
-          enrolledStudents: 0,
-          status: 'SCHEDULED'
-        }));
+        // 새로운 강의들을 기존 목록에 추가 (중복 제거)
+        const newCourses = action.payload.filter(
+          (newCourse: S3Structure) => 
+            !state.courses.some(
+              (existingCourse: S3Structure) => existingCourse.path === newCourse.path
+            )
+        );
+        state.courses = [...state.courses, ...newCourses];
       })
       .addCase(fetchCoursesByCategory.rejected, (state, action) => {
         state.loading = false;
@@ -142,5 +143,5 @@ const coursesSlice = createSlice({
   },
 });
 
-export const { clearSelectedCourse } = coursesSlice.actions;
+export const { clearSelectedCourse, clearCourses } = coursesSlice.actions;
 export default coursesSlice.reducer; 

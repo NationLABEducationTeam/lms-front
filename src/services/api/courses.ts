@@ -9,7 +9,8 @@ export async function listMainCategories(): Promise<S3Structure[]> {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data.folders;
+    console.log('Main categories response:', data);
+    return data.folders || [];
   } catch (error) {
     console.error('Error fetching main categories:', error);
     throw error;
@@ -18,12 +19,14 @@ export async function listMainCategories(): Promise<S3Structure[]> {
 
 export async function listSubCategories(mainCategory: string): Promise<S3Structure[]> {
   try {
-    const response = await fetch(`${API_URL}/folders?path=${mainCategory}/`);
+    const path = mainCategory.trim().replace('//', '/');
+    const response = await fetch(`${API_URL}/folders?path=${path}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data.folders;
+    console.log('Sub categories response:', data);
+    return data.folders || [];
   } catch (error) {
     console.error('Error fetching subcategories:', error);
     throw error;
@@ -32,12 +35,15 @@ export async function listSubCategories(mainCategory: string): Promise<S3Structu
 
 export async function listCoursesByCategory(mainCategory: string, subCategory: string): Promise<S3Structure[]> {
   try {
-    const response = await fetch(`${API_URL}/folders?path=${mainCategory}/${subCategory}/courses/`);
+    const path = `${mainCategory.trim()}/${subCategory.trim()}/courses`.replace('//', '/');
+    console.log('Fetching courses with path:', path);
+    const response = await fetch(`${API_URL}/folders?path=${path}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const data = await response.json();
-    return data.folders;
+    console.log('Courses response:', data);
+    return data.folders || [];
   } catch (error) {
     console.error('Error fetching courses:', error);
     throw error;
@@ -46,20 +52,24 @@ export async function listCoursesByCategory(mainCategory: string, subCategory: s
 
 export async function getCourseDetails(coursePath: string): Promise<{meta: any, weeks: S3Structure[]}> {
   try {
+    const path = coursePath.trim().replace('//', '/');
     // 코스 메타데이터 가져오기
-    const metaResponse = await fetch(`${API_URL}/files?path=${coursePath}/meta.json`);
+    const metaResponse = await fetch(`${API_URL}/files?path=${path}/meta.json`);
     if (!metaResponse.ok) {
       throw new Error(`HTTP error! status: ${metaResponse.status}`);
     }
-    const meta = await metaResponse.json();
+    const metaData = await metaResponse.json();
+    console.log('Course meta response:', metaData);
+    const meta = JSON.parse(metaData.body);
 
     // 주차별 폴더 목록 가져오기
-    const weeksResponse = await fetch(`${API_URL}/folders?path=${coursePath}/`);
+    const weeksResponse = await fetch(`${API_URL}/folders?path=${path}`);
     if (!weeksResponse.ok) {
       throw new Error(`HTTP error! status: ${weeksResponse.status}`);
     }
     const weeksData = await weeksResponse.json();
-    const weeks = weeksData.folders.filter((folder: S3Structure) => 
+    console.log('Course weeks response:', weeksData);
+    const weeks = (weeksData.folders || []).filter((folder: S3Structure) => 
       folder.type === 'directory' && folder.name.includes('주차')
     );
 
