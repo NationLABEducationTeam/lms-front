@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signIn, signUp, getCurrentUser, fetchUserAttributes, signOut } from 'aws-amplify/auth';
+import { signIn, signUp, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import { CognitoIdentityProviderClient, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { UserRole } from '../../config/cognito';
 import { AlertCircle } from "lucide-react";
@@ -12,13 +12,13 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "../../components/ui/card";
+} from "@/components/common/ui/card";
 
 import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "../../components/ui/alert";
+} from "@/components/common/ui/alert";
 
 import {
   Select,
@@ -26,17 +26,17 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "../../components/ui/select";
+} from "@/components/common/ui/select";
 
-import { Button } from "../../components/ui/button";
-import { Input } from "../../components/ui/input";
-import { Label } from "../../components/ui/label";
+import { Button } from "@/components/common/ui/button";
+import { Input } from "@/components/common/ui/input";
+import { Label } from "@/components/common/ui/label";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "../../components/ui/tabs";
+} from "@/components/common/ui/tabs";
 
 const AuthForm = () => {
   const navigate = useNavigate();
@@ -76,28 +76,21 @@ const AuthForm = () => {
     setLoading(true);
 
     try {
-      // 기존 세션이 있는지 확인
-      try {
-        await signOut();
-      } catch (error) {
-        console.log('No existing session');
-      }
-
       const username = email.split('@')[0];
       console.log('Attempting login with:', { 
         username, 
         email,
-        userPoolId: 'ap-northeast-2_RWIv2Yp2f',
-        userPoolClientId: '45f6aee3q7vgs7cj332i59897o',
-        region: 'ap-northeast-2'
+        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+        userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
+        region: import.meta.env.VITE_AWS_REGION
       });
 
       const signInInput = {
         username,
         password,
         options: {
-          userPoolId: 'ap-northeast-2_RWIv2Yp2f',
-          userPoolClientId: '45f6aee3q7vgs7cj332i59897o'
+          userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
+          userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID
         }
       };
       
@@ -130,9 +123,9 @@ const AuthForm = () => {
             setError('사용자 권한을 확인할 수 없습니다.');
         }
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      setError(error instanceof Error ? error.message : '로그인 중 오류가 발생했습니다.');
+    } catch (err: any) {
+      console.error('로그인 오류:', err);
+      handleAuthError(err);
     } finally {
       setLoading(false);
     }
@@ -386,4 +379,3 @@ const AuthForm = () => {
 };
 
 export default AuthForm;
-

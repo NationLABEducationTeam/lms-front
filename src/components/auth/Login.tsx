@@ -1,23 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Box, Container, TextField, Button, Typography, Link } from '@mui/material';
 import { signIn } from 'aws-amplify/auth';
+import { Button } from '../common/ui/button';
+import { Input } from '../common/ui/input';
+import { Label } from '../common/ui/label';
+import { Alert, AlertDescription, AlertTitle } from '../common/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
-const Login = () => {
+interface LoginProps {
+  onSuccess?: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({ onSuccess }) => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
+    setLoading(true);
 
     try {
       const user = await signIn({ username: email, password });
       console.log('로그인 성공:', user);
-      
-      // 역할 선택 페이지로 이동
+      onSuccess?.();
       navigate('/role-select');
     } catch (err: any) {
       console.error('로그인 오류:', err);
@@ -27,66 +36,53 @@ const Login = () => {
       } else {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
       }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Typography component="h1" variant="h5">
-          로그인
-        </Typography>
-        {error && (
-          <Typography color="error" sx={{ mt: 2 }}>
-            {error}
-          </Typography>
-        )}
-        <Box component="form" onSubmit={handleSubmit} sx={{ mt: 1 }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="이메일"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="비밀번호"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2 }}
-          >
-            로그인
-          </Button>
-          <Link href="/register" variant="body2">
-            {"계정이 없으신가요? 회원가입"}
-          </Link>
-        </Box>
-      </Box>
-    </Container>
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div className="space-y-2">
+        <Label htmlFor="email">이메일</Label>
+        <Input
+          id="email"
+          type="email"
+          placeholder="name@example.com"
+          value={email}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+          required
+        />
+      </div>
+      <div className="space-y-2">
+        <Label htmlFor="password">비밀번호</Label>
+        <Input
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+          required
+        />
+      </div>
+      
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>오류</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+      
+      <Button type="submit" className="w-full" disabled={loading}>
+        {loading ? '로그인 중...' : '로그인'}
+      </Button>
+      
+      <div className="text-center">
+        <a href="/register" className="text-sm text-blue-500 hover:text-blue-600">
+          계정이 없으신가요? 회원가입
+        </a>
+      </div>
+    </form>
   );
 };
 

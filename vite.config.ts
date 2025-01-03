@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 3000
+      port: 3001
     },
     define: {
       'import.meta.env.VITE_COGNITO_USER_POOL_ID': JSON.stringify(env.VITE_COGNITO_USER_POOL_ID || 'ap-northeast-2_RWIv2Yp2f'),
@@ -21,7 +21,8 @@ export default defineConfig(({ mode }) => {
       alias: {
         './runtimeConfig': './runtimeConfig.browser',
         '@': path.resolve(__dirname, './src'),
-      },
+        '@components': path.resolve(__dirname, './src/components')
+      }
     }
   }
 })
