@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { signIn, signUp, getCurrentUser, fetchUserAttributes } from 'aws-amplify/auth';
 import { CognitoIdentityProviderClient, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { UserRole } from '../../config/cognito';
@@ -40,13 +40,23 @@ import {
 
 const AuthForm = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserRole>(UserRole.STUDENT);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const state = location.state as { verificationSuccess?: boolean };
+    if (state?.verificationSuccess) {
+      setSuccess('이메일 인증이 완료되었습니다. 로그인해주세요.');
+      navigate('/', { replace: true });
+    }
+  }, [location, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -368,6 +378,14 @@ const AuthForm = () => {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle className="text-sm sm:text-base">오류</AlertTitle>
                   <AlertDescription className="text-sm">{error}</AlertDescription>
+                </Alert>
+              </CardFooter>
+            )}
+            {success && (
+              <CardFooter className="px-4 sm:px-6">
+                <Alert className="w-full bg-green-50 text-green-900 border-green-200">
+                  <AlertTitle className="text-sm sm:text-base">성공</AlertTitle>
+                  <AlertDescription className="text-sm">{success}</AlertDescription>
                 </Alert>
               </CardFooter>
             )}

@@ -42,7 +42,7 @@ const VerifyEmail = () => {
         username,
         confirmationCode: code
       });
-      navigate('/login');
+      navigate('/', { state: { verificationSuccess: true } });
     } catch (error) {
       console.error('Verification error:', error);
       setError(error instanceof Error ? error.message : '인증 코드 확인 중 오류가 발생했습니다.');
