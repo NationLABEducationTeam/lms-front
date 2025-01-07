@@ -1,5 +1,6 @@
 import { FC } from 'react';
 
+// TODO: 토스트 구현 => 웹 애플리케이션에서 사용자에게 알림을 보여주는 토스트
 interface ToastProps {
   title: string;
   description: string;

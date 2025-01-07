@@ -4,7 +4,9 @@ import AuthForm from './components/auth/AuthForm';
 import VerifyEmail from './components/auth/VerifyEmail';
 import StudentPage from './pages/student/dashboard/index';
 import InstructorPage from './pages/instructor/index';
-import AdminPage from './pages/admin/dashboard';
+import AdminDashboard from './pages/admin/dashboard';
+import AdminNotices from './pages/admin/notices';
+import AdminNoticeCreate from './pages/admin/notices/create';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { UserRole } from './config/cognito';
 import './App.css';
@@ -33,10 +35,14 @@ const App = () => {
           }
         />
         <Route
-          path="/admin"
+          path="/admin/*"
           element={
             <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminPage />
+              <Routes>
+                <Route path="/" element={<AdminDashboard />} />
+                <Route path="/notices" element={<AdminNotices />} />
+                <Route path="/notices/create" element={<AdminNoticeCreate />} />
+              </Routes>
             </ProtectedRoute>
           }
         />
