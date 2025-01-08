@@ -3,14 +3,21 @@ import { List, Tag, Typography, Space, Avatar, theme, Col, Row, Card, Button } f
 import { UserOutlined, MessageOutlined, EyeOutlined, NotificationOutlined, TeamOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { Notice } from '@/types/notice';
 import { CommunityPost } from '@/types/community';
+import { QnaPost } from '@/types/qna';
 import { getNotices } from '@/services/api/notices';
 import { getCommunityPosts } from '@/services/api/community';
+import { getQnaPosts } from '@/services/api/qna';
 import { toast } from 'sonner';
 import CommunityBoard from './CommunityBoard';
 import { useNavigate } from 'react-router-dom';
 
 const { Text, Link } = Typography;
 const { useToken } = theme;
+
+interface BoardListProps {
+  onPostClick: (boardType: 'notice' | 'community' | 'qna', postId: string) => void;
+  onCreateClick: (boardType: 'community' | 'qna') => void;
+}
 
 interface NoticeItemProps {
   notice: Notice;
@@ -92,7 +99,7 @@ const CommunityItem: FC<CommunityItemProps> = ({ post, onClick }) => {
   );
 };
 
-const NoticeColumn: FC = () => {
+const NoticeColumn: FC<{ onPostClick: (postId: string) => void }> = ({ onPostClick }) => {
   const navigate = useNavigate();
   const { token } = useToken();
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -135,14 +142,19 @@ const NoticeColumn: FC = () => {
         <NoticeItem 
           key={notice.metadata.id} 
           notice={notice} 
-          onClick={() => navigate(`/student/notices/${notice.metadata.id}`)}
+          onClick={() => onPostClick(notice.metadata.id)}
         />
       ))}
     </Card>
   );
 };
 
-const CommunityColumn: FC = () => {
+interface CommunityColumnProps {
+  onPostClick: (postId: string) => void;
+  onCreateClick: () => void;
+}
+
+const CommunityColumn: FC<CommunityColumnProps> = ({ onPostClick, onCreateClick }) => {
   const navigate = useNavigate();
   const { token } = useToken();
   const [posts, setPosts] = useState<CommunityPost[]>([]);
@@ -178,7 +190,7 @@ const CommunityColumn: FC = () => {
           <Button type="link" onClick={() => navigate('/student/community')}>
             더 보기
           </Button>
-          <Button type="primary" onClick={() => navigate('/student/community/create')}>
+          <Button type="primary" onClick={onCreateClick}>
             글쓰기
           </Button>
         </Space>
@@ -190,24 +202,71 @@ const CommunityColumn: FC = () => {
         <CommunityItem 
           key={post.metadata.id} 
           post={post}
-          onClick={() => navigate(`/student/community/${post.metadata.id}`)}
+          onClick={() => onPostClick(post.metadata.id)}
         />
       ))}
     </Card>
   );
 };
 
-const QnaColumn: FC = () => {
+interface QnaColumnProps {
+  onPostClick: (postId: string) => void;
+  onCreateClick: () => void;
+}
+
+interface QnaItemProps {
+  post: QnaPost;
+  onClick: () => void;
+}
+
+const QnaItem: FC<QnaItemProps> = ({ post, onClick }) => {
+  const { token } = useToken();
+
+  return (
+    <div 
+      style={{ marginBottom: token.marginMD, padding: token.paddingSM, borderBottom: `1px solid ${token.colorBorderSecondary}`, cursor: 'pointer' }}
+      onClick={onClick}
+    >
+      <div style={{ marginBottom: token.marginXS }}>
+        <Link strong>{post.content.title}</Link>
+      </div>
+      {post.content.summary && (
+        <Text type="secondary" style={{ display: 'block', marginBottom: token.marginXS }}>
+          {post.content.summary}
+        </Text>
+      )}
+      <Space size="large" style={{ color: token.colorTextSecondary }}>
+        <Space>
+          <Avatar size="small" icon={<UserOutlined />} />
+          <Text type="secondary">{post.metadata.author}</Text>
+        </Space>
+        <Text type="secondary">
+          {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
+        </Text>
+        <Space>
+          <EyeOutlined />
+          <Text type="secondary">{post.metadata.viewCount}</Text>
+        </Space>
+        <Space>
+          <MessageOutlined />
+          <Text type="secondary">{post.metadata.commentCount}</Text>
+        </Space>
+      </Space>
+    </div>
+  );
+};
+
+const QnaColumn: FC<QnaColumnProps> = ({ onPostClick, onCreateClick }) => {
   const navigate = useNavigate();
   const { token } = useToken();
-  const [posts, setPosts] = useState<CommunityPost[]>([]);
+  const [posts, setPosts] = useState<QnaPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        // TODO: QNA API 연동
-        setPosts([]);
+        const postList = await getQnaPosts();
+        setPosts(postList.slice(0, 5));
       } catch (error) {
         console.error('Q&A 목록 조회 실패:', error);
         toast.error('Q&A 목록을 불러오는데 실패했습니다.');
@@ -233,8 +292,8 @@ const QnaColumn: FC = () => {
           <Button type="link" onClick={() => navigate('/student/qna')}>
             더 보기
           </Button>
-          <Button type="primary" onClick={() => navigate('/student/qna/create')}>
-            글쓰기
+          <Button type="primary" onClick={onCreateClick}>
+            질문하기
           </Button>
         </Space>
       }
@@ -242,27 +301,35 @@ const QnaColumn: FC = () => {
       loading={loading}
     >
       {posts.map(post => (
-        <CommunityItem 
+        <QnaItem 
           key={post.metadata.id} 
           post={post}
-          onClick={() => navigate(`/student/qna/${post.metadata.id}`)}
+          onClick={() => onPostClick(post.metadata.id)}
         />
       ))}
     </Card>
   );
 };
 
-export const BoardList: FC = () => {
+export const BoardList: FC<BoardListProps> = ({ onPostClick, onCreateClick }) => {
   return (
     <Row gutter={16}>
       <Col span={8}>
-        <NoticeColumn />
+        <NoticeColumn 
+          onPostClick={(postId) => onPostClick('notice', postId)} 
+        />
       </Col>
       <Col span={8}>
-        <CommunityColumn />
+        <CommunityColumn 
+          onPostClick={(postId) => onPostClick('community', postId)}
+          onCreateClick={() => onCreateClick('community')}
+        />
       </Col>
       <Col span={8}>
-        <QnaColumn />
+        <QnaColumn 
+          onPostClick={(postId) => onPostClick('qna', postId)}
+          onCreateClick={() => onCreateClick('qna')}
+        />
       </Col>
     </Row>
   );

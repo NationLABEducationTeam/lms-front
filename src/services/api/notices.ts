@@ -70,49 +70,14 @@ export const getNotices = async (): Promise<Notice[]> => {
 
     const notices = await response.json();
     
-    // 응답 데이터가 없을 경우 빈 배열 반환
+    // 응답 데이터가 없거나 배열이 아닌 경우 빈 배열 반환
     if (!notices || !Array.isArray(notices)) {
       console.warn('공지사항 데이터가 없습니다.');
       return [];
     }
 
-    // 각 공지사항에 대해 필요한 기본값 설정
-    return notices.map(notice => {
-      if (!notice.metadata) {
-        notice.metadata = {
-          id: notice.id || 'unknown',
-          author: '알 수 없음',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          category: '일반',
-          tags: [],
-          status: 'active',
-          viewCount: 0,
-          isImportant: false
-        };
-      } else {
-        if (notice.metadata.isImportant === undefined) {
-          notice.metadata.isImportant = false;
-        }
-        if (!notice.metadata.tags) {
-          notice.metadata.tags = [];
-        }
-      }
-
-      if (!notice.content) {
-        notice.content = {
-          title: '제목 없음',
-          body: '',
-          summary: ''
-        };
-      }
-
-      if (!notice.attachments) {
-        notice.attachments = [];
-      }
-
-      return notice;
-    });
+    // 유효한 데이터만 필터링
+    return notices.filter(notice => notice && notice.metadata && notice.content);
   } catch (error) {
     console.error('공지사항 목록 조회 실패:', error);
     return [];
@@ -133,47 +98,9 @@ export const getNotice = async (noticeId: string): Promise<Notice | null> => {
 
     const notice = await response.json();
     
-    if (!notice) {
-      console.warn('공지사항을 찾을 수 없습니다.');
+    if (!notice || !notice.metadata || !notice.content) {
+      console.warn('공지사항 데이터가 올바르지 않습니다.');
       return null;
-    }
-
-    // metadata가 없는 경우 기본값 설정
-    if (!notice.metadata) {
-      notice.metadata = {
-        id: noticeId,
-        author: '알 수 없음',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        category: '일반',
-        tags: [],
-        status: 'active',
-        viewCount: 0,
-        isImportant: false
-      };
-    } else {
-      // metadata는 있지만 isImportant가 없는 경우
-      if (notice.metadata.isImportant === undefined) {
-        notice.metadata.isImportant = false;
-      }
-      // tags가 없는 경우
-      if (!notice.metadata.tags) {
-        notice.metadata.tags = [];
-      }
-    }
-
-    // content가 없는 경우 기본값 설정
-    if (!notice.content) {
-      notice.content = {
-        title: '제목 없음',
-        body: '',
-        summary: ''
-      };
-    }
-
-    // attachments가 없는 경우 기본값 설정
-    if (!notice.attachments) {
-      notice.attachments = [];
     }
 
     return notice;

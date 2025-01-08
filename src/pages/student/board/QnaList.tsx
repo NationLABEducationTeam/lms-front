@@ -4,9 +4,9 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
 import { MessageCircle, Eye, FileText, Plus } from 'lucide-react';
+import { toast } from 'sonner';
 import { QnaPost } from '@/types/qna';
 import { getQnaPosts } from '@/services/api/qna';
-import { toast } from 'sonner';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -36,11 +36,11 @@ const QnaList: FC = () => {
   }, []);
 
   const handlePostClick = (postId: string) => {
-    navigate(`/student/board/qna/${postId}`);
+    navigate(`/student/qna/${postId}`);
   };
 
   const handleCreateClick = () => {
-    navigate('/student/board/qna/create');
+    navigate('/student/qna/create');
   };
 
   if (loading) {

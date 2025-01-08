@@ -60,6 +60,7 @@ const App = () => {
                 <Route path="/" element={<AdminDashboard />} />
                 <Route path="/notices" element={<AdminNotices />} />
                 <Route path="/notices/create" element={<AdminNoticeCreate />} />
+                <Route path="/notices/:id" element={<NoticeDetail />} />
               </Routes>
             </ProtectedRoute>
           }

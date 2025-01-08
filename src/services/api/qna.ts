@@ -1,10 +1,12 @@
 import { QnaPost, QnaFormData } from '@/types/qna';
 
-const API_URL = 'https://your-qna-api-endpoint.com';
+const VIEW_API_URL = 'https://t5aqskvckoo2foa3enszyuijly0voqbl.lambda-url.ap-northeast-2.on.aws';
+const UPLOAD_API_URL = 'https://dxbs7ctkbwmo2i55jozzmbxomy0mhtwi.lambda-url.ap-northeast-2.on.aws';
+
 
 export const getQnaPosts = async (): Promise<QnaPost[]> => {
   try {
-    const response = await fetch(`${API_URL}/posts`);
+    const response = await fetch(`${VIEW_API_URL}/posts`);
     if (!response.ok) {
       throw new Error('Failed to fetch QnA posts');
     }
@@ -17,7 +19,7 @@ export const getQnaPosts = async (): Promise<QnaPost[]> => {
 
 export const getQnaPost = async (postId: string): Promise<QnaPost> => {
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}`);
+    const response = await fetch(`${VIEW_API_URL}/posts/${postId}`);
     if (!response.ok) {
       throw new Error('Failed to fetch QnA post');
     }
@@ -30,7 +32,7 @@ export const getQnaPost = async (postId: string): Promise<QnaPost> => {
 
 export const createQnaPost = async (formData: QnaFormData): Promise<string> => {
   try {
-    const response = await fetch(`${API_URL}/posts`, {
+    const response = await fetch(`${UPLOAD_API_URL}/posts`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -50,7 +52,7 @@ export const createQnaPost = async (formData: QnaFormData): Promise<string> => {
 
 export const updateQnaPost = async (postId: string, formData: Partial<QnaFormData>): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}`, {
+    const response = await fetch(`${UPLOAD_API_URL}/posts/${postId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -68,7 +70,7 @@ export const updateQnaPost = async (postId: string, formData: Partial<QnaFormDat
 
 export const deleteQnaPost = async (postId: string): Promise<void> => {
   try {
-    const response = await fetch(`${API_URL}/posts/${postId}`, {
+    const response = await fetch(`${UPLOAD_API_URL}/posts/${postId}`, {
       method: 'DELETE',
     });
     if (!response.ok) {

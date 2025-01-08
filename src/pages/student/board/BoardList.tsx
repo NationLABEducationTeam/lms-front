@@ -43,15 +43,15 @@ const BoardList: FC = () => {
   }, []);
 
   const handleNoticeClick = (noticeId: string) => {
-    navigate(`/student/board/${noticeId}`);
+    navigate(`/student/${noticeId}`);
   };
 
   const handleCommunityPostClick = (postId: string) => {
-    navigate(`/student/board/community/${postId}`);
+    navigate(`/student/community/${postId}`);
   };
 
   const handleCreateClick = () => {
-    navigate('/student/board/community/create');
+    navigate('/student/community/create');
   };
 
   if (loading) {
