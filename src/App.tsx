@@ -7,6 +7,7 @@ import InstructorPage from './pages/instructor/index';
 import AdminDashboard from './pages/admin/dashboard';
 import AdminNotices from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
+import AdminNoticeDetail from './pages/admin/notices/detail';
 import NoticeList from './pages/student/board/NoticeList';
 import NoticeDetail from './pages/student/board/NoticeDetail';
 import CommunityList from './pages/student/board/CommunityList';
@@ -60,7 +61,7 @@ const App = () => {
                 <Route path="/" element={<AdminDashboard />} />
                 <Route path="/notices" element={<AdminNotices />} />
                 <Route path="/notices/create" element={<AdminNoticeCreate />} />
-                <Route path="/notices/:id" element={<NoticeDetail />} />
+                <Route path="/notices/:id" element={<AdminNoticeDetail />} />
               </Routes>
             </ProtectedRoute>
           }

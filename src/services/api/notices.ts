@@ -108,4 +108,22 @@ export const getNotice = async (noticeId: string): Promise<Notice | null> => {
     console.error('공지사항 조회 실패:', error);
     return null;
   }
+};
+
+export const deleteNotice = async (noticeId: string): Promise<void> => {
+  try {
+    const response = await fetch(`${UPLOAD_API_URL}/notices/${noticeId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to delete notice');
+    }
+  } catch (error) {
+    console.error('공지사항 삭제 실패:', error);
+    throw error;
+  }
 }; 
