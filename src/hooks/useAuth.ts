@@ -44,8 +44,9 @@ export const useAuth = () => {
 
       setAuthState({
         user: {
-          user_id: attributes.sub,
+          cognito_user_id: attributes.sub,
           email: attributes.email,
+          name: attributes.name,
           given_name: attributes.given_name,
           role: role,
           created_at: new Date().toISOString(),

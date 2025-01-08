@@ -40,6 +40,7 @@ import { cn } from '@/lib/utils';
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
+  placeholder?: string;
 }
 
 const RichTextEditor: FC<RichTextEditorProps> = ({ content, onChange }) => {

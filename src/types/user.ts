@@ -1,7 +1,7 @@
 export interface DBUser {
   cognito_user_id: string;
   email: string;
-  name: string;
+  name?: string;
   given_name: string;
   role: 'ADMIN' | 'INSTRUCTOR' | 'STUDENT';
   created_at: string;

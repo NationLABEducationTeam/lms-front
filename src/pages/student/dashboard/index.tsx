@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui/tabs';
 import { BookOpen, FileText, BrainCircuit, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -22,6 +23,7 @@ const fadeInUp = {
 const StudentDashboard: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { categories, courses, loading, error } = useSelector((state: RootState) => state.courses);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const loadCourses = async () => {
@@ -53,6 +55,31 @@ const StudentDashboard: FC = () => {
   const handleJoinClass = (coursePath: string) => {
     // TODO: 강의실 입장 로직 구현
     console.log('Joining class:', coursePath);
+  };
+
+  const handlePostClick = (boardType: 'notice' | 'community' | 'qna', postId: string) => {
+    switch (boardType) {
+      case 'notice':
+        navigate(`/student/notices/${postId}`);
+        break;
+      case 'community':
+        navigate(`/student/community/${postId}`);
+        break;
+      case 'qna':
+        navigate(`/student/qna/${postId}`);
+        break;
+    }
+  };
+
+  const handleCreateClick = (boardType: 'community' | 'qna') => {
+    switch (boardType) {
+      case 'community':
+        navigate('/student/community/create');
+        break;
+      case 'qna':
+        navigate('/student/qna/create');
+        break;
+    }
   };
 
   if (loading) {
@@ -190,7 +217,10 @@ const StudentDashboard: FC = () => {
           </TabsContent>
 
           <TabsContent value="board" className="space-y-4">
-            <BoardTabs />
+            <BoardTabs 
+              onPostClick={handlePostClick}
+              onCreateClick={handleCreateClick}
+            />
           </TabsContent>
 
           <TabsContent value="chat" className="space-y-4">

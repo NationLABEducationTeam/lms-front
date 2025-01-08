@@ -49,6 +49,8 @@ const AuthForm = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("login");
+  const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
     const state = location.state as { verificationSuccess?: boolean };
@@ -241,40 +243,97 @@ const AuthForm = () => {
     }
   };
 
+  const handleTabChange = (value: string) => {
+    setIsAnimating(true);
+    setActiveTab(value);
+    setTimeout(() => setIsAnimating(false), 300);
+  };
+
   return (
-    <div className="min-h-screen min-w-full flex items-center justify-center bg-slate-50">
-      <div className="w-full max-w-[420px] mx-auto space-y-6">
-        <div className="text-center space-y-2 px-4">
-          <div className="flex items-center justify-center mb-6">
-            <img src="/nationlmslogo.png" alt="NationsLAB LMS" className="h-10 sm:h-12 w-auto" />
+    <div className="min-h-screen flex">
+      {/* Left side - Illustration */}
+      <div className="flex-1 bg-gray-50 hidden lg:flex lg:items-center lg:justify-center p-8">
+        <img 
+          src="/sideillustration.png" 
+          alt="Auth illustration" 
+          className="max-w-[80%] h-auto"
+        />
+      </div>
+
+      {/* Right side - Auth Form */}
+      <div className="flex-1 flex flex-col justify-center px-8 lg:px-16 bg-[#1a1f37]">
+        <div className="max-w-[420px] mx-auto w-full">
+          <div className="text-center space-y-2 mb-8">
+            <div className="flex items-center justify-center mb-6">
+              <img src="/nationlmslogo.png" alt="NationsLAB LMS" className="h-10 sm:h-12 w-auto" />
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Nation's LAB</h1>
+            <p className="text-gray-300 text-sm sm:text-base">
+              (주)에이아네이션의 혁신적인 교육 플랫폼
+            </p>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-700">NationsLAB</h1>
-          <p className="text-slate-500 text-sm sm:text-base">
-            (주)에이아네이션의 혁신적인 교육 플랫폼
-          </p>
-        </div>
-        <Card className="border-0 shadow-xl bg-white mx-4 relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#65e892] via-[#3994d6] to-[#354abf] p-[3px] rounded-xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-[#3994d6] via-[#354abf] to-[#3d289b] blur-xl opacity-50" />
-          </div>
-          <div className="relative bg-white/90 backdrop-blur-sm rounded-lg p-1">
-            <CardHeader className="space-y-1 px-4 sm:px-6">
-              <CardTitle className="text-xl sm:text-2xl font-bold text-center bg-gradient-to-r from-[#65e892] to-[#3994d6] bg-clip-text text-transparent">계정</CardTitle>
-              <CardDescription className="text-center text-sm sm:text-base">
-                로그인하거나 새 계정을 만드세요
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="px-4 sm:px-6">
-              <Tabs defaultValue="login" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-6 sm:mb-8 rounded-lg bg-slate-50/50 backdrop-blur-sm p-1">
-                  <TabsTrigger value="login" className="rounded-md text-sm sm:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#65e892] data-[state=active]:to-[#3994d6] data-[state=active]:text-white">로그인</TabsTrigger>
-                  <TabsTrigger value="register" className="rounded-md text-sm sm:text-base data-[state=active]:bg-gradient-to-r data-[state=active]:from-[#65e892] data-[state=active]:to-[#3994d6] data-[state=active]:text-white">회원가입</TabsTrigger>
-                </TabsList>
-                <TabsContent value="login">
-                  <form onSubmit={handleLogin} className="space-y-4 sm:space-y-6">
-                    <div className="space-y-3 sm:space-y-4">
+
+          {error && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>오류</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {success && (
+            <Alert className="mb-6 bg-green-50 text-green-900 border-green-200">
+              <AlertTitle>성공</AlertTitle>
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="bg-white rounded-xl shadow-lg p-8">
+            <div className="w-full">
+              <div className="relative mb-8">
+                <div className="relative z-10 grid w-full grid-cols-2 bg-gray-100/80 p-1 rounded-lg">
+                  <button 
+                    onClick={() => handleTabChange("login")}
+                    className={[
+                      "relative z-20 rounded-md py-2.5 text-gray-600 transition-colors duration-200",
+                      activeTab === "login" ? "text-gray-900" : ""
+                    ].join(" ")}
+                  >
+                    로그인
+                  </button>
+                  <button 
+                    onClick={() => handleTabChange("register")}
+                    className={[
+                      "relative z-20 rounded-md py-2.5 text-gray-600 transition-colors duration-200",
+                      activeTab === "register" ? "text-gray-900" : ""
+                    ].join(" ")}
+                  >
+                    회원가입
+                  </button>
+                  <div 
+                    className={[
+                      "absolute left-0 top-0 h-full w-1/2 rounded-md bg-white shadow-sm transition-transform duration-300 ease-in-out",
+                      activeTab === "register" ? "translate-x-full" : "",
+                      isAnimating ? "transition-transform" : ""
+                    ].join(" ")}
+                  />
+                </div>
+              </div>
+
+              <div className="relative h-[400px]">
+                <div 
+                  className={[
+                    "absolute inset-0 transition-all duration-300 ease-in-out",
+                    activeTab === "login" 
+                      ? "translate-x-0 opacity-100" 
+                      : "translate-x-8 opacity-0 pointer-events-none",
+                    isAnimating ? "transition-all" : ""
+                  ].join(" ")}
+                >
+                  <form onSubmit={handleLogin} className="space-y-5">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm sm:text-base">이메일</Label>
+                        <Label htmlFor="email" className="text-gray-700">이메일</Label>
                         <Input
                           id="email"
                           placeholder="name@example.com"
@@ -282,31 +341,51 @@ const AuthForm = () => {
                           value={email}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-slate-600"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-sm sm:text-base">비밀번호</Label>
+                        <Label htmlFor="password" className="text-gray-700">비밀번호</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-slate-600"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
                     </div>
-                    <Button className="w-full h-10 sm:h-11 text-sm sm:text-base bg-gradient-to-r from-[#65e892] to-[#3994d6] hover:from-[#3994d6] hover:to-[#354abf] text-white shadow-lg transition-all duration-300 hover:shadow-xl" type="submit">
+
+                    <div className="flex items-center justify-end">
+                      <a href="#" className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors duration-200">
+                        비밀번호 찾기
+                      </a>
+                    </div>
+
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-md"
+                    >
                       로그인
                     </Button>
                   </form>
-                </TabsContent>
-                <TabsContent value="register">
-                  <form onSubmit={handleRegister} className="space-y-4 sm:space-y-6">
-                    <div className="space-y-3 sm:space-y-4">
+                </div>
+
+                <div 
+                  className={[
+                    "absolute inset-0 transition-all duration-300 ease-in-out",
+                    activeTab === "register" 
+                      ? "translate-x-0 opacity-100" 
+                      : "-translate-x-8 opacity-0 pointer-events-none",
+                    isAnimating ? "transition-all" : ""
+                  ].join(" ")}
+                >
+                  <form onSubmit={handleRegister} className="space-y-5">
+                    <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email" className="text-sm sm:text-base">이메일</Label>
+                        <Label htmlFor="email" className="text-gray-700">이메일</Label>
                         <Input
                           id="email"
                           placeholder="name@example.com"
@@ -314,11 +393,12 @@ const AuthForm = () => {
                           value={email}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-slate-600"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="name" className="text-sm sm:text-base">이름</Label>
+                        <Label htmlFor="name" className="text-gray-700">이름</Label>
                         <Input
                           id="name"
                           placeholder="홍길동"
@@ -326,71 +406,79 @@ const AuthForm = () => {
                           value={name}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-slate-600"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="password" className="text-sm sm:text-base">비밀번호</Label>
+                        <Label htmlFor="password" className="text-gray-700">비밀번호</Label>
                         <Input
                           id="password"
                           type="password"
                           value={password}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-[#3994d6]"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-sm sm:text-base">비밀번호 확인</Label>
+                        <Label htmlFor="confirmPassword" className="text-gray-700">비밀번호 확인</Label>
                         <Input
                           id="confirmPassword"
                           type="password"
                           value={confirmPassword}
                           onChange={handleInputChange}
                           required
-                          className="h-10 sm:h-11 text-sm sm:text-base focus-visible:ring-[#3994d6]"
+                          className="h-11 rounded-lg border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
                         />
                       </div>
+
                       <div className="space-y-2">
-                        <Label htmlFor="role" className="text-sm sm:text-base">역할</Label>
+                        <Label htmlFor="role" className="text-gray-700">역할</Label>
                         <Select onValueChange={handleRoleChange} defaultValue={role}>
-                          <SelectTrigger id="role" className="h-10 sm:h-11 text-sm sm:text-base focus:ring-[#3994d6]">
+                          <SelectTrigger 
+                            id="role"
+                            className="h-11 rounded-lg border-gray-200 bg-white focus:border-blue-500 focus:ring-blue-500 transition-colors duration-200"
+                          >
                             <SelectValue placeholder="역할을 선택하세요" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={UserRole.STUDENT} className="text-sm sm:text-base">수강생</SelectItem>
-                            <SelectItem value={UserRole.INSTRUCTOR} className="text-sm sm:text-base">강사</SelectItem>
-                            <SelectItem value={UserRole.ADMIN} className="text-sm sm:text-base">관리자</SelectItem>
+                          <SelectContent className="bg-white border border-gray-200 shadow-lg">
+                            <SelectItem 
+                              value={UserRole.STUDENT}
+                              className="hover:bg-gray-50 focus:bg-gray-50 cursor-pointer py-2.5"
+                            >
+                              수강생
+                            </SelectItem>
+                            <SelectItem 
+                              value={UserRole.INSTRUCTOR}
+                              className="hover:bg-gray-50 focus:bg-gray-50 cursor-pointer py-2.5"
+                            >
+                              강사
+                            </SelectItem>
+                            <SelectItem 
+                              value={UserRole.ADMIN}
+                              className="hover:bg-gray-50 focus:bg-gray-50 cursor-pointer py-2.5"
+                            >
+                              관리자
+                            </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     </div>
-                    <Button className="w-full h-10 sm:h-11 text-sm sm:text-base bg-gradient-to-r from-[#65e892] to-[#3994d6] hover:from-[#3994d6] hover:to-[#354abf] text-white shadow-lg transition-all duration-300 hover:shadow-xl" type="submit">
+
+                    <Button 
+                      type="submit" 
+                      className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 hover:shadow-md"
+                    >
                       회원가입
                     </Button>
                   </form>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-            {error && (
-              <CardFooter className="px-4 sm:px-6">
-                <Alert variant="destructive" className="w-full">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle className="text-sm sm:text-base">오류</AlertTitle>
-                  <AlertDescription className="text-sm">{error}</AlertDescription>
-                </Alert>
-              </CardFooter>
-            )}
-            {success && (
-              <CardFooter className="px-4 sm:px-6">
-                <Alert className="w-full bg-green-50 text-green-900 border-green-200">
-                  <AlertTitle className="text-sm sm:text-base">성공</AlertTitle>
-                  <AlertDescription className="text-sm">{success}</AlertDescription>
-                </Alert>
-              </CardFooter>
-            )}
+                </div>
+              </div>
+            </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

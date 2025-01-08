@@ -7,6 +7,14 @@ import InstructorPage from './pages/instructor/index';
 import AdminDashboard from './pages/admin/dashboard';
 import AdminNotices from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
+import NoticeList from './pages/student/board/NoticeList';
+import NoticeDetail from './pages/student/board/NoticeDetail';
+import CommunityList from './pages/student/board/CommunityList';
+import CommunityCreate from './pages/student/board/CommunityCreate';
+import CommunityDetail from './pages/student/board/CommunityDetail';
+import QnaList from './pages/student/board/QnaList';
+import QnaCreate from './pages/student/board/QnaCreate';
+import QnaDetail from './pages/student/board/QnaDetail';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { UserRole } from './config/cognito';
 import './App.css';
@@ -19,10 +27,20 @@ const App = () => {
         <Route path="/auth" element={<AuthForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route
-          path="/student"
+          path="/student/*"
           element={
             <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
-              <StudentPage />
+              <Routes>
+                <Route path="/" element={<StudentPage />} />
+                <Route path="/notices" element={<NoticeList />} />
+                <Route path="/notices/:id" element={<NoticeDetail />} />
+                <Route path="/community" element={<CommunityList />} />
+                <Route path="/community/create" element={<CommunityCreate />} />
+                <Route path="/community/:id" element={<CommunityDetail />} />
+                <Route path="/qna" element={<QnaList />} />
+                <Route path="/qna/create" element={<QnaCreate />} />
+                <Route path="/qna/:id" element={<QnaDetail />} />
+              </Routes>
             </ProtectedRoute>
           }
         />
