@@ -62,7 +62,6 @@ export const CourseList: FC<CourseListProps> = ({
       'certifications': '자격증',
       'aws-certification': 'AWS 자격증',
       'productivity': '생산성',
-      'office-tools': '오피스 도구',
       'project-management': '프로젝트 관리',
       'programming': '프로그래밍',
       'web-development': '웹 개발'
@@ -120,6 +119,7 @@ export const CourseList: FC<CourseListProps> = ({
                           입장
                         </Button>
                       </Tooltip>,
+                      // TO-DO: 관리자 권한일 경우 수정, 삭제 버튼 추가
                       ...(userRole === 'ADMIN' ? [
                         <Tooltip title="강의 수정" key="edit">
                           <Button 

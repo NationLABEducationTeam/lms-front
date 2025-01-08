@@ -5,7 +5,12 @@ import { BoardList } from './BoardList';
 const { Title } = Typography;
 const { useToken } = theme;
 
-export const BoardTabs: FC = () => {
+interface BoardTabsProps {
+  onPostClick: (boardType: 'notice' | 'community' | 'qna', postId: string) => void;
+  onCreateClick: (boardType: 'community' | 'qna') => void;
+}
+
+export const BoardTabs: FC<BoardTabsProps> = ({ onPostClick, onCreateClick }) => {
   const { token } = useToken();
 
   return (
@@ -17,7 +22,10 @@ export const BoardTabs: FC = () => {
         borderRadius: token.borderRadiusLG,
         boxShadow: token.boxShadowTertiary
       }}>
-        <BoardList />
+        <BoardList 
+          onPostClick={onPostClick}
+          onCreateClick={onCreateClick}
+        />
       </div>
     </div>
   );

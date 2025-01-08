@@ -1,100 +1,72 @@
 import { FC } from 'react';
 import { List, Tag, Typography, Space, Button, Avatar, theme } from 'antd';
 import { UserOutlined, LikeOutlined, MessageOutlined, EyeOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { CommunityPost } from '@/types/community';
 
 const { Text, Link } = Typography;
 const { useToken } = theme;
 
-// 임시 데이터
-const posts = [
-  {
-    id: 1,
-    title: '프로그래밍 스터디 모집합니다',
-    content: '주 2회 온라인으로 진행되는 프로그래밍 스터디원을 모집합니다.',
-    author: '김철수',
-    createdAt: '2024-01-02',
-    views: 128,
-    likes: 15,
-    replies: 8,
-    category: '스터디'
-  },
-  {
-    id: 2,
-    title: '자격증 시험 후기 공유',
-    content: '지난 주에 본 자격증 시험 후기를 공유드립니다.',
-    author: '이영희',
-    createdAt: '2024-01-01',
-    views: 256,
-    likes: 24,
-    replies: 12,
-    category: '후기'
-  },
-  {
-    id: 3,
-    title: '온라인 강의 꿀팁 공유',
-    content: '효율적인 온라인 강의 수강을 위한 꿀팁을 공유합니다.',
-    author: '박지민',
-    createdAt: '2023-12-31',
-    views: 312,
-    likes: 45,
-    replies: 18,
-    category: '꿀팁'
-  }
-];
+interface CommunityBoardProps {
+  posts: CommunityPost[];
+  onPostClick: (postId: string) => void;
+  onCreateClick: () => void;
+}
 
-const CommunityBoard: FC = () => {
+const CommunityBoard: FC<CommunityBoardProps> = ({ posts, onPostClick, onCreateClick }) => {
   const { token } = useToken();
 
   return (
-    <div>
-      <div style={{ marginBottom: token.marginMD, textAlign: 'right' }}>
-        <Button type="primary">글쓰기</Button>
+    <div className="space-y-4">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold">자유게시판</h2>
+        <Button type="primary" onClick={onCreateClick}>
+          글쓰기
+        </Button>
       </div>
+
       <List
         itemLayout="vertical"
+        size="large"
+        pagination={{
+          pageSize: 10,
+          position: 'bottom',
+          align: 'center'
+        }}
         dataSource={posts}
-        renderItem={(item) => (
+        renderItem={(post) => (
           <List.Item
-            key={item.id}
-            style={{
-              background: token.colorBgContainer,
-              borderRadius: token.borderRadiusLG,
-              padding: token.padding,
-              marginBottom: token.marginSM,
-              border: `1px solid ${token.colorBorderSecondary}`
-            }}
-          >
-            <div style={{ marginBottom: token.marginXS }}>
-              <Tag color="purple" style={{ marginRight: token.marginSM }}>
-                {item.category}
-              </Tag>
-              <Link strong>{item.title}</Link>
-            </div>
-            <Text type="secondary" style={{ display: 'block', marginBottom: token.marginXS }}>
-              {item.content}
-            </Text>
-            <Space size="large" style={{ color: token.colorTextSecondary }}>
-              <Space>
-                <Avatar size="small" icon={<UserOutlined />} />
-                <Text type="secondary">{item.author}</Text>
-              </Space>
-              <Space>
-                <ClockCircleOutlined />
-                <Text type="secondary">{item.createdAt}</Text>
-              </Space>
-              <Space>
-                <LikeOutlined />
-                <Text type="secondary">{item.likes}</Text>
-              </Space>
-              <Space>
-                <MessageOutlined />
-                <Text type="secondary">{item.replies}</Text>
-              </Space>
-              <Space>
+            key={post.metadata.id}
+            onClick={() => onPostClick(post.metadata.id)}
+            className="cursor-pointer hover:bg-gray-50 transition-colors"
+            actions={[
+              <Space key="views">
                 <EyeOutlined />
-                <Text type="secondary">{item.views}</Text>
+                {post.metadata.viewCount}
+              </Space>,
+              <Space key="comments">
+                <MessageOutlined />
+                {post.metadata.commentCount}
+              </Space>,
+              <Space key="date">
+                <ClockCircleOutlined />
+                {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
               </Space>
-            </Space>
+            ]}
+          >
+            <List.Item.Meta
+              avatar={<Avatar icon={<UserOutlined />} />}
+              title={post.content.title}
+              description={
+                <Space size={[0, 8]} wrap>
+                  <Text type="secondary">{post.metadata.author}</Text>
+                </Space>
+              }
+            />
+            {post.content.summary && (
+              <Text type="secondary" className="line-clamp-2">
+                {post.content.summary}
+              </Text>
+            )}
           </List.Item>
         )}
       />
