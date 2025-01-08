@@ -4,7 +4,7 @@ import { Button } from '@/components/common/ui/button';
 import { Badge } from '@/components/common/ui/badge';
 import { AlertCircle, ArrowLeft, Download, Pencil, Trash } from 'lucide-react';
 import { Notice } from '@/types/notice';
-import { getNotice } from '@/services/api/notices';
+import { getNotice, deleteNotice } from '@/services/api/notices';
 import { toast } from 'sonner';
 
 const NoticeDetail: FC = () => {
@@ -12,6 +12,7 @@ const NoticeDetail: FC = () => {
   const navigate = useNavigate();
   const [notice, setNotice] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const fetchNotice = async () => {
@@ -46,6 +47,24 @@ const NoticeDetail: FC = () => {
     } catch (error) {
       console.error('파일 다운로드 실패:', error);
       toast.error('파일 다운로드에 실패했습니다.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!id || !window.confirm('정말로 이 공지사항을 삭제하시겠습니까?')) {
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteNotice(id);
+      toast.success('공지사항이 삭제되었습니다.');
+      navigate('/admin/notices');
+    } catch (error) {
+      console.error('공지사항 삭제 실패:', error);
+      toast.error('공지사항 삭제에 실패했습니다.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -169,13 +188,11 @@ const NoticeDetail: FC = () => {
             <Button
               variant="destructive"
               className="bg-red-500/50 hover:bg-red-500/70"
-              onClick={() => {
-                // TODO: 삭제 기능 구현
-                toast.error('삭제 기능은 아직 구현되지 않았습니다.');
-              }}
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
               <Trash className="w-4 h-4 mr-2" />
-              삭제
+              {isDeleting ? '삭제 중...' : '삭제'}
             </Button>
           </div>
         </div>

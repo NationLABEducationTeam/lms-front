@@ -538,7 +538,7 @@ const AdminDashboard: FC = () => {
                         outerRadius={30}
                         fill="#8884d8"
                       >
-                        {qnaData.map((entry, index) => (
+                        {qnaData.map((_entry, index) => (
                           <Cell key={`cell-${index}`} fill={['#1890ff', '#13c2c2', '#52c41a'][index % 3]} />
                         ))}
                       </Pie>

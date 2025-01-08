@@ -42,7 +42,7 @@ const CommunityCreate: FC = () => {
       });
 
       toast.success('게시글이 작성되었습니다.');
-      navigate('/student/board/community');
+      navigate('/student/community');
     } catch (error) {
       console.error('게시글 작성 실패:', error);
       toast.error('게시글 작성에 실패했습니다.');
@@ -108,7 +108,7 @@ const CommunityCreate: FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/student/board/community')}
+              onClick={() => navigate('/student/community')}
             >
               취소
             </Button>

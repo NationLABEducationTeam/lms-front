@@ -252,12 +252,15 @@ const AuthForm = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left side - Illustration */}
-      <div className="flex-1 bg-gray-50 hidden lg:flex lg:items-center lg:justify-center p-8">
-        <img 
-          src="/sideillustration.png" 
-          alt="Auth illustration" 
-          className="max-w-[80%] h-auto"
-        />
+      <div className="flex-1 bg-blue-50 hidden lg:flex lg:items-center lg:justify-center p-12">
+        <div className="text-center">
+          <img 
+            src="/sideillustration.png" 
+            alt="Auth illustration" 
+            className="max-w-[70%] mx-auto mb-8 h-auto"
+          />
+          <h2 className="text-2xl font-semibold text-gray-800 mb-3">Let's Nation's LAB!</h2>
+        </div>
       </div>
 
       {/* Right side - Auth Form */}

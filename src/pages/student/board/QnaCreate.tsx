@@ -42,7 +42,7 @@ const QnaCreate: FC = () => {
       });
 
       toast.success('질문이 등록되었습니다.');
-      navigate('/student/board/qna');
+      navigate('/student/qna');
     } catch (error) {
       console.error('질문 등록 실패:', error);
       toast.error('질문 등록에 실패했습니다.');
@@ -72,7 +72,7 @@ const QnaCreate: FC = () => {
           <div className="space-y-2">
             <Label>내용</Label>
             <RichTextEditor
-              value={content}
+              content={content}
               onChange={setContent}
               placeholder="질문 내용을 자세히 작성해주세요"
             />
@@ -81,7 +81,7 @@ const QnaCreate: FC = () => {
           <div className="space-y-2">
             <Label>첨부파일</Label>
             <FileUpload
-              onFileSelect={handleFileUpload}
+              onUpload={handleFileUpload}
               accept="image/*,.pdf,.doc,.docx"
               multiple
             />
@@ -96,7 +96,7 @@ const QnaCreate: FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/student/board/qna')}
+              onClick={() => navigate('/student/qna')}
             >
               취소
             </Button>

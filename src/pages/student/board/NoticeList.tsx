@@ -53,7 +53,7 @@ const NoticeList: FC = () => {
         renderItem={(notice) => (
           <List.Item
             key={notice.metadata.id}
-            onClick={() => navigate(`/student/board/notices/${notice.metadata.id}`)}
+            onClick={() => navigate(`/student/notices/${notice.metadata.id}`)}
             className="cursor-pointer hover:bg-gray-50"
             actions={[
               <Space key="metadata">
