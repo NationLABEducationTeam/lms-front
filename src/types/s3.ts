@@ -1,7 +1,13 @@
 export interface S3Structure {
-  type: 'directory' | 'file';
   name: string;
   path: string;
-  folders?: S3Structure[];
-  files?: S3Structure[];
+  type: 'file' | 'directory';
+  size?: number;
+  lastModified?: string;
+  parent?: string;
+}
+
+export interface S3UploadResponse {
+  url: string;
+  key: string;
 } 

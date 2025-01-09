@@ -18,9 +18,8 @@ const CommunityCreate: FC = () => {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const handleFileUpload = (files: FileList) => {
-    const fileArray = Array.from(files);
-    setAttachments(prev => [...prev, ...fileArray]);
+  const handleFileUpload = (files: File[]) => {
+    setAttachments(prev => [...prev, ...files]);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

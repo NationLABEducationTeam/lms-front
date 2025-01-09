@@ -1,5 +1,5 @@
 import { FC, useMemo } from 'react';
-import { S3Structure } from '@/types/s3';
+import { Course } from '@/types/course';
 import { Collapse, Card, Tag, Button, Typography, Space, Tooltip, theme } from 'antd';
 import { BookOutlined, RightOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, TeamOutlined } from '@ant-design/icons';
 import type { CollapseProps } from 'antd';
@@ -8,16 +8,16 @@ const { Text } = Typography;
 const { useToken } = theme;
 
 interface CourseListProps {
-  courses: S3Structure[];
+  courses: Course[];
   userRole: string;
-  onJoinClass: (coursePath: string) => void;
-  onEdit: (course: S3Structure) => void;
-  onDelete: (course: S3Structure) => void;
+  onJoinClass: (courseId: string) => void;
+  onEdit: (course: Course) => void;
+  onDelete: (course: Course) => void;
 }
 
 interface CategoryGroup {
   [key: string]: {
-    [key: string]: S3Structure[];
+    [key: string]: Course[];
   };
 }
 
@@ -35,20 +35,17 @@ export const CourseList: FC<CourseListProps> = ({
     const groups: CategoryGroup = {};
     
     courses.forEach(course => {
-      const parts = course.path.split('/');
-      if (parts.length >= 4) {
-        const mainCategory = parts[0];
-        const subCategory = parts[1];
-        
-        if (!groups[mainCategory]) {
-          groups[mainCategory] = {};
-        }
-        if (!groups[mainCategory][subCategory]) {
-          groups[mainCategory][subCategory] = [];
-        }
-        
-        groups[mainCategory][subCategory].push(course);
+      const mainCategory = course.mainCategory;
+      const subCategory = course.subCategory;
+      
+      if (!groups[mainCategory]) {
+        groups[mainCategory] = {};
       }
+      if (!groups[mainCategory][subCategory]) {
+        groups[mainCategory][subCategory] = [];
+      }
+      
+      groups[mainCategory][subCategory].push(course);
     });
     
     return groups;
@@ -102,7 +99,7 @@ export const CourseList: FC<CourseListProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {courses.map((course) => (
                   <Card
-                    key={course.path}
+                    key={course.id}
                     hoverable
                     className="h-full"
                     style={{ 
@@ -114,7 +111,7 @@ export const CourseList: FC<CourseListProps> = ({
                         <Button 
                           type="text" 
                           icon={<RightOutlined />}
-                          onClick={() => onJoinClass(course.path)}
+                          onClick={() => onJoinClass(course.id)}
                         >
                           입장
                         </Button>
@@ -157,7 +154,7 @@ export const CourseList: FC<CourseListProps> = ({
                       }
                       title={
                         <Text strong style={{ fontSize: token.fontSizeLG }}>
-                          {course.name}
+                          {course.title}
                         </Text>
                       }
                       description={

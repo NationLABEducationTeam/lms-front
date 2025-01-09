@@ -1,14 +1,24 @@
-import { FC, useRef } from 'react';
+import { FC, useRef, useState } from 'react';
 import { Button } from '../ui/button';
+import { cn } from '@/lib/utils';
 
 interface FileUploadProps {
-  onUpload: (files: FileList) => void;
+  onUpload: (files: File[]) => void;
   accept?: string;
   multiple?: boolean;
+  maxFiles?: number;
+  className?: string;
 }
 
-export const FileUpload: FC<FileUploadProps> = ({ onUpload, accept, multiple }) => {
+export const FileUpload: FC<FileUploadProps> = ({
+  onUpload,
+  accept,
+  multiple,
+  maxFiles = 1,
+  className
+}) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleClick = () => {
     fileInputRef.current?.click();
@@ -17,19 +27,24 @@ export const FileUpload: FC<FileUploadProps> = ({ onUpload, accept, multiple }) 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files && files.length > 0) {
-      onUpload(files);
+      if (maxFiles && files.length > maxFiles) {
+        setError(`최대 ${maxFiles}개의 파일만 선택할 수 있습니다.`);
+        return;
+      }
+      setError(null);
+      onUpload(Array.from(files));
     }
   };
 
   return (
-    <div>
+    <div className={cn("space-y-2", className)}>
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleChange}
         className="hidden"
         accept={accept}
-        multiple={multiple}
+        multiple={multiple || maxFiles > 1}
       />
       <Button
         type="button"
@@ -39,6 +54,9 @@ export const FileUpload: FC<FileUploadProps> = ({ onUpload, accept, multiple }) 
       >
         파일 선택
       </Button>
+      {error && (
+        <p className="text-sm text-red-500">{error}</p>
+      )}
     </div>
   );
 }; 

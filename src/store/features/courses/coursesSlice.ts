@@ -1,20 +1,12 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import { 
-  listMainCategories,
-  listSubCategories,
-  listCoursesByCategory,
-  getCourseDetails
-} from '@/services/api/courses';
+import { listCategories, listCourses } from '@/services/api/courses';
+import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
 
 interface CoursesState {
   categories: S3Structure[];
   subCategories: S3Structure[];
-  courses: S3Structure[];
-  selectedCourse: {
-    meta: any;
-    weeks: S3Structure[];
-  } | null;
+  courses: Course[];
   loading: boolean;
   error: string | null;
 }
@@ -23,7 +15,6 @@ const initialState: CoursesState = {
   categories: [],
   subCategories: [],
   courses: [],
-  selectedCourse: null,
   loading: false,
   error: null,
 };
@@ -31,40 +22,24 @@ const initialState: CoursesState = {
 export const fetchCategories = createAsyncThunk(
   'courses/fetchCategories',
   async () => {
-    console.log('Fetching main categories...');
-    const categories = await listMainCategories();
-    console.log('Fetched categories:', categories);
-    return categories;
+    const response = await listCategories();
+    return response.folders;
   }
 );
 
 export const fetchSubCategories = createAsyncThunk(
   'courses/fetchSubCategories',
   async (mainCategory: string) => {
-    console.log('Fetching sub categories for:', mainCategory);
-    const subCategories = await listSubCategories(mainCategory);
-    console.log('Fetched sub categories:', subCategories);
-    return subCategories;
+    const response = await listCategories(mainCategory);
+    return response.folders;
   }
 );
 
 export const fetchCoursesByCategory = createAsyncThunk(
   'courses/fetchCoursesByCategory',
   async ({ mainCategory, subCategory }: { mainCategory: string; subCategory: string }) => {
-    console.log('Fetching courses for:', { mainCategory, subCategory });
-    const courses = await listCoursesByCategory(mainCategory, subCategory);
-    console.log('Fetched courses:', courses);
-    return courses;
-  }
-);
-
-export const fetchCourseDetails = createAsyncThunk(
-  'courses/fetchCourseDetails',
-  async (coursePath: string) => {
-    console.log('Fetching course details for:', coursePath);
-    const details = await getCourseDetails(coursePath);
-    console.log('Fetched course details:', details);
-    return details;
+    const response = await listCourses(mainCategory, subCategory);
+    return response.courses;
   }
 );
 
@@ -72,16 +47,13 @@ const coursesSlice = createSlice({
   name: 'courses',
   initialState,
   reducers: {
-    clearSelectedCourse: (state) => {
-      state.selectedCourse = null;
-    },
     clearCourses: (state) => {
       state.courses = [];
     },
   },
   extraReducers: (builder) => {
     builder
-      // 카테고리 로딩
+      // fetchCategories
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -94,7 +66,7 @@ const coursesSlice = createSlice({
         state.loading = false;
         state.error = action.error.message || '카테고리를 불러오는데 실패했습니다.';
       })
-      // 서브카테고리 로딩
+      // fetchSubCategories
       .addCase(fetchSubCategories.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -105,43 +77,24 @@ const coursesSlice = createSlice({
       })
       .addCase(fetchSubCategories.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || '서브카테고리를 불러오는데 실패했습니다.';
+        state.error = action.error.message || '하위 카테고리를 불러오는데 실패했습니다.';
       })
-      // 강의 목록 로딩
+      // fetchCoursesByCategory
       .addCase(fetchCoursesByCategory.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
       .addCase(fetchCoursesByCategory.fulfilled, (state, action) => {
         state.loading = false;
-        // 새로운 강의들을 기존 목록에 추가 (중복 제거)
-        const newCourses = action.payload.filter(
-          (newCourse: S3Structure) => 
-            !state.courses.some(
-              (existingCourse: S3Structure) => existingCourse.path === newCourse.path
-            )
-        );
-        state.courses = [...state.courses, ...newCourses];
+        state.courses = action.payload;
       })
       .addCase(fetchCoursesByCategory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || '강의 목록을 불러오는데 실패했습니다.';
-      })
-      // 강의 상세 정보 로딩
-      .addCase(fetchCourseDetails.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchCourseDetails.fulfilled, (state, action) => {
-        state.loading = false;
-        state.selectedCourse = action.payload;
-      })
-      .addCase(fetchCourseDetails.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || '강의 상세 정보를 불러오는데 실패했습니다.';
       });
   },
 });
 
-export const { clearSelectedCourse, clearCourses } = coursesSlice.actions;
+export const { clearCourses } = coursesSlice.actions;
+
 export default coursesSlice.reducer; 
