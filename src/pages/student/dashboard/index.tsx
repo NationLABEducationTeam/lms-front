@@ -1,4 +1,4 @@
-import { FC, useEffect } from 'react';
+import { FC, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
 import { fetchCategories, fetchSubCategories, fetchCoursesByCategory, clearCourses } from '@/store/features/courses/coursesSlice';
@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui
 import { BookOpen, FileText, BrainCircuit, Calendar } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Alert } from '@/components/common/ui/alert';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -24,28 +25,36 @@ const StudentDashboard: FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { categories, courses, loading, error } = useSelector((state: RootState) => state.courses);
   const navigate = useNavigate();
+  const [loadingState, setLoadingState] = useState<string>('');
 
   useEffect(() => {
     const loadCourses = async () => {
       try {
+        setLoadingState('카테고리 초기화 중...');
         dispatch(clearCourses());
         
+        setLoadingState('메인 카테고리 로딩 중...');
         const categoriesResult = await dispatch(fetchCategories()).unwrap();
         console.log('Loaded categories:', categoriesResult);
         
         for (const category of categoriesResult) {
+          setLoadingState(`${category.name} 하위 카테고리 로딩 중...`);
           const subCatsResult = await dispatch(fetchSubCategories(category.path)).unwrap();
           console.log(`Loaded sub categories for ${category.name}:`, subCatsResult);
           
           for (const subCat of subCatsResult) {
+            setLoadingState(`${category.name}/${subCat.name} 강의 로딩 중...`);
             await dispatch(fetchCoursesByCategory({
-              mainCategory: category.path,
+              mainCategory: category.name,
               subCategory: subCat.name
             })).unwrap();
           }
         }
+        
+        setLoadingState('');
       } catch (error) {
         console.error('Error loading courses:', error);
+        setLoadingState('');
       }
     };
 
@@ -84,23 +93,24 @@ const StudentDashboard: FC = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center text-red-500">
-        {error}
-      </div>
+      <DashboardLayout title="Nations LAB LMS">
+        <div className="flex flex-col justify-center items-center h-[60vh]">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+          <div className="text-gray-600">{loadingState || '로딩 중...'}</div>
+        </div>
+      </DashboardLayout>
     );
   }
 
   return (
     <DashboardLayout title="Nations LAB LMS">
       <div className="space-y-8">
+        {error && (
+          <Alert variant="destructive">
+            <p>{error}</p>
+          </Alert>
+        )}
+
         {/* 상단 카드 섹션 */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <motion.div
@@ -118,7 +128,7 @@ const StudentDashboard: FC = () => {
               <CardContent>
                 <div className="text-2xl font-bold">{courses.length}</div>
                 <p className="text-xs text-gray-500">
-                  전체 진도율 65%
+                  {courses.length > 0 ? `${courses.length}개의 강의 수강 중` : '수강 중인 강의가 없습니다'}
                 </p>
               </CardContent>
             </Card>
@@ -199,13 +209,19 @@ const StudentDashboard: FC = () => {
           </TabsList>
 
           <TabsContent value="courses" className="space-y-4">
-            <CourseList
-              courses={courses}
-              userRole="STUDENT"
-              onJoinClass={handleJoinClass}
-              onEdit={() => {}}
-              onDelete={() => {}}
-            />
+            {courses.length > 0 ? (
+              <CourseList
+                courses={courses}
+                userRole="STUDENT"
+                onJoinClass={handleJoinClass}
+                onEdit={() => {}}
+                onDelete={() => {}}
+              />
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                수강 중인 강의가 없습니다.
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="assignments" className="space-y-4">

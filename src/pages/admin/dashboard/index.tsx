@@ -114,7 +114,7 @@ const AdminDashboard: FC = () => {
             
             for (const subCat of subCatsResult) {
               await dispatch(fetchCoursesByCategory({
-                mainCategory: category.path,
+                mainCategory: category.name,
                 subCategory: subCat.name
               })).unwrap();
             }

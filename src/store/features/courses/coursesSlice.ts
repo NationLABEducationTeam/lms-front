@@ -49,6 +49,10 @@ const coursesSlice = createSlice({
   reducers: {
     clearCourses: (state) => {
       state.courses = [];
+      state.categories = [];
+      state.subCategories = [];
+      state.loading = false;
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
@@ -59,7 +63,6 @@ const coursesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.loading = false;
         state.categories = action.payload;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
@@ -68,30 +71,37 @@ const coursesSlice = createSlice({
       })
       // fetchSubCategories
       .addCase(fetchSubCategories.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(fetchSubCategories.fulfilled, (state, action) => {
-        state.loading = false;
-        state.subCategories = action.payload;
+        state.subCategories = [...state.subCategories, ...action.payload];
       })
       .addCase(fetchSubCategories.rejected, (state, action) => {
-        state.loading = false;
         state.error = action.error.message || '하위 카테고리를 불러오는데 실패했습니다.';
       })
       // fetchCoursesByCategory
       .addCase(fetchCoursesByCategory.pending, (state) => {
-        state.loading = true;
         state.error = null;
       })
       .addCase(fetchCoursesByCategory.fulfilled, (state, action) => {
-        state.loading = false;
-        state.courses = action.payload;
+        // 새로운 강의들을 기존 강의 목록에 추가
+        const newCourses = action.payload.filter(
+          newCourse => !state.courses.some(
+            existingCourse => existingCourse.id === newCourse.id
+          )
+        );
+        state.courses = [...state.courses, ...newCourses];
       })
       .addCase(fetchCoursesByCategory.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || '강의 목록을 불러오는데 실패했습니다.';
-      });
+      })
+      .addMatcher(
+        action => action.type.endsWith('/fulfilled'),
+        (state) => {
+          state.loading = false;
+        }
+      );
   },
 });
 

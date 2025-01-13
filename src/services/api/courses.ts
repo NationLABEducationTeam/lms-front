@@ -5,6 +5,7 @@ const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
 const DELETE_COURSE_URL = 'https://whym5n2vlkhep55o4j7i75znwa0dnipm.lambda-url.ap-northeast-2.on.aws/';
 const UPDATE_COURSE_URL = 'https://krhl5cd3wy2ejzcrxiviier2tu0owccb.lambda-url.ap-northeast-2.on.aws/';
+const GET_COURSE_DETAIL_URL = 'https://dwv5b4lus57dwmjsiqnmoyvgge0hmkwh.lambda-url.ap-northeast-2.on.aws/';  // TODO: 실제 URL로 교체 필요
 
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { Course } from '@/types/course';
@@ -19,10 +20,33 @@ interface CoursesResponse {
   courses: Course[];
 }
 
+interface CourseDetail {
+  weeklyContents: {
+    weekNumber: string;
+    name: string;
+    files: {
+      name: string;
+      path: string;
+      size: number;
+      lastModified?: string;
+      type: string;
+    }[];
+  }[];
+  courseInfo: {
+    title: string;
+    description: string;
+    instructor: string;
+    totalWeeks: number;
+  };
+}
+
 // 카테고리 조회
 export const listCategories = async (path: string = ''): Promise<ListResponse> => {
   try {
-    const url = path ? `${LIST_CATEGORIES_URL}?path=${path}` : LIST_CATEGORIES_URL;
+    const encodedPath = encodeURIComponent(path);
+    const url = path ? `${LIST_CATEGORIES_URL}?path=${encodedPath}` : LIST_CATEGORIES_URL;
+    console.log('Fetching from URL:', url);
+    
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -36,6 +60,7 @@ export const listCategories = async (path: string = ''): Promise<ListResponse> =
     }
     
     const data = await response.json();
+    console.log('Received data:', data);
     return {
       folders: data.folders || [],
       files: data.files || []
@@ -49,40 +74,84 @@ export const listCategories = async (path: string = ''): Promise<ListResponse> =
 // 강의 목록 조회
 export const listCourses = async (mainCategory: string, subCategory: string): Promise<CoursesResponse> => {
   try {
-    const path = `${mainCategory}/${subCategory}/courses`;
+    // 경로에서 빈 문자열이나 undefined 제거 후 유효한 세그먼트만 결합
+    const pathSegments = [mainCategory, subCategory].filter(segment => segment && segment.trim());
+    const path = pathSegments.join('/');
+    console.log('Fetching courses from path:', path);
+    
     const response = await fetch(`${LIST_CATEGORIES_URL}?path=${path}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
     });
+    
     if (!response.ok) {
       throw new Error('Failed to fetch courses');
     }
+    
     const data = await response.json();
+    console.log('Received courses data:', data);
     
     // S3 폴더 구조를 Course 객체로 변환
     const courses: Course[] = await Promise.all(
-      data.folders.map(async (folder: S3Structure) => {
-        const metaResponse = await fetch(`${LIST_CATEGORIES_URL}?path=${folder.path}/meta.json`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
+      (data.folders || []).map(async (folder: S3Structure) => {
+        try {
+          const metaPath = `${path}/${folder.name}/meta.json`;
+          console.log('Fetching metadata from:', metaPath);
+          
+          const metaResponse = await fetch(`${LIST_CATEGORIES_URL}?path=${metaPath}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (!metaResponse.ok) {
+            console.warn(`Failed to fetch metadata for course: ${folder.name}`);
+            // 메타데이터가 없는 경우 기본값 사용
+            return {
+              id: folder.name,
+              title: folder.name,
+              description: '강의 설명이 없습니다.',
+              mainCategory,
+              subCategory,
+              status: 'published' as const,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString()
+            };
           }
-        });
-        if (!metaResponse.ok) {
-          throw new Error('Failed to fetch course metadata');
+          
+          const metadata = await metaResponse.json();
+          console.log('Received metadata:', metadata);
+          
+          return {
+            id: folder.name,
+            ...metadata,
+            mainCategory,
+            subCategory,
+            status: metadata.status || 'published',
+            createdAt: metadata.createdAt || new Date().toISOString(),
+            updatedAt: metadata.updatedAt || new Date().toISOString()
+          };
+        } catch (error) {
+          console.error(`Error processing course ${folder.name}:`, error);
+          // 에러가 발생한 경우에도 기본값 반환
+          return {
+            id: folder.name,
+            title: folder.name,
+            description: '강의 정보를 불러오는데 실패했습니다.',
+            mainCategory,
+            subCategory,
+            status: 'published' as const,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          };
         }
-        const metadata = await metaResponse.json();
-        return {
-          id: folder.name,
-          ...metadata,
-          mainCategory,
-          subCategory
-        };
       })
     );
 
+    console.log('Processed courses:', courses);
     return { courses };
   } catch (error) {
     console.error('Error fetching courses:', error);
@@ -273,6 +342,30 @@ export const updateCourse = async (courseId: string, updateData: Partial<Course>
     }
   } catch (error) {
     console.error('Error updating course:', error);
+    throw error;
+  }
+};
+
+// 강의 상세 정보 조회
+export const getCourseDetail = async (courseId: string): Promise<CourseDetail> => {
+  try {
+    const response = await fetch(`${GET_COURSE_DETAIL_URL}?courseId=${encodeURIComponent(courseId)}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch course details');
+    }
+
+    const data = await response.json();
+    console.log('Received course details:', data);
+    return data;
+  } catch (error) {
+    console.error('Error fetching course details:', error);
     throw error;
   }
 }; 

@@ -83,3 +83,23 @@ export interface CourseFormData {
   thumbnail?: File;
   materials?: File[];
 }
+
+export interface CourseDetail {
+  weeklyContents: {
+    weekNumber: string;
+    name: string;
+    files: {
+      name: string;
+      path: string;
+      size: number;
+      lastModified?: string;
+      type: string;
+    }[];
+  }[];
+  courseInfo: {
+    title: string;
+    description: string;
+    instructor: string;
+    totalWeeks: number;
+  };
+}

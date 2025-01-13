@@ -21,6 +21,7 @@ import QnaDetail from './pages/student/board/QnaDetail';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import { UserRole } from './config/cognito';
 import './App.css';
+import CourseDetailPage from './pages/student/[courseId]';
 
 const App = () => {
   return (
@@ -35,6 +36,7 @@ const App = () => {
             <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
               <Routes>
                 <Route path="/" element={<StudentPage />} />
+                <Route path="/:courseId" element={<CourseDetailPage />} />
                 <Route path="/notices" element={<NoticeList />} />
                 <Route path="/notices/:id" element={<NoticeDetail />} />
                 <Route path="/community" element={<CommunityList />} />
