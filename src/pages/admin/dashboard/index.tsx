@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { fetchCategories, fetchSubCategories, fetchCoursesByCategory, clearCourses } from '@/store/features/courses/coursesSlice';
+import { fetchCategories, fetchCoursesByCategory, clearCategories } from '@/store/features/courses/coursesSlice';
 import { getAllUsers } from '@/services/api/users';
 import { getNotices } from '@/services/api/notices';
 import { signOut } from 'aws-amplify/auth';
@@ -58,7 +58,7 @@ const AdminDashboard: FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { categories, subCategories, courses, loading: coursesLoading, error: coursesError } = useSelector((state: RootState) => state.courses);
+  const { categories, courses, loading: coursesLoading, error: coursesError } = useSelector((state: RootState) => state.courses);
   const { user } = useAuth();
   const [notices, setNotices] = useState<Notice[]>([]);
   const [noticesLoading, setNoticesLoading] = useState(true);
@@ -103,19 +103,17 @@ const AdminDashboard: FC = () => {
     const loadCourses = async () => {
       if (user) {
         try {
-          dispatch(clearCourses());
+          dispatch(clearCategories());
           
-          const categoriesResult = await dispatch(fetchCategories()).unwrap();
-          console.log('Loaded categories:', categoriesResult);
+          const response = await dispatch(fetchCategories('')).unwrap();
+          console.log('Loaded categories:', response);
           
-          for (const category of categoriesResult) {
-            const subCatsResult = await dispatch(fetchSubCategories(category.path)).unwrap();
-            console.log(`Loaded sub categories for ${category.name}:`, subCatsResult);
-            
-            for (const subCat of subCatsResult) {
+          // 각 카테고리에 대해 강의 목록 불러오기
+          if (response.items.folders) {
+            for (const category of response.items.folders) {
               await dispatch(fetchCoursesByCategory({
                 mainCategory: category.name,
-                subCategory: subCat.name
+                subCategory: 'all'
               })).unwrap();
             }
           }

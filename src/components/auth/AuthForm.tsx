@@ -255,7 +255,7 @@ const AuthForm = () => {
       <div className="flex-1 bg-blue-50 hidden lg:flex lg:items-center lg:justify-center p-12">
         <div className="text-center">
           <img 
-            src="/sideillustration.png" 
+            src="sideillustration.png" 
             alt="Auth illustration" 
             className="max-w-[70%] mx-auto mb-8 h-auto"
           />

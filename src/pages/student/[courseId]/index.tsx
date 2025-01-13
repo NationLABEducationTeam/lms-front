@@ -1,29 +1,38 @@
 import { FC, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Typography, Card, Space, Spin, Alert, Collapse, List, Button } from 'antd';
+import { Typography, Card, Space, Spin, Alert, Grid, Collapse, List, Button } from 'antd';
 import { 
   FolderOutlined, 
-  CalendarOutlined,
+  CalendarOutlined, 
+  TeamOutlined, 
   BookOutlined,
   FileTextOutlined,
   PlayCircleOutlined,
   DownloadOutlined,
   FileWordOutlined,
   FilePdfOutlined,
-  FileExcelOutlined,
-  UserOutlined
+  FileExcelOutlined
 } from '@ant-design/icons';
-import { getCourseDetail, getDownloadUrl } from '@/services/api/courses';
-import { CourseDetail } from '@/types/course';
+import { listCategories, getDownloadUrl } from '@/services/api/courses';
+import { S3Structure } from '@/types/s3';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 
-const CourseDetailPage: FC = () => {
+interface WeeklyContent {
+  weekNumber: string;
+  path: string;
+  contents?: {
+    folders: S3Structure[];
+    files: S3Structure[];
+  };
+}
+
+const CourseDetail: FC = () => {
   const { courseId } = useParams<{ courseId: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [courseDetail, setCourseDetail] = useState<CourseDetail | null>(null);
+  const [weeklyFolders, setWeeklyFolders] = useState<WeeklyContent[]>([]);
 
   // 파일 아이콘 선택 함수
   const getFileIcon = (fileName: string) => {
@@ -55,32 +64,64 @@ const CourseDetailPage: FC = () => {
   };
 
   useEffect(() => {
-    const loadCourseDetail = async () => {
-      if (!courseId) return;
-
-      // URL이 /student/{courseId} 형식인지 확인
-      const pathSegments = window.location.pathname.split('/');
-      if (pathSegments[1] !== 'student' || !pathSegments[2]) return;
-
+    const loadCourseContents = async () => {
       try {
         setLoading(true);
         setError(null);
-        const detail = await getCourseDetail(courseId);
-        setCourseDetail(detail);
+
+        // AI_ML/MACHINE_LEARNING 형식의 경로 구성
+        const coursePath = `AI_ML/${courseId}`;
+        console.log('Loading course contents from:', coursePath);
+
+        // 해당 경로의 모든 폴더와 파일 가져오기
+        const response = await listCategories(coursePath);
+        console.log('Course contents:', response);
+
+        // 주차 폴더만 필터링하고 정렬
+        const weekFolders = response.folders
+          .filter(folder => /^week\d+$/.test(folder.name))
+          .map(folder => ({
+            weekNumber: folder.name.replace('week', ''),
+            path: `${coursePath}/${folder.name}`,
+            contents: {
+              folders: [],
+              files: []
+            }
+          }))
+          .sort((a, b) => parseInt(a.weekNumber) - parseInt(b.weekNumber));
+
+        console.log('Filtered week folders:', weekFolders);
+
+        // 각 주차 폴더의 내용 가져오기
+        const weeklyContents = await Promise.all(
+          weekFolders.map(async (week) => {
+            console.log('Fetching contents for week:', week.path);
+            const weekContents = await listCategories(week.path);
+            console.log('Week contents:', weekContents);
+            return {
+              ...week,
+              contents: weekContents
+            };
+          })
+        );
+
+        setWeeklyFolders(weeklyContents);
       } catch (err) {
-        console.error('Error loading course details:', err);
+        console.error('Error loading course contents:', err);
         setError('강의 내용을 불러오는데 실패했습니다.');
       } finally {
         setLoading(false);
       }
     };
 
-    loadCourseDetail();
+    if (courseId) {
+      loadCourseContents();
+    }
   }, [courseId]);
 
-  const handleFileClick = async (filePath: string) => {
+  const handleFileClick = async (file: S3Structure) => {
     try {
-      const response = await getDownloadUrl(filePath);
+      const response = await getDownloadUrl(file.path);
       window.open(response.presignedUrl, '_blank');
     } catch (error) {
       console.error('Error getting file URL:', error);
@@ -108,19 +149,6 @@ const CourseDetailPage: FC = () => {
     );
   }
 
-  if (!courseDetail) {
-    return (
-      <div className="p-6">
-        <Alert
-          message="강의를 찾을 수 없음"
-          description="요청하신 강의를 찾을 수 없습니다."
-          type="error"
-          showIcon
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-7xl mx-auto p-6">
       {/* 강의 헤더 */}
@@ -129,43 +157,36 @@ const CourseDetailPage: FC = () => {
           <div className="p-3 bg-blue-50 rounded-lg">
             <BookOutlined className="text-2xl text-blue-500" />
           </div>
-          <div className="flex-grow">
-            <Title level={2} className="!mb-1">{courseDetail.courseInfo.title}</Title>
-            <Space className="text-gray-500" size="large">
-              <Space>
-                <UserOutlined />
-                <span>{courseDetail.courseInfo.instructor}</span>
-              </Space>
+          <div>
+            <Title level={2} className="!mb-1">{courseId?.replace(/_/g, ' ')}</Title>
+            <Space className="text-gray-500">
               <Space>
                 <CalendarOutlined />
-                <span>총 {courseDetail.courseInfo.totalWeeks}주차</span>
+                <span>총 {weeklyFolders.length}주차</span>
               </Space>
             </Space>
           </div>
         </div>
-        <Text className="block text-gray-600">
-          {courseDetail.courseInfo.description}
-        </Text>
       </Card>
 
       {/* 주차별 섹션 */}
       <div className="space-y-4">
         <Collapse defaultActiveKey={['1']}>
-          {courseDetail.weeklyContents.map((week) => (
+          {weeklyFolders.map((week) => (
             <Panel
               key={week.weekNumber}
               header={
                 <Space>
                   <FolderOutlined className="text-blue-500" />
-                  <span className="font-medium">{week.name}</span>
+                  <span className="font-medium">Week {week.weekNumber}</span>
                   <span className="text-gray-400">
-                    ({week.files.length} files)
+                    ({(week.contents?.files.length || 0)} files)
                   </span>
                 </Space>
               }
             >
               <List
-                dataSource={week.files}
+                dataSource={week.contents?.files || []}
                 renderItem={file => (
                   <List.Item
                     actions={[
@@ -173,7 +194,7 @@ const CourseDetailPage: FC = () => {
                         key="download"
                         type="text"
                         icon={<DownloadOutlined />}
-                        onClick={() => handleFileClick(file.path)}
+                        onClick={() => handleFileClick(file)}
                       >
                         Download
                       </Button>
@@ -206,4 +227,4 @@ const CourseDetailPage: FC = () => {
   );
 };
 
-export default CourseDetailPage; 
+export default CourseDetail; 

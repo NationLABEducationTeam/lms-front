@@ -41,65 +41,29 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  mainCategory: string;
-  subCategory: string;
-  thumbnail?: string;
-  createdAt: string;
-  updatedAt: string;
+  instructor: string;
+  mainCategory: MainCategory;
+  subCategory: SubCategory;
   status: 'draft' | 'published' | 'archived';
-}
-
-export interface CourseContent {
-  id: string;
-  courseId: string;
-  week: number;
-  title: string;
-  description: string;
-  type: 'lecture' | 'quiz' | 'assignment';
-  content: any;
-  createdAt: string;
   updatedAt: string;
-  createdBy: {
-    id: string;
-    role: string;
-  };
+  totalWeeks: number;
 }
 
-export interface CoursePermissions {
-  canCreate: boolean;
-  canEdit: boolean;
-  canDelete: boolean;
-  canUploadContent: boolean;
-  canCreateQuiz: boolean;
-  canGrade: boolean;
-  canEnroll: boolean;
+export interface CourseFile {
+  name: string;
+  path: string;
+  size: number;
+  lastModified: Date;
 }
 
-export interface CourseFormData {
-  title: string;
-  description: string;
-  mainCategory: string;
-  subCategory: string;
-  thumbnail?: File;
-  materials?: File[];
+export interface WeeklyContent {
+  weekNumber: number;
+  folderName: string;
+  files: CourseFile[];
 }
 
-export interface CourseDetail {
-  weeklyContents: {
-    weekNumber: string;
-    name: string;
-    files: {
-      name: string;
-      path: string;
-      size: number;
-      lastModified?: string;
-      type: string;
-    }[];
-  }[];
-  courseInfo: {
-    title: string;
-    description: string;
-    instructor: string;
-    totalWeeks: number;
-  };
+export interface CourseDetail extends Course {
+  weeklyContents: WeeklyContent[];
+  thumbnail?: string;
+  materials?: CourseFile[];
 }

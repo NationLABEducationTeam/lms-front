@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { AppDispatch, RootState } from '@/store/store';
-import { fetchCategories, fetchSubCategories, fetchCoursesByCategory } from '@/store/features/courses/coursesSlice';
+import { fetchCategories, fetchCoursesByCategory } from '@/store/features/courses/coursesSlice';
 import { Button } from '@/components/common/ui/button';
 import { Plus } from 'lucide-react';
 import { CategorySelector } from '@/components/courses/CategorySelector';
