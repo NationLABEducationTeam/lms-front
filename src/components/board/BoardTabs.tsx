@@ -15,7 +15,7 @@ export const BoardTabs: FC<BoardTabsProps> = ({ onPostClick, onCreateClick }) =>
 
   return (
     <div style={{ padding: token.paddingLG }}>
-      <Title level={4} style={{ marginBottom: token.marginMD }}>게시판</Title>
+      <Title level={4} style={{ marginBottom: token.marginMD }}>커뮤니티</Title>
       <div style={{
         background: token.colorBgContainer,
         padding: token.paddingLG,

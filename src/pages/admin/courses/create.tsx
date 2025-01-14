@@ -1,191 +1,248 @@
-// import { FC, useState } from 'react';
-// import { useNavigate } from 'react-router-dom';
-// import { useAuth } from '@/hooks/useAuth';
-// import { Button } from '@/components/common/ui/button';
-// import { Input } from '@/components/common/ui/input';
-// import { Label } from '@/components/common/ui/label';
-// import { Alert } from '@/components/common/ui/alert';
-// import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/common/ui/select';
-// import { MainCategory, SubCategory } from '@/types/category';
+import { FC, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { CategorySelector } from '@/components/courses/CategorySelector';
+import { Input } from '@/components/common/ui/input';
+import { Button } from '@/components/common/ui/button';
+import { Textarea } from '@/components/common/ui/textarea';
+import { FileUpload } from '@/components/common/upload/FileUpload';
+import { createCourse, getUploadUrls } from '@/services/api/courses';
+import { MainCategory } from '@/types/course';
+import { useAuth } from '@/hooks/useAuth';
 
-// interface CourseFormData {
-//   name: string;
-//   title: string;
-//   description: string;
-//   zoom_link?: string;
-//   thumbnail?: File;
-//   category: MainCategory;
-//   subcategory: SubCategory;
-// }
+interface CourseFormData {
+  title: string;
+  description: string;
+  mainCategory: MainCategory;
+  subCategory: string;
+  thumbnail?: File;
+  materials?: File[];
+}
 
-// const CreateCoursePage: FC = () => {
-//   const navigate = useNavigate();
-//   const { user } = useAuth();
-//   const [formData, setFormData] = useState<CourseFormData>({
-//     name: '',
-//     title: '',
-//     description: '',
-//     category: 'PROGRAMMING' as MainCategory,
-//     //subcategory: 'FRONTEND' as SubCategory,
-//   });
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
+interface UploadUrlResponse {
+  urls: string[];
+}
 
-//   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-//     const { name, value } = e.target;
-//     setFormData(prev => ({ ...prev, [name]: value }));
-//   };
+const AdminCourseCreate: FC = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [formData, setFormData] = useState<CourseFormData>({
+    title: '',
+    description: '',
+    mainCategory: 'CLOUD',
+    subCategory: 'default',
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [mainCategory, setMainCategory] = useState<MainCategory>('CLOUD');
+  const [subCategory, setSubCategory] = useState<string>('default');
 
-//   const handleThumbnailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     const file = e.target.files?.[0];
-//     if (file) {
-//       setFormData(prev => ({ ...prev, thumbnail: file }));
-//     }
-//   };
+  const handleMainCategoryChange = (category: MainCategory) => {
+    setMainCategory(category);
+    setFormData(prev => ({
+      ...prev,
+      mainCategory: category
+    }));
+  };
 
-//   const handleSubmit = async (e: React.FormEvent) => {
-//     e.preventDefault();
-//     if (!user) return;
+  const handleSubCategoryChange = (category: string) => {
+    setSubCategory(category);
+    setFormData(prev => ({
+      ...prev,
+      subCategory: category
+    }));
+  };
 
-//     try {
-//       setLoading(true);
-//       setError(null);
-      
-//       // await createCourse({
-//       //   name: formData.name,
-//       //   title: formData.title,
-//       //   description: formData.description,
-//       //   category: formData.category,
-//       //   subcategory: formData.subcategory,
-//       //   instructor_id: user.user_id,
-//       // });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
 
-//       navigate('/admin/courses');
-//     } catch (err) {
-//       setError(err instanceof Error ? err.message : '강의 생성 중 오류가 발생했습니다.');
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
+  const handleThumbnailUpload = (files: File[]) => {
+    if (files.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        thumbnail: files[0]
+      }));
+    }
+  };
 
-//   return (
-//     <div className="container mx-auto py-8">
-//       <div className="max-w-2xl mx-auto">
-//         <h1 className="text-2xl font-bold mb-6">새 강의 생성</h1>
+  const handleMaterialsUpload = (files: File[]) => {
+    setFormData(prev => ({
+      ...prev,
+      materials: files
+    }));
+  };
 
-//         {error && (
-//           <Alert variant="destructive" className="mb-4">
-//             {error}
-//           </Alert>
-//         )}
+  const removeMaterial = (index: number) => {
+    if (formData.materials) {
+      const newMaterials = [...formData.materials];
+      newMaterials.splice(index, 1);
+      setFormData(prev => ({
+        ...prev,
+        materials: newMaterials
+      }));
+    }
+  };
 
-//         <form onSubmit={handleSubmit} className="space-y-6">
-//           <div>
-//             <Label htmlFor="name">강의 코드</Label>
-//             <Input
-//               id="name"
-//               name="name"
-//               value={formData.name}
-//               onChange={handleInputChange}
-//               required
-//             />
-//           </div>
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
 
-//           <div>
-//             <Label htmlFor="title">강의 제목</Label>
-//             <Input
-//               id="title"
-//               name="title"
-//               value={formData.title}
-//               onChange={handleInputChange}
-//               required
-//             />
-//           </div>
+    // 소분류 검증
+    if (!formData.subCategory.trim()) {
+      setError('소분류를 입력해주세요.');
+      setLoading(false);
+      return;
+    }
 
-//           <div>
-//             <Label htmlFor="description">강의 설명</Label>
-//             <textarea
-//               id="description"
-//               name="description"
-//               value={formData.description}
-//               onChange={handleInputChange}
-//               className="w-full min-h-[100px] p-2 border rounded-md"
-//               required
-//             />
-//           </div>
+    try {
+      // 강의 생성 API 호출
+      await createCourse({
+        title: formData.title,
+        description: formData.description,
+        mainCategory: formData.mainCategory as MainCategory,
+        subCategory: formData.subCategory,
+        instructor: user?.email || ''
+      });
 
-//           <div>
-//             <Label htmlFor="zoom_link">Zoom 링크</Label>
-//             <Input
-//               id="zoom_link"
-//               name="zoom_link"
-//               value={formData.zoom_link || ''}
-//               onChange={handleInputChange}
-//               placeholder="https://zoom.us/j/..."
-//             />
-//           </div>
+      navigate('/admin/courses');
+    } catch (error) {
+      console.error('Error creating course:', error);
+      setError('강의 생성 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-//           <div>
-//             <Label htmlFor="thumbnail">썸네일 이미지</Label>
-//             <Input
-//               id="thumbnail"
-//               name="thumbnail"
-//               type="file"
-//               accept="image/*"
-//               onChange={handleThumbnailChange}
-//               className="mt-1"
-//             />
-//             {formData.thumbnail && (
-//               <p className="mt-2 text-sm text-gray-600">
-//                 선택된 파일: {formData.thumbnail.name}
-//               </p>
-//             )}
-//           </div>
+  return (
+    <div className="min-h-screen bg-[#232f3e] text-white p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-2xl font-bold mb-6">새 강의 생성</h1>
 
-//           <div>
-//             <Label htmlFor="category">카테고리</Label>
-//             <Select value={formData.category}>
-//               <SelectTrigger>
-//                 <SelectValue placeholder="카테고리 선택" />
-//               </SelectTrigger>
-//               <SelectContent>
-//                 <SelectItem value="PROGRAMMING">프로그래밍</SelectItem>
-//                 <SelectItem value="DESIGN">디자인</SelectItem>
-//                 <SelectItem value="BUSINESS">비즈니스</SelectItem>
-//               </SelectContent>
-//             </Select>
-//           </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">카테고리</label>
+            <CategorySelector
+              selectedMain={mainCategory}
+              selectedSub={subCategory}
+              onMainChange={handleMainCategoryChange}
+              onSubChange={handleSubCategoryChange}
+            />
+          </div>
 
-//           <div>
-//             <Label htmlFor="subcategory">서브 카테고리</Label>
-//             <Select value={formData.subcategory}>
-//               <SelectTrigger>
-//                 <SelectValue placeholder="서브 카테고리 선택" />
-//               </SelectTrigger>
-//               <SelectContent>
-//                 <SelectItem value="FRONTEND">프론트엔드</SelectItem>
-//                 <SelectItem value="BACKEND">백엔드</SelectItem>
-//                 <SelectItem value="MOBILE">모바일</SelectItem>
-//               </SelectContent>
-//             </Select>
-//           </div>
+          <div className="space-y-2">
+            <label htmlFor="title" className="text-sm font-medium">강의 제목</label>
+            <Input
+              id="title"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              placeholder="강의 제목을 입력하세요"
+              className="bg-[#1a232e] border-gray-700"
+              required
+            />
+          </div>
 
-//           <div className="flex justify-end gap-4">
-//             <Button
-//               type="button"
-//               variant="outline"
-//               onClick={() => navigate('/admin/courses')}
-//             >
-//               취소
-//             </Button>
-//             <Button type="submit" disabled={loading}>
-//               {loading ? '생성 중...' : '강의 생성'}
-//             </Button>
-//           </div>
-//         </form>
-//       </div>
-//     </div>
-//   );
-// };
+          <div className="space-y-2">
+            <label htmlFor="description" className="text-sm font-medium">강의 설명</label>
+            <Textarea
+              id="description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              placeholder="강의 설명을 입력하세요"
+              className="bg-[#1a232e] border-gray-700 min-h-[100px]"
+              required
+            />
+          </div>
 
-// export default CreateCoursePage; 
+          <div className="space-y-2">
+            <label className="text-sm font-medium">썸네일 이미지</label>
+            <FileUpload
+              onUpload={handleThumbnailUpload}
+              accept="image/*"
+              maxFiles={1}
+              className="bg-[#1a232e] border-gray-700"
+            />
+            {formData.thumbnail && (
+              <div className="mt-2">
+                <div className="relative w-48 h-32 rounded-lg overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(formData.thumbnail)}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, thumbnail: undefined }))}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">강의 자료</label>
+            <FileUpload
+              onUpload={handleMaterialsUpload}
+              accept=".pdf,.doc,.docx,.ppt,.pptx"
+              maxFiles={10}
+              multiple
+              className="bg-[#1a232e] border-gray-700"
+            />
+            {formData.materials && formData.materials.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {formData.materials.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-[#1a232e] p-2 rounded">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">{file.name}</span>
+                      <span className="text-xs text-gray-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeMaterial(index)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {error && (
+            <div className="text-red-500 text-sm">{error}</div>
+          )}
+
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/admin/courses')}
+              className="border-gray-700 text-gray-300 hover:bg-[#2c3b4e]"
+            >
+              취소
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {loading ? '생성 중...' : '강의 생성'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default AdminCourseCreate; 

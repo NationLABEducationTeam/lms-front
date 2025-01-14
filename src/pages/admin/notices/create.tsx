@@ -44,8 +44,7 @@ const CreateNotice: FC = () => {
     }
   };
 
-  const handleFileUpload = (fileList: FileList) => {
-    const files = Array.from(fileList);
+  const handleFileUpload = (files: File[]) => {
     setFormData(prev => ({
       ...prev,
       attachments: files

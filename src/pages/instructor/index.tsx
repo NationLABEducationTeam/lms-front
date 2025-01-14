@@ -1,156 +1,104 @@
-import { useState, useEffect } from "react";
-import DashboardLayout from "@/components/common/layout/DashboardLayout";
-import {
+import React from 'react';
+import { useState, useEffect } from 'react';
+import { 
   Card,
-  CardContent,
   CardHeader,
   CardTitle,
-} from "@/components/common/ui/card";
-import { Button } from "@/components/common/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/common/ui/tabs";
-import { CourseList } from "@/components/courses/CourseList";
-import { CategoryList } from "@/components/courses/CategoryList";
-import { S3Structure } from "@/types/s3";
-import { Category } from "@/types/course";
-import { fetchCategories, fetchCoursesByCategory } from "@/store/features/courses/coursesSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { AppDispatch, RootState } from "@/store/store";
+  CardContent
+} from '@/components/common/ui/card/index';
+import DataTable from '@/components/common/ui/DataTable';
+import type { Column } from '@/components/common/ui/DataTable';
+import { FileUpload } from '@/components/common/upload/FileUpload';
+import { getStudents } from '@/services/api/users';
+import type { DBUser } from '@/types/user';
 
-const InstructorDashboard = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { courses, loading, error } = useSelector((state: RootState) => state.courses);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string | null>(null);
+const InstructorDashboard: React.FC = () => {
+  const [students, setStudents] = useState<DBUser[]>([]); 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadCategories = async () => {
+    const fetchStudents = async () => {
       try {
-        const result = await dispatch(fetchCategories()).unwrap();
-        setCategories(result);
-      } catch (error) {
-        console.error('Error loading categories:', error);
+        const studentData = await getStudents();
+        setStudents(studentData);
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching students:', err);
+        setError('학생 목록을 불러오는데 실패했습니다.');
+      } finally {
+        setLoading(false);
       }
     };
-    loadCategories();
-  }, [dispatch]);
 
-  const handleCategorySelect = async (category: Category) => {
-    setSelectedCategory(category);
-    setSelectedSubCategory(null);
-    
-    try {
-      await dispatch(fetchCoursesByCategory({
-        mainCategory: category.path,
-        subCategory: 'all'
-      })).unwrap();
-    } catch (error) {
-      console.error('Error fetching courses:', error);
-    }
-  };
+    fetchStudents();
+  }, []);
 
-  const handleJoinClass = (coursePath: string) => {
-    console.log('Join class:', coursePath);
-  };
-
-  const handleEditCourse = (course: S3Structure) => {
-    console.log('Edit course:', course);
-  };
-
-  const handleDeleteCourse = (course: S3Structure) => {
-    console.log('Delete course:', course);
-  };
+  const columns: Column<DBUser>[] = [
+    { header: '이름', accessor: 'given_name' },
+    { header: '이메일', accessor: 'email' },
+    { header: '가입일', accessor: 'created_at' },
+    { 
+      header: '최근 접속일', 
+      accessor: (user: DBUser) => user.updated_at || '-'
+    },
+  ];
 
   return (
-    <DashboardLayout title="강사 대시보드">
-      <div className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                강의
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{courses.length}</div>
-              <p className="text-xs text-muted-foreground">
-                총 강의 수
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                수강생
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+2350</div>
-              <p className="text-xs text-muted-foreground">
-                전체 수강생 수
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                평균 만족도
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">+4.8</div>
-              <p className="text-xs text-muted-foreground">
-                5점 만점
-              </p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                수익
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₩573,000</div>
-              <p className="text-xs text-muted-foreground">
-                이번 달 수익
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+    <div className="container mx-auto p-6">
+      <h1 className="text-2xl font-bold mb-6">강사 대시보드</h1>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle>총 수강생</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">{students.length}명</p>
+          </CardContent>
+        </Card>
 
-        <Tabs defaultValue="courses" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="courses">내 강의</TabsTrigger>
-            <TabsTrigger value="categories">카테고리</TabsTrigger>
-          </TabsList>
-          <TabsContent value="courses" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold tracking-tight">강의 목록</h2>
-              <Button>새 강의 만들기</Button>
-            </div>
-            <CourseList
-              courses={courses}
-              userRole="INSTRUCTOR"
-              onJoinClass={handleJoinClass}
-              onEdit={handleEditCourse}
-              onDelete={handleDeleteCourse}
+        <Card>
+          <CardHeader>
+            <CardTitle>강의 업로드</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FileUpload 
+              onUpload={(files) => console.log('Uploaded:', files)}
+              accept="video/*"
+              maxFiles={1}
             />
-          </TabsContent>
-          <TabsContent value="categories" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold tracking-tight">카테고리</h2>
-            </div>
-            <CategoryList 
-              categories={categories} 
-              onCategorySelect={handleCategorySelect}
-              selectedCategory={selectedCategory}
-            />
-          </TabsContent>
-        </Tabs>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>최근 활동</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>최근 업로드한 강의가 없습니다.</p>
+          </CardContent>
+        </Card>
       </div>
-    </DashboardLayout>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>수강생 목록</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {error ? (
+            <div className="text-red-500 p-4">{error}</div>
+          ) : (
+            <DataTable
+              columns={columns}
+              data={students}
+              loading={loading}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
-export default InstructorDashboard; 
+export default InstructorDashboard;
