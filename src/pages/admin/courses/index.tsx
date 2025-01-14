@@ -6,25 +6,26 @@ import { fetchCategories, fetchCoursesByCategory } from '@/store/features/course
 import { Button } from '@/components/common/ui/button';
 import { Plus } from 'lucide-react';
 import { CategorySelector } from '@/components/courses/CategorySelector';
-import { MainCategory, SubCategory, Course } from '@/types/course';
+import { MainCategory, Course } from '@/types/course';
 
 const AdminCourses: FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  const { categories, subCategories, courses, loading, error } = useSelector((state: RootState) => state.courses);
+  const { courses, loading, error } = useSelector((state: RootState) => state.courses);
 
-  const [mainCategory, setMainCategory] = useState<MainCategory | ''>('');
-  const [subCategory, setSubCategory] = useState<SubCategory | ''>('');
+  const [mainCategory, setMainCategory] = useState<MainCategory>('CLOUD');
+  const [subCategory, setSubCategory] = useState<string>('');
 
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
-  const handleMainCategoryChange = (category: MainCategory | '') => {
+  const handleMainCategoryChange = (category: MainCategory) => {
     setMainCategory(category);
+    setSubCategory('');  // Reset subcategory when main category changes
   };
 
-  const handleSubCategoryChange = (category: SubCategory | '') => {
+  const handleSubCategoryChange = (category: string) => {
     setSubCategory(category);
     if (mainCategory && category) {
       dispatch(fetchCoursesByCategory({ mainCategory, subCategory: category }));

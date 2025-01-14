@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MAIN_CATEGORIES, SUB_CATEGORIES, MainCategory, SubCategory } from '@/types/course';
+import { CATEGORY_MAPPING, MainCategory } from '@/types/course';
 import {
   Select,
   SelectContent,
@@ -7,12 +7,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/common/ui/select';
+import { Input } from '@/components/common/ui/input';
 
 interface CategorySelectorProps {
-  selectedMain: MainCategory | '';
-  selectedSub: SubCategory | '';
-  onMainChange: (category: MainCategory | '') => void;
-  onSubChange: (category: SubCategory | '') => void;
+  selectedMain: MainCategory;
+  selectedSub: string;
+  onMainChange: (category: MainCategory) => void;
+  onSubChange: (category: string) => void;
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({
@@ -21,19 +22,6 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   onMainChange,
   onSubChange,
 }) => {
-  // 대분류가 변경될 때 소분류 초기화
-  useEffect(() => {
-    if (selectedMain === '') {
-      onSubChange('');
-    }
-  }, [selectedMain, onSubChange]);
-
-  // 현재 선택된 대분류에 해당하는 소분류 목록 가져오기
-  const getSubCategories = () => {
-    if (!selectedMain) return [];
-    return Object.entries(SUB_CATEGORIES[selectedMain]);
-  };
-
   return (
     <div className="flex gap-4">
       <Select 
@@ -47,7 +35,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           <SelectValue placeholder="대분류 선택" />
         </SelectTrigger>
         <SelectContent className="bg-indigo-50">
-          {Object.entries(MAIN_CATEGORIES).map(([key, value]) => (
+          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
             <SelectItem 
               key={key} 
               value={key}
@@ -59,26 +47,13 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         </SelectContent>
       </Select>
 
-      <Select
+      <Input
         value={selectedSub}
-        onValueChange={onSubChange}
-        disabled={!selectedMain} // 대분류가 선택되지 않았으면 비활성화
-      >
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="소분류 선택" />
-        </SelectTrigger>
-        <SelectContent className="bg-indigo-50">
-          {getSubCategories().map(([key, value]) => (
-            <SelectItem 
-              key={key} 
-              value={key}
-              className="text-indigo-700 hover:bg-indigo-100 hover:text-indigo-900 focus:bg-indigo-100 focus:text-indigo-900"
-            >
-              {value}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        onChange={(e) => onSubChange(e.target.value)}
+        placeholder="소분류 입력"
+        className="w-48 bg-[#1a232e] border-gray-700"
+        disabled={!selectedMain}
+      />
     </div>
   );
 }; 

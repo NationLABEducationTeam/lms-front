@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import RootLayout from './components/common/layout/RootLayout';
 import StudentDashboard from './pages/student/dashboard';
+import StudentLanding from './pages/student';
 import AuthForm from './components/auth/AuthForm';
 import VerifyEmail from './components/auth/VerifyEmail';
 import InstructorPage from './pages/instructor/index';
@@ -20,6 +21,7 @@ import QnaList from './pages/student/board/QnaList';
 import QnaCreate from './pages/student/board/QnaCreate';
 import QnaDetail from './pages/student/board/QnaDetail';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import AdminLayout from './components/common/layout/admin/AdminLayout';
 import { UserRole } from './config/cognito';
 import './App.css';
 import CourseDetailPage from './pages/student/[courseId]';
@@ -27,18 +29,18 @@ import CourseDetailPage from './pages/student/[courseId]';
 const App = () => {
   return (
     <BrowserRouter>
-      <RootLayout>
-        <Routes>
-          <Route path="/" element={<Navigate to="/student/dashboard" replace />} />
-          <Route path="/student/dashboard" element={<StudentDashboard />} />
-          <Route path="/auth" element={<AuthForm />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route
-            path="/student/*"
-            element={
+      <Routes>
+        <Route path="/" element={<Navigate to="/student" replace />} />
+        <Route path="/auth" element={<AuthForm />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route
+          path="/student/*"
+          element={
+            <RootLayout>
               <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
                 <Routes>
-                  <Route path="/" element={<StudentDashboard />} />
+                  <Route path="/" element={<StudentLanding />} />
+                  <Route path="/dashboard" element={<StudentDashboard />} />
                   <Route path="/:courseId" element={<CourseDetailPage />} />
                   <Route path="/notices" element={<NoticeList />} />
                   <Route path="/notices/:id" element={<NoticeDetail />} />
@@ -50,20 +52,24 @@ const App = () => {
                   <Route path="/qna/:id" element={<QnaDetail />} />
                 </Routes>
               </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/instructor"
-            element={
+            </RootLayout>
+          }
+        />
+        <Route
+          path="/instructor"
+          element={
+            <RootLayout>
               <ProtectedRoute allowedRoles={[UserRole.INSTRUCTOR]}>
                 <InstructorPage />
               </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin/*"
-            element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+            </RootLayout>
+          }
+        />
+        <Route
+          path="/admin/*"
+          element={
+            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
+              <AdminLayout>
                 <Routes>
                   <Route path="/" element={<AdminDashboard />} />
                   <Route path="/notices" element={<AdminNotices />} />
@@ -72,11 +78,11 @@ const App = () => {
                   <Route path="/courses" element={<AdminCourses />} />
                   <Route path="/courses/create" element={<AdminCourseCreate />} />
                 </Routes>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </RootLayout>
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
     </BrowserRouter>
   );
 };

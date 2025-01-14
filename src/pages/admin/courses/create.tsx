@@ -6,12 +6,13 @@ import { Button } from '@/components/common/ui/button';
 import { Textarea } from '@/components/common/ui/textarea';
 import { FileUpload } from '@/components/common/upload/FileUpload';
 import { createCourse, getUploadUrls } from '@/services/api/courses';
-import { MainCategory, SubCategory } from '@/types/course';
+import { MainCategory } from '@/types/course';
+import { useAuth } from '@/hooks/useAuth';
 
 interface CourseFormData {
   title: string;
   description: string;
-  mainCategory: string;
+  mainCategory: MainCategory;
   subCategory: string;
   thumbnail?: File;
   materials?: File[];
@@ -23,18 +24,19 @@ interface UploadUrlResponse {
 
 const AdminCourseCreate: FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [formData, setFormData] = useState<CourseFormData>({
     title: '',
     description: '',
-    mainCategory: '',
-    subCategory: '',
+    mainCategory: 'CLOUD',
+    subCategory: 'default',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mainCategory, setMainCategory] = useState<MainCategory | ''>('');
-  const [subCategory, setSubCategory] = useState<SubCategory | ''>('');
+  const [mainCategory, setMainCategory] = useState<MainCategory>('CLOUD');
+  const [subCategory, setSubCategory] = useState<string>('default');
 
-  const handleMainCategoryChange = (category: MainCategory | '') => {
+  const handleMainCategoryChange = (category: MainCategory) => {
     setMainCategory(category);
     setFormData(prev => ({
       ...prev,
@@ -42,7 +44,7 @@ const AdminCourseCreate: FC = () => {
     }));
   };
 
-  const handleSubCategoryChange = (category: SubCategory | '') => {
+  const handleSubCategoryChange = (category: string) => {
     setSubCategory(category);
     setFormData(prev => ({
       ...prev,
@@ -74,63 +76,38 @@ const AdminCourseCreate: FC = () => {
     }));
   };
 
+  const removeMaterial = (index: number) => {
+    if (formData.materials) {
+      const newMaterials = [...formData.materials];
+      newMaterials.splice(index, 1);
+      setFormData(prev => ({
+        ...prev,
+        materials: newMaterials
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
+    // 소분류 검증
+    if (!formData.subCategory.trim()) {
+      setError('소분류를 입력해주세요.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 1. 강의 생성
-      const courseResponse = await createCourse({
+      // 강의 생성 API 호출
+      await createCourse({
         title: formData.title,
         description: formData.description,
-        mainCategory: formData.mainCategory,
-        subCategory: formData.subCategory
+        mainCategory: formData.mainCategory as MainCategory,
+        subCategory: formData.subCategory,
+        instructor: user?.email || ''
       });
-
-      const courseId = courseResponse.courseId;
-      const coursePath = `${formData.mainCategory}/${formData.subCategory}/courses/${courseId}`;
-
-      // 2. 썸네일 업로드
-      if (formData.thumbnail) {
-        const thumbnailResponse = await getUploadUrls(coursePath, [{
-          name: 'thumbnail.jpg',
-          type: formData.thumbnail.type,
-          size: formData.thumbnail.size
-        }]);
-
-        await fetch(thumbnailResponse.urls[0], {
-          method: 'PUT',
-          body: formData.thumbnail,
-          headers: {
-            'Content-Type': formData.thumbnail.type
-          }
-        });
-      }
-
-      // 3. 강의 자료 업로드
-      if (formData.materials && formData.materials.length > 0) {
-        const materialsResponse: UploadUrlResponse = await getUploadUrls(
-          `${coursePath}/materials`,
-          formData.materials.map(file => ({
-            name: file.name,
-            type: file.type,
-            size: file.size
-          }))
-        );
-
-        await Promise.all(
-          materialsResponse.urls.map((url: string, index: number) =>
-            fetch(url, {
-              method: 'PUT',
-              body: formData.materials![index],
-              headers: {
-                'Content-Type': formData.materials![index].type
-              }
-            })
-          )
-        );
-      }
 
       navigate('/admin/courses');
     } catch (error) {
@@ -191,6 +168,24 @@ const AdminCourseCreate: FC = () => {
               maxFiles={1}
               className="bg-[#1a232e] border-gray-700"
             />
+            {formData.thumbnail && (
+              <div className="mt-2">
+                <div className="relative w-48 h-32 rounded-lg overflow-hidden">
+                  <img
+                    src={URL.createObjectURL(formData.thumbnail)}
+                    alt="Thumbnail preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, thumbnail: undefined }))}
+                    className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -202,6 +197,25 @@ const AdminCourseCreate: FC = () => {
               multiple
               className="bg-[#1a232e] border-gray-700"
             />
+            {formData.materials && formData.materials.length > 0 && (
+              <div className="mt-2 space-y-2">
+                {formData.materials.map((file, index) => (
+                  <div key={index} className="flex items-center justify-between bg-[#1a232e] p-2 rounded">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm">{file.name}</span>
+                      <span className="text-xs text-gray-400">({(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeMaterial(index)}
+                      className="text-red-500 hover:text-red-600"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {error && (

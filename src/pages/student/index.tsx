@@ -1,0 +1,323 @@
+import { FC, useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { Button } from '@/components/common/ui/button';
+import { motion } from 'framer-motion';
+import { DynamoCourse, CATEGORY_MAPPING } from '@/types/course';
+import { listPublicCourses } from '@/services/api/courses';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
+import { cn } from "@/lib/utils";
+
+const CategoryIcon: FC<{ category: string }> = ({ category }) => {
+  switch (category) {
+    case 'CLOUD':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+        </svg>
+      );
+    case 'AI_ML':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      );
+    case 'WEB':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+        </svg>
+      );
+    case 'AUTOMATION':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      );
+    case 'DEVOPS':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      );
+    case 'DataEngineering':
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+        </svg>
+      );
+    default:
+      return (
+        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+        </svg>
+      );
+  }
+};
+
+const StudentLanding: FC = () => {
+  const navigate = useNavigate();
+  const user = useSelector((state: RootState) => state.auth.user);
+  const [courses, setCourses] = useState<DynamoCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
+
+  // 메모이제이션된 필터링된 강의 목록
+  const filteredCourses = useMemo(() => {
+    return courses.filter(course => {
+      if (selectedMainCategory && selectedMainCategory !== 'all' && course.mainCategory !== selectedMainCategory) {
+        return false;
+      }
+      return true;
+    });
+  }, [courses, selectedMainCategory]);
+
+  const fadeInUp = {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5 }
+  };
+
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        setLoading(true);
+        const data = await listPublicCourses();
+        setCourses(data);
+      } catch (err) {
+        setError('강의 목록을 불러오는데 실패했습니다.');
+        console.error('Error fetching courses:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCourses();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
+          <div className="text-center">
+            <motion.div
+              initial={fadeInUp.initial}
+              animate={fadeInUp.animate}
+              transition={fadeInUp.transition}
+            >
+              <h1 className="text-4xl sm:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400 mb-8">
+                {user ? `${user.name}님, 환영합니다` : 'NationsLAB에 오신 것을 환영합니다'}
+              </h1>
+              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+                AWS 클라우드, AI, 머신러닝, 딥러닝 전문가와 함께하는 성장
+              </p>
+              <div className="flex justify-center gap-4">
+                {user && (
+                  <Button
+                    size="lg"
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-8"
+                    onClick={() => navigate('/student/dashboard')}
+                  >
+                    대시보드
+                  </Button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+
+      {/* Course Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">강의 목록</h2>
+          <p className="text-lg text-gray-600">최신 기술을 배우고 실무에 적용하세요</p>
+        </div>
+
+        {/* Category Filter Section */}
+        <div className="flex flex-wrap justify-center gap-4 mb-8">
+          <Button
+            variant="outline"
+            className={cn(
+              "flex flex-col items-center p-4 h-auto min-w-[120px]",
+              selectedMainCategory === 'all' && "border-blue-500 bg-blue-50"
+            )}
+            onClick={() => setSelectedMainCategory('all')}
+          >
+            <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+            </svg>
+            <span>전체</span>
+          </Button>
+
+          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
+            <Button
+              key={key}
+              variant="outline"
+              className={cn(
+                "flex flex-col items-center p-4 h-auto min-w-[120px]",
+                selectedMainCategory === key && "border-blue-500 bg-blue-50"
+              )}
+              onClick={() => setSelectedMainCategory(key)}
+            >
+              <CategoryIcon category={key} />
+              <span>{value}</span>
+            </Button>
+          ))}
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">{error}</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredCourses.map((course) => (
+              <motion.div
+                key={course.id}
+                initial={fadeInUp.initial}
+                animate={fadeInUp.animate}
+                transition={fadeInUp.transition}
+              >
+                <Card className="group h-full hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden relative"
+                      onClick={() => navigate(`/student/courses/${course.id}`)}>
+                  {course.thumbnail ? (
+                    <div className="aspect-video w-full overflow-hidden">
+                      <img
+                        src={course.thumbnail}
+                        alt={course.title}
+                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ) : (
+                    <div className="aspect-video w-full bg-gray-100 flex items-center justify-center">
+                      <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="absolute top-4 left-4 flex gap-2 z-10">
+                    <span className="px-2 py-1 bg-blue-600/90 text-white text-xs rounded-full backdrop-blur-sm shadow-sm">
+                      {CATEGORY_MAPPING[course.mainCategory as keyof typeof CATEGORY_MAPPING]}
+                    </span>
+                    <span className="px-2 py-1 bg-blue-400/90 text-white text-xs rounded-full backdrop-blur-sm shadow-sm">
+                      {course.subCategory}
+                    </span>
+                  </div>
+                  <CardHeader>
+                    <CardTitle className="line-clamp-2 text-lg font-bold group-hover:text-blue-600 transition-colors">
+                      {course.title}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 mb-4 line-clamp-2 text-sm">{course.description}</p>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{course.instructor}</p>
+                            <p className="text-xs text-gray-500">강사</p>
+                          </div>
+                        </div>
+                        {course.level && (
+                          <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
+                            {course.level}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t">
+                        <div className="flex items-center gap-2">
+                          <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg className="h-3 w-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <span className="text-xs text-gray-500">
+                            {new Date(course.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                        <span className="font-semibold text-sm">
+                          {course.price ? `${course.price.toLocaleString()}원` : '무료'}
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Features Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <motion.div
+            initial={fadeInUp.initial}
+            animate={fadeInUp.animate}
+            transition={{ ...fadeInUp.transition, delay: 0.1 }}
+            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+              <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-4">체계적인 커리큘럼</h3>
+            <p className="text-gray-600">
+              전문가가 설계한 커리큘럼으로 단계별 학습을 경험하세요
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={fadeInUp.initial}
+            animate={fadeInUp.animate}
+            transition={{ ...fadeInUp.transition, delay: 0.2 }}
+            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+              <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-4">실시간 피드백</h3>
+            <p className="text-gray-600">
+              강사와 동료들의 피드백으로 더 빠른 성장을 이루세요
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={fadeInUp.initial}
+            animate={fadeInUp.animate}
+            transition={{ ...fadeInUp.transition, delay: 0.3 }}
+            className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-shadow"
+          >
+            <div className="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+              <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-4">학습 관리</h3>
+            <p className="text-gray-600">
+              대시보드를 통해 나의 학습 현황을 한눈에 파악하세요
+            </p>
+          </motion.div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StudentLanding; 

@@ -1,7 +1,5 @@
-import { FC, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { AppDispatch, RootState } from '@/store/store';
-import { fetchCategories, fetchSubCategories, fetchCoursesByCategory } from '@/store/features/courses/coursesSlice';
+import { FC, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CourseList } from '@/components/courses/CourseList';
 import { TodoCalendar } from '../calendar/TodoCalendar';
 import AssignmentList from '../assignments/AssignmentList';
@@ -12,7 +10,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui/tabs';
 import { BookOpen, FileText, BrainCircuit, Calendar, MessageSquare, Notebook } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
 import { Alert } from '@/components/common/ui/alert';
 
 const fadeInUp = {
@@ -22,47 +19,19 @@ const fadeInUp = {
 };
 
 const StudentDashboard: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { categories, courses, loading, error } = useSelector((state: RootState) => state.courses);
   const navigate = useNavigate();
-  const [loadingState, setLoadingState] = useState<string>('');
-
-  useEffect(() => {
-    const loadCourses = async () => {
-      try {
+  const [courses] = useState<any[]>([]);
   
-        
-        setLoadingState('메인 카테고리 로딩 중...');
-        const categoriesResult = await dispatch(fetchCategories()).unwrap();
-        console.log('Loaded categories:', categoriesResult);
-        
-        for (const category of categoriesResult) {
-          setLoadingState(`${category.name} 하위 카테고리 로딩 중...`);
-          const subCatsResult = await dispatch(fetchSubCategories(category.path)).unwrap();
-          console.log(`Loaded sub categories for ${category.name}:`, subCatsResult);
-          
-          for (const subCat of subCatsResult) {
-            setLoadingState(`${category.name}/${subCat.name} 강의 로딩 중...`);
-            await dispatch(fetchCoursesByCategory({
-              mainCategory: category.name,
-              subCategory: subCat.name
-            })).unwrap();
-          }
-        }
-        
-        setLoadingState('');
-      } catch (error) {
-        console.error('Error loading courses:', error);
-        setLoadingState('');
-      }
-    };
+  // TODO: 학생이 수강 신청한 과목 목록을 가져오는 로직 추가
+  // 1. useEffect 내에서 백엔드 API 호출
+  // 2. Express 서버에서 RDS의 student_courses 테이블 조회
+  // 3. 조회된 course_id들을 기반으로 DynamoDB에서 해당 과목들의 정보를 가져옴
+  // 4. 최종 결과를 courses state에 설정
 
-    loadCourses();
-  }, [dispatch]);
+  const [error] = useState<string | null>(null);
 
   const handleJoinClass = (coursePath: string) => {
-    // TODO: 강의실 입장 로직 구현
-    console.log('Joining class:', coursePath);
+    navigate(`/student/${coursePath}`);
   };
 
   const handlePostClick = (boardType: 'notice' | 'community' | 'qna', postId: string) => {
@@ -90,38 +59,25 @@ const StudentDashboard: FC = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <DashboardLayout title="Nations LAB LMS">
-        <div className="flex flex-col justify-center items-center h-[60vh]">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-          <div className="text-gray-600">{loadingState || '로딩 중...'}</div>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
   return (
     <DashboardLayout>
       {/* Header Banner */}
       <div className="relative bg-gradient-to-br from-blue-900 via-blue-800 to-blue-900 text-white">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
-        <div className="w-full px-6 py-12 relative">
-          <div className="max-w-7xl mx-auto">
-            <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-white">
-              학습 대시보드
-            </h1>
-            <p className="text-lg text-blue-100 opacity-90">
-              학습 진행 상황과 일정을 한눈에 확인하고 관리하세요
-            </p>
-          </div>
+        <div className="px-6 py-12">
+          <h1 className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-100 to-white">
+            학습 대시보드
+          </h1>
+          <p className="text-lg text-blue-100 opacity-90">
+            학습 진행 상황과 일정을 한눈에 확인하고 관리하세요
+          </p>
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white to-transparent"></div>
       </div>
 
       {/* Main Content */}
-      <div className="w-full px-6 -mt-12">
-        <div className="max-w-7xl mx-auto space-y-8">
+      <div className="-mt-12 px-6">
+        <div className="space-y-8">
           {error && (
             <Alert variant="destructive">
               <p>{error}</p>
@@ -327,7 +283,6 @@ const StudentDashboard: FC = () => {
           </div>
         </div>
       </div>
-
     </DashboardLayout>
   );
 };

@@ -35,7 +35,7 @@ const Header: FC = () => {
           {/* Logo */}
           <div 
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
-            onClick={() => navigate('/student/dashboard')}
+            onClick={() => navigate('/student')}
           >
             <img src="/nationlmslogo.svg" alt="Nations LAB LMS" className="h-8 w-8" />
             <span className="font-semibold text-lg">NationsLAB LMS</span>
@@ -43,11 +43,36 @@ const Header: FC = () => {
 
           {/* Navigation */}
           <nav className="hidden md:flex items-center gap-6">
-            <a href="/student/dashboard" className="text-gray-600 hover:text-blue-600 transition-colors">대시보드</a>
-            <a href="/student/courses" className="text-gray-600 hover:text-blue-600 transition-colors">강의실</a>
-            <a href="/student/assignments" className="text-gray-600 hover:text-blue-600 transition-colors">과제</a>
-            <a href="/student/calendar" className="text-gray-600 hover:text-blue-600 transition-colors">일정</a>
-            <a href="/student/board" className="text-gray-600 hover:text-blue-600 transition-colors">게시판</a>
+            <button 
+              onClick={() => navigate('/student/dashboard')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              대시보드
+            </button>
+            <button 
+              onClick={() => navigate('/student/courses')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              강의실
+            </button>
+            <button 
+              onClick={() => navigate('/student/assignments')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              과제
+            </button>
+            <button 
+              onClick={() => navigate('/student/calendar')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              일정
+            </button>
+            <button 
+              onClick={() => navigate('/student/board')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              커뮤니티
+            </button>
           </nav>
 
           {/* User Profile Dropdown */}

@@ -1,5 +1,5 @@
 import { FC, useMemo, useState } from 'react';
-import { Course } from '@/types/course';
+import { Course, CATEGORY_MAPPING } from '@/types/course';
 import { Card, Tag, Button, Typography, Space, Tooltip, Select } from 'antd';
 import { BookOutlined, RightOutlined, EditOutlined, DeleteOutlined, CalendarOutlined, TeamOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -52,28 +52,21 @@ export const CourseList: FC<CourseListProps> = ({
   }, [courses, selectedMainCategory, selectedSubCategory]);
 
   const getCategoryLabel = (category: string) => {
-    const labels: { [key: string]: string } = {
-      'AI_ML': '인공지능/머신러닝',
-      'MACHINE_LEARNING': '머신러닝',
-      'CLOUD': '클라우드',
-      'AWS_BASIC': 'AWS 입문',
-      'AWS_SAA': 'AWS 솔루션스 아키텍트',
-      'WEB': '웹 개발',
-      'BASIC': '기초',
-      'ADVANCED': '심화',
-      'MOBILE': '모바일 개발',
-      'IOS': 'iOS',
-      'ANDROID': '안드로이드'
-    };
-    return labels[category] || category;
+    if (category in CATEGORY_MAPPING) {
+      return CATEGORY_MAPPING[category as keyof typeof CATEGORY_MAPPING];
+    }
+    return category;
   };
 
   const getTagColor = (category: string) => {
     const colors: { [key: string]: string } = {
-      'AI_ML': 'blue',
-      'CLOUD': 'purple',
+      'CLOUD': 'blue',
+      'AI_ML': 'purple',
       'WEB': 'green',
-      'MOBILE': 'orange'
+      'AUTOMATION': 'orange',
+      'DEVOPS': 'cyan',
+      'DataEngineering': 'magenta',
+      'CodeingTest': 'gold'
     };
     return colors[category] || 'default';
   };

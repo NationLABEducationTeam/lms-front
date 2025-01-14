@@ -9,6 +9,7 @@ const UPDATE_COURSE_URL = 'https://krhl5cd3wy2ejzcrxiviier2tu0owccb.lambda-url.a
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
+import { DynamoCourse, CourseListResponse } from '@/types/course';
 
 interface ListResponse {
   folders: S3Structure[];
@@ -19,13 +20,35 @@ interface CoursesResponse {
   courses: Course[];
 }
 
-// 카테고리와 강의 목록 조회
+interface CourseDetail {
+  weeklyContents: {
+    weekNumber: string;
+    name: string;
+    files: {
+      name: string;
+      path: string;
+      size: number;
+      lastModified?: string;
+      type: string;
+    }[];
+  }[];
+  courseInfo: {
+    title: string;
+    description: string;
+    instructor: string;
+    totalWeeks: number;
+  };
+}
+
+
+// 카테고리 조회
 export const listCategories = async (path: string = ''): Promise<ListResponse> => {
   try {
-    const url = LIST_STUDENT_COURSES_URL;
-    console.log('Fetching from path:', path);
+    const encodedPath = encodeURIComponent(path);
+    const url = path ? `${LIST_STUDENT_COURSES_URL}?path=${encodedPath}` : LIST_STUDENT_COURSES_URL;
+    console.log('Fetching from URL:', url);
     
-    const response = await fetch(`${url}${path ? `?path=${path}` : ''}`, {
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -33,10 +56,12 @@ export const listCategories = async (path: string = ''): Promise<ListResponse> =
     });
     
     if (!response.ok) {
-      throw new Error('Failed to fetch categories');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to fetch categories');
     }
     
     const data = await response.json();
+    console.log('Received data:', data);
     return {
       folders: data.folders || [],
       files: data.files || []
@@ -48,8 +73,11 @@ export const listCategories = async (path: string = ''): Promise<ListResponse> =
 };
 
 // 강의 목록 조회
-export const listCourses = async (path: string): Promise<CoursesResponse> => {
+export const listCourses = async (mainCategory: string, subCategory: string): Promise<CoursesResponse> => {
   try {
+    // 경로에서 빈 문자열이나 undefined 제거 후 유효한 세그먼트만 결합
+    const pathSegments = [mainCategory, subCategory].filter(segment => segment && segment.trim());
+    const path = pathSegments.join('/');
     console.log('Fetching courses from path:', path);
     
     const response = await fetch(`${LIST_STUDENT_COURSES_URL}?path=${path}`, {
@@ -87,8 +115,8 @@ export const listCourses = async (path: string): Promise<CoursesResponse> => {
               id: folder.name,
               title: folder.name,
               description: '강의 설명이 없습니다.',
-              mainCategory: path.split('/')[0] || '',
-              subCategory: path.split('/')[1] || '',
+              mainCategory,
+              subCategory,
               status: 'published' as const,
               createdAt: new Date().toISOString(),
               updatedAt: new Date().toISOString()
@@ -101,8 +129,8 @@ export const listCourses = async (path: string): Promise<CoursesResponse> => {
           return {
             id: folder.name,
             ...metadata,
-            mainCategory: path.split('/')[0] || '',
-            subCategory: path.split('/')[1] || '',
+            mainCategory,
+            subCategory,
             status: metadata.status || 'published',
             createdAt: metadata.createdAt || new Date().toISOString(),
             updatedAt: metadata.updatedAt || new Date().toISOString()
@@ -114,8 +142,8 @@ export const listCourses = async (path: string): Promise<CoursesResponse> => {
             id: folder.name,
             title: folder.name,
             description: '강의 정보를 불러오는데 실패했습니다.',
-            mainCategory: path.split('/')[0] || '',
-            subCategory: path.split('/')[1] || '',
+            mainCategory,
+            subCategory,
             status: 'published' as const,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString()
@@ -341,7 +369,8 @@ export const getCourseDetail = async (courseId: string): Promise<CourseDetail> =
     console.error('Error fetching course details:', error);
     throw error;
   }
-};
+}; 
+
 
 // 카테고리와 강의 목록 한 번에 조회
 export const listAllCoursesAndCategories = async (): Promise<{
@@ -411,6 +440,29 @@ export const listPathContents = async (path: string): Promise<ListResponse> => {
     };
   } catch (error) {
     console.error('Error fetching contents:', error);
+    throw error;
+  }
+}; 
+
+const LIST_PUBLIC_COURSES_URL = 'https://nbftw47jv4bz6xqqv3fluylvlq0lvylv.lambda-url.ap-northeast-2.on.aws/';
+
+export const listPublicCourses = async (): Promise<DynamoCourse[]> => {
+  try {
+    const response = await fetch(LIST_PUBLIC_COURSES_URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch courses');
+    }
+
+    const data: CourseListResponse = await response.json();
+    return data.Items.filter(course => course.status === 'published');
+  } catch (error) {
+    console.error('Error fetching courses:', error);
     throw error;
   }
 }; 
