@@ -242,15 +242,20 @@ const StudentLanding: FC = () => {
               initial={fadeInUp.initial}
               animate={fadeInUp.animate}
               transition={fadeInUp.transition}
+              className="text-center max-w-3xl mx-auto"
             >
-              <div className="inline-block">
-                <span className="inline-flex text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 text-5xl sm:text-7xl font-black mb-8 leading-tight">
-                  NEXT LEVEL
-                </span>
-                <div className="mt-2 text-4xl sm:text-6xl font-bold text-white">
-                  {user ? `${user.name}님의 성장` : '테크 전문가로 도약'}
-                </div>
-              </div>
+              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+                {user ? (
+                  <span>
+                    <span className="text-orange-400 font-mono">{"{"}</span>
+                    <span className="text-purple-200">{user.name}</span>
+                    <span className="text-orange-400 font-mono">{"}"}</span>
+                    <span className="text-purple-100">님의 성장</span>
+                  </span>
+                ) : (
+                  <span className="text-purple-100">Nations LAB과 함께하는 성장</span>
+                )}
+              </h1>
               <div className="mt-8 flex flex-col items-center justify-center space-y-4">
                 <div className="flex flex-wrap justify-center gap-4 text-lg sm:text-xl font-medium text-purple-200/90">
                   <span className="flex items-center">
@@ -321,20 +326,20 @@ const StudentLanding: FC = () => {
             className={cn(
               "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
               "hover:scale-105 hover:shadow-md hover:border-transparent",
-              "bg-gradient-to-b from-white to-gray-50/80",
+              "bg-gradient-to-b from-slate-900/80 to-purple-900/80 backdrop-blur-sm",
               selectedMainCategory === 'all' 
-                ? "border-blue-500 shadow-blue-100 bg-blue-50/50" 
-                : "border-gray-100 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50/50"
+                ? "border-purple-400 shadow-purple-500/20 bg-gradient-to-br from-purple-900/90 to-slate-900/90" 
+                : "border-purple-500/20 hover:bg-gradient-to-br hover:from-purple-900/80 hover:to-slate-900/80"
             )}
             onClick={() => setSelectedMainCategory('all')}
           >
-            <div className="h-8 w-8 mb-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
-              <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-8 w-8 mb-2 rounded-lg bg-gradient-to-br from-purple-400/20 to-purple-600/20 flex items-center justify-center shadow-sm">
+              <svg className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <span className="font-medium text-sm text-gray-700">전체</span>
-            <span className="text-[10px] text-gray-500 mt-0.5">All Courses</span>
+            <span className="font-medium text-sm text-purple-100">전체</span>
+            <span className="text-[10px] text-purple-300/80 mt-0.5">All Courses</span>
           </Button>
 
           {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
@@ -344,16 +349,16 @@ const StudentLanding: FC = () => {
               className={cn(
                 "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
                 "hover:scale-105 hover:shadow-md hover:border-transparent",
-                "bg-gradient-to-b from-white to-gray-50/80",
+                "bg-gradient-to-b from-slate-900/80 to-purple-900/80 backdrop-blur-sm",
                 selectedMainCategory === key 
-                  ? "border-blue-500 shadow-blue-100 bg-blue-50/50" 
-                  : "border-gray-100 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50/50"
+                  ? "border-purple-400 shadow-purple-500/20 bg-gradient-to-br from-purple-900/90 to-slate-900/90" 
+                  : "border-purple-500/20 hover:bg-gradient-to-br hover:from-purple-900/80 hover:to-slate-900/80"
               )}
               onClick={() => setSelectedMainCategory(key)}
             >
               <CategoryIcon category={key} />
-              <span className="font-medium text-sm text-gray-700 mt-2">{value}</span>
-              <span className="text-[10px] text-gray-500 mt-0.5">
+              <span className="font-medium text-sm text-purple-100 mt-2">{value}</span>
+              <span className="text-[10px] text-purple-300/80 mt-0.5">
                 {(() => {
                   switch(key) {
                     case 'CLOUD': return 'Cloud Computing';
