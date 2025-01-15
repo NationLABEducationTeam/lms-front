@@ -17,46 +17,79 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
   switch (category) {
     case 'CLOUD':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-sky-50 to-blue-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/cloudcomp.svg" alt="Cloud Computing" className="h-5 w-5" />
+          </div>
+        </div>
       );
     case 'AI_ML':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-indigo-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/aiml.svg" alt="AI/ML" className="h-5 w-5" />
+          </div>
+        </div>
       );
     case 'WEB':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 to-rose-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/webprogramming.svg" alt="Web Programming" className="h-5 w-5" />
+          </div>
+        </div>
       );
     case 'AUTOMATION':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/automation.svg" alt="Automation" className="h-5 w-5" />
+          </div>
+        </div>
       );
     case 'DEVOPS':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/devops.svg" alt="DevOps" className="h-5 w-5" />
+          </div>
+        </div>
       );
     case 'DataEngineering':
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 to-teal-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/data-engineering.svg" alt="Data Engineering" className="h-5 w-5" />
+          </div>
+        </div>
+      );
+    case 'CodeingTest':
+      return (
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-violet-50 to-purple-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <img src="/icons/codingtest.svg" alt="Coding Test" className="h-5 w-5" />
+          </div>
+        </div>
       );
     default:
       return (
-        <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
+        <div className="relative group">
+          <div className="absolute inset-0 bg-gradient-to-br from-gray-400/20 to-gray-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
+          <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
+            <svg className="h-5 w-5 text-gray-500" viewBox="0 0 24 24" fill="none">
+              <path d="M12 6V4M12 20V18M6 12H4M20 12H18" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z" 
+                fill="currentColor" fillOpacity="0.2" stroke="currentColor" strokeWidth="1.5"/>
+            </svg>
+          </div>
+        </div>
       );
   }
 };
@@ -282,19 +315,26 @@ const StudentLanding: FC = () => {
         </div>
 
         {/* Category Filter Section */}
-        <div className="flex flex-wrap justify-center gap-4 mb-8">
+        <div className="flex justify-center gap-4 mb-12 overflow-x-auto pb-2">
           <Button
             variant="outline"
             className={cn(
-              "flex flex-col items-center p-4 h-auto min-w-[120px]",
-              selectedMainCategory === 'all' && "border-blue-500 bg-blue-50"
+              "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
+              "hover:scale-105 hover:shadow-md hover:border-transparent",
+              "bg-gradient-to-b from-white to-gray-50/80",
+              selectedMainCategory === 'all' 
+                ? "border-blue-500 shadow-blue-100 bg-blue-50/50" 
+                : "border-gray-100 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50/50"
             )}
             onClick={() => setSelectedMainCategory('all')}
           >
-            <svg className="h-8 w-8 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-            </svg>
-            <span>전체</span>
+            <div className="h-8 w-8 mb-2 rounded-lg bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shadow-sm">
+              <svg className="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <span className="font-medium text-sm text-gray-700">전체</span>
+            <span className="text-[10px] text-gray-500 mt-0.5">All Courses</span>
           </Button>
 
           {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
@@ -302,13 +342,31 @@ const StudentLanding: FC = () => {
               key={key}
               variant="outline"
               className={cn(
-                "flex flex-col items-center p-4 h-auto min-w-[120px]",
-                selectedMainCategory === key && "border-blue-500 bg-blue-50"
+                "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
+                "hover:scale-105 hover:shadow-md hover:border-transparent",
+                "bg-gradient-to-b from-white to-gray-50/80",
+                selectedMainCategory === key 
+                  ? "border-blue-500 shadow-blue-100 bg-blue-50/50" 
+                  : "border-gray-100 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50/50"
               )}
               onClick={() => setSelectedMainCategory(key)}
             >
               <CategoryIcon category={key} />
-              <span>{value}</span>
+              <span className="font-medium text-sm text-gray-700 mt-2">{value}</span>
+              <span className="text-[10px] text-gray-500 mt-0.5">
+                {(() => {
+                  switch(key) {
+                    case 'CLOUD': return 'Cloud Computing';
+                    case 'AI_ML': return 'AI & Machine Learning';
+                    case 'WEB': return 'Web Development';
+                    case 'AUTOMATION': return 'Automation';
+                    case 'DEVOPS': return 'DevOps';
+                    case 'DataEngineering': return 'Data Engineering';
+                    case 'CodeingTest': return 'Coding Test';
+                    default: return '';
+                  }
+                })()}
+              </span>
             </Button>
           ))}
         </div>
@@ -320,7 +378,7 @@ const StudentLanding: FC = () => {
         ) : error ? (
           <div className="text-center text-red-500 py-8">{error}</div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {filteredCourses.map((course) => (
               <motion.div
                 key={course.id}
@@ -328,8 +386,10 @@ const StudentLanding: FC = () => {
                 animate={fadeInUp.animate}
                 transition={fadeInUp.transition}
               >
-                <Card className="group h-full hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden relative"
-                      onClick={() => navigate(`/student/courses/${course.id}`)}>
+                <Card 
+                  className="group h-full hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden relative"
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                >
                   {course.thumbnail ? (
                     <div className="aspect-video w-full overflow-hidden">
                       <img
