@@ -4,6 +4,7 @@ import { signIn, signUp, getCurrentUser, fetchUserAttributes } from 'aws-amplify
 import { CognitoIdentityProviderClient, AdminAddUserToGroupCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { UserRole } from '../../config/cognito';
 import { AlertCircle } from "lucide-react";
+import { useAuth } from '@/hooks/useAuth';
 
 import {
   Card,
@@ -41,6 +42,7 @@ import {
 const AuthForm = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -51,6 +53,12 @@ const AuthForm = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("login");
   const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     const state = location.state as { verificationSuccess?: boolean };
@@ -89,14 +97,6 @@ const AuthForm = () => {
 
     try {
       const username = email.split('@')[0];
-      console.log('Attempting login with:', { 
-        username, 
-        email,
-        userPoolId: import.meta.env.VITE_COGNITO_USER_POOL_ID,
-        userPoolClientId: import.meta.env.VITE_COGNITO_APP_CLIENT_ID,
-        region: import.meta.env.VITE_AWS_REGION
-      });
-
       const signInInput = {
         username,
         password,
@@ -107,23 +107,15 @@ const AuthForm = () => {
       };
       
       const { isSignedIn, nextStep } = await signIn(signInInput);
-      console.log('Sign in result:', { isSignedIn, nextStep });
       
       if (isSignedIn) {
-        const user = await getCurrentUser();
-        console.log('Current user:', user);
-        
         const userAttributes = await fetchUserAttributes();
-        console.log('User attributes:', userAttributes);
-        
         const userRole = userAttributes['custom:role'] as UserRole;
-        console.log('User role:', userRole);
-        
         localStorage.setItem('userRole', userRole);
 
         switch (userRole) {
           case UserRole.STUDENT:
-            navigate('/student');
+            navigate('/');
             break;
           case UserRole.INSTRUCTOR:
             navigate('/instructor');
@@ -268,7 +260,7 @@ const AuthForm = () => {
         <div className="max-w-[420px] mx-auto w-full">
           <div className="text-center space-y-2 mb-8">
             <div className="flex items-center justify-center mb-6">
-              <img src="/nationlmslogo.png" alt="NationsLAB LMS" className="h-10 sm:h-12 w-auto" />
+              <img src="/nationlmslogo.png" alt="NationsLAB" className="h-10 sm:h-12 w-auto" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Nation's LAB</h1>
             <p className="text-gray-300 text-sm sm:text-base">

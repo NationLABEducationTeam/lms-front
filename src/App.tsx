@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import RootLayout from './components/common/layout/RootLayout';
 import StudentDashboard from './pages/student/dashboard';
 import StudentLanding from './pages/student';
@@ -30,31 +30,30 @@ const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/student" replace />} />
+        {/* Public Routes */}
+        <Route element={<RootLayout />}>
+          <Route path="/" element={<StudentLanding />} />
+          
+          {/* Protected Student Routes */}
+          <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
+            <Route path="/dashboard" element={<StudentDashboard />} />
+            <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+            <Route path="/notices" element={<NoticeList />} />
+            <Route path="/notices/:id" element={<NoticeDetail />} />
+            <Route path="/community" element={<CommunityList />} />
+            <Route path="/community/create" element={<CommunityCreate />} />
+            <Route path="/community/:id" element={<CommunityDetail />} />
+            <Route path="/qna" element={<QnaList />} />
+            <Route path="/qna/create" element={<QnaCreate />} />
+            <Route path="/qna/:id" element={<QnaDetail />} />
+          </Route>
+        </Route>
+
+        {/* Auth Routes */}
         <Route path="/auth" element={<AuthForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
-        <Route
-          path="/student/*"
-          element={
-            <RootLayout>
-              <ProtectedRoute allowedRoles={[UserRole.STUDENT]}>
-                <Routes>
-                  <Route path="/" element={<StudentLanding />} />
-                  <Route path="/dashboard" element={<StudentDashboard />} />
-                  <Route path="/:courseId" element={<CourseDetailPage />} />
-                  <Route path="/notices" element={<NoticeList />} />
-                  <Route path="/notices/:id" element={<NoticeDetail />} />
-                  <Route path="/community" element={<CommunityList />} />
-                  <Route path="/community/create" element={<CommunityCreate />} />
-                  <Route path="/community/:id" element={<CommunityDetail />} />
-                  <Route path="/qna" element={<QnaList />} />
-                  <Route path="/qna/create" element={<QnaCreate />} />
-                  <Route path="/qna/:id" element={<QnaDetail />} />
-                </Routes>
-              </ProtectedRoute>
-            </RootLayout>
-          }
-        />
+
+        {/* Protected Instructor Routes */}
         <Route
           path="/instructor"
           element={
@@ -65,6 +64,8 @@ const App = () => {
             </RootLayout>
           }
         />
+
+        {/* Protected Admin Routes */}
         <Route
           path="/admin/*"
           element={

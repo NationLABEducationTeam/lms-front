@@ -8,6 +8,10 @@ import { DynamoCourse, CATEGORY_MAPPING } from '@/types/course';
 import { listPublicCourses } from '@/services/api/courses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { cn } from "@/lib/utils";
+import { useKeenSlider } from 'keen-slider/react';
+import type { KeenSliderInstance } from 'keen-slider';
+import 'keen-slider/keen-slider.min.css';
+import { useAuth } from '@/hooks/useAuth';
 
 const CategoryIcon: FC<{ category: string }> = ({ category }) => {
   switch (category) {
@@ -57,9 +61,102 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
   }
 };
 
+const ImageCarousel: FC = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [loaded, setLoaded] = useState(false);
+  const [sliderRef, instanceRef] = useKeenSlider<HTMLDivElement>({
+    initial: 0,
+    slideChanged(slider: KeenSliderInstance) {
+      setCurrentSlide(slider.track.details.rel);
+    },
+    created() {
+      setLoaded(true);
+    },
+    loop: true,
+    mode: "snap",
+    rtl: false,
+    slides: { perView: 1 },
+  });
+
+  useEffect(() => {
+    const autoplayInterval = setInterval(() => {
+      if (instanceRef.current) {
+        instanceRef.current.next();
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(autoplayInterval);
+    };
+  }, [instanceRef]);
+
+  const images = [
+    {
+      url: "/carousel/1.png",
+      title: "클라우드 전문가와 함께하는 실무 중심 교육",
+      description: "AWS 공인 전문가들과 함께 실제 프로젝트를 통해 배우는 클라우드 컴퓨팅"
+    },
+    {
+      url: "/carousel/2.png",
+      title: "AI & 머신러닝 마스터 과정",
+      description: "최신 AI 기술을 활용한 실무 프로젝트 경험"
+    },
+    {
+      url: "/carousel/3.png",
+      title: "데이터 엔지니어링 완성 과정",
+      description: "빅데이터 처리부터 파이프라인 구축까지 완벽 마스터"
+    },
+    {
+      url: "/carousel/4.png",
+      title: "DevOps & MLOps 전문가 과정",
+      description: "현대적인 개발 운영 방법론과 AI 운영 파이프라인 구축"
+    },
+    {
+      url: "/carousel/5.png",
+      title: "실시간 1:1 전문가 멘토링",
+      description: "업계 최고 전문가들의 맞춤형 학습 가이드"
+    }
+  ];
+
+  return (
+    <div className="relative">
+      <div ref={sliderRef} className="keen-slider h-[400px]">
+        {images.map((image, idx) => (
+          <div key={idx} className="keen-slider__slide relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
+            <img
+              src={image.url}
+              alt={image.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute bottom-0 left-0 right-0 p-8 z-20 text-white">
+              <h3 className="text-2xl font-bold mb-2">{image.title}</h3>
+              <p className="text-lg">{image.description}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+      {loaded && instanceRef.current && (
+        <div className="absolute bottom-4 right-4 z-30 flex gap-2">
+          {[...Array(images.length)].map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => instanceRef.current?.moveToIdx(idx)}
+              className={cn(
+                "w-2 h-2 rounded-full transition-all",
+                currentSlide === idx ? "bg-white w-4" : "bg-white/50"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const StudentLanding: FC = () => {
   const navigate = useNavigate();
-  const user = useSelector((state: RootState) => state.auth.user);
+  const { user } = useAuth();
   const [courses, setCourses] = useState<DynamoCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -99,44 +196,89 @@ const StudentLanding: FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-blue-50">
-      {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Enhanced Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent"></div>
+        </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
-          <div className="text-center">
+          <div className="text-center relative">
             <motion.div
               initial={fadeInUp.initial}
               animate={fadeInUp.animate}
               transition={fadeInUp.transition}
             >
-              <h1 className="text-4xl sm:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-blue-400 mb-8">
-                {user ? `${user.name}님, 환영합니다` : 'NationsLAB에 오신 것을 환영합니다'}
-              </h1>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-                AWS 클라우드, AI, 머신러닝, 딥러닝 전문가와 함께하는 성장
-              </p>
-              <div className="flex justify-center gap-4">
-                {user && (
+              <div className="inline-block">
+                <span className="inline-flex text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-600 text-5xl sm:text-7xl font-black mb-8 leading-tight">
+                  NEXT LEVEL
+                </span>
+                <div className="mt-2 text-4xl sm:text-6xl font-bold text-white">
+                  {user ? `${user.name}님의 성장` : '테크 전문가로 도약'}
+                </div>
+              </div>
+              <div className="mt-8 flex flex-col items-center justify-center space-y-4">
+                <div className="flex flex-wrap justify-center gap-4 text-lg sm:text-xl font-medium text-purple-200/90">
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    AWS 클라우드
+                  </span>
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    AI/머신러닝
+                  </span>
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    데이터 엔지니어링
+                  </span>
+                </div>
+                <p className="max-w-2xl mx-auto text-purple-100/80 text-lg">
+                  단순한 이론 교육이 아닌, <span className="text-purple-300 font-semibold">실무 프로젝트 기반</span>의 
+                  전문가 양성 프로그램으로 당신의 커리어를 한 단계 도약시키세요
+                </p>
+              </div>
+              <div className="mt-10 flex justify-center gap-4">
+                {user ? (
                   <Button
                     size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-8"
-                    onClick={() => navigate('/student/dashboard')}
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300"
+                    onClick={() => navigate('/dashboard')}
                   >
-                    대시보드
+                    대시보드로 이동
+                  </Button>
+                ) : (
+                  <Button
+                    size="lg"
+                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300"
+                    onClick={() => navigate('/auth')}
+                  >
+                    무료로 시작하기
                   </Button>
                 )}
               </div>
             </motion.div>
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50 to-transparent"></div>
+      </div>
+
+      {/* Image Carousel Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <ImageCarousel />
       </div>
 
       {/* Course Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">강의 목록</h2>
-          <p className="text-lg text-gray-600">최신 기술을 배우고 실무에 적용하세요</p>
+          <h2 className="text-3xl font-bold text-gray-900 mb-4">전문가 과정</h2>
+          <p className="text-lg text-gray-600">실무에 바로 적용 가능한 커리큘럼으로 구성된 전문가 과정을 만나보세요</p>
         </div>
 
         {/* Category Filter Section */}
