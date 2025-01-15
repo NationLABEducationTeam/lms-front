@@ -33,6 +33,8 @@ const App = () => {
         {/* Public Routes */}
         <Route element={<RootLayout />}>
           <Route path="/" element={<StudentLanding />} />
+          <Route path="/auth" element={<AuthForm />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           
           {/* Protected Student Routes */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
@@ -47,42 +49,24 @@ const App = () => {
             <Route path="/qna/create" element={<QnaCreate />} />
             <Route path="/qna/:id" element={<QnaDetail />} />
           </Route>
+
+          {/* Protected Instructor Routes */}
+          <Route element={<ProtectedRoute allowedRoles={[UserRole.INSTRUCTOR]} />}>
+            <Route path="/instructor" element={<InstructorPage />} />
+          </Route>
+
+          {/* Protected Admin Routes */}
+          <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
+            <Route element={<AdminLayout />}>
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/notices" element={<AdminNotices />} />
+              <Route path="/admin/notices/create" element={<AdminNoticeCreate />} />
+              <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
+              <Route path="/admin/courses" element={<AdminCourses />} />
+              <Route path="/admin/courses/create" element={<AdminCourseCreate />} />
+            </Route>
+          </Route>
         </Route>
-
-        {/* Auth Routes */}
-        <Route path="/auth" element={<AuthForm />} />
-        <Route path="/verify-email" element={<VerifyEmail />} />
-
-        {/* Protected Instructor Routes */}
-        <Route
-          path="/instructor"
-          element={
-            <RootLayout>
-              <ProtectedRoute allowedRoles={[UserRole.INSTRUCTOR]}>
-                <InstructorPage />
-              </ProtectedRoute>
-            </RootLayout>
-          }
-        />
-
-        {/* Protected Admin Routes */}
-        <Route
-          path="/admin/*"
-          element={
-            <ProtectedRoute allowedRoles={[UserRole.ADMIN]}>
-              <AdminLayout>
-                <Routes>
-                  <Route path="/" element={<AdminDashboard />} />
-                  <Route path="/notices" element={<AdminNotices />} />
-                  <Route path="/notices/create" element={<AdminNoticeCreate />} />
-                  <Route path="/notices/:id" element={<AdminNoticeDetail />} />
-                  <Route path="/courses" element={<AdminCourses />} />
-                  <Route path="/courses/create" element={<AdminCourseCreate />} />
-                </Routes>
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
       </Routes>
     </BrowserRouter>
   );

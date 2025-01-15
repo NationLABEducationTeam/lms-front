@@ -1,19 +1,11 @@
-import { FC, ReactNode } from 'react';
-import AdminHeader from './AdminHeader';
-import AdminFooter from './AdminFooter';
+import { Outlet } from 'react-router-dom';
 
-interface AdminLayoutProps {
-  children: ReactNode;
-}
-
-const AdminLayout: FC<AdminLayoutProps> = ({ children }) => {
+const AdminLayout = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <AdminHeader />
-      <main className="flex-1 container mx-auto py-8">
-        {children}
+    <div className="flex h-full">
+      <main className="flex-1 p-8">
+        <Outlet />
       </main>
-      <AdminFooter />
     </div>
   );
 };
