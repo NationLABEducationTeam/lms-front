@@ -20,26 +20,29 @@ import CommunityDetail from './pages/student/board/CommunityDetail';
 import QnaList from './pages/student/board/QnaList';
 import QnaCreate from './pages/student/board/QnaCreate';
 import QnaDetail from './pages/student/board/QnaDetail';
+import CourseDetailPage from './pages/courses/[id]';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminLayout from './components/common/layout/admin/AdminLayout';
 import { UserRole } from './config/cognito';
 import './App.css';
-import CourseDetailPage from './pages/student/[courseId]';
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public Routes */}
+        {/* Auth Routes - No Layout */}
+        <Route path="/auth" element={<AuthForm />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+
+        {/* Routes with RootLayout */}
         <Route element={<RootLayout />}>
+          {/* Public Routes */}
           <Route path="/" element={<StudentLanding />} />
-          <Route path="/auth" element={<AuthForm />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="/courses/:id" element={<CourseDetailPage />} />
           
           {/* Protected Student Routes */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
             <Route path="/dashboard" element={<StudentDashboard />} />
-            <Route path="/courses/:courseId" element={<CourseDetailPage />} />
             <Route path="/notices" element={<NoticeList />} />
             <Route path="/notices/:id" element={<NoticeDetail />} />
             <Route path="/community" element={<CommunityList />} />
