@@ -12,6 +12,7 @@ import { useKeenSlider } from 'keen-slider/react';
 import type { KeenSliderInstance } from 'keen-slider';
 import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
+import { getApiConfig } from '@/config/api';
 
 const CategoryIcon: FC<{ category: string }> = ({ category }) => {
   switch (category) {
@@ -194,6 +195,28 @@ const StudentLanding: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
+  const [serverMessage, setServerMessage] = useState<string>('');
+
+  useEffect(() => {
+    const fetchServerMessage = async () => {
+      try {
+        const { baseUrl } = getApiConfig();
+        const response = await fetch(baseUrl);
+        if (!response.ok) {
+          throw new Error('Failed to fetch server message');
+        }
+        const data = await response.json();
+        setServerMessage(data.message);
+        console.log('Current Environment:', process.env.REACT_APP_ENV || 'development');
+        console.log('Server URL:', baseUrl);
+        console.log('Server response:', data);
+      } catch (err) {
+        console.error('Error fetching server message:', err);
+      }
+    };
+
+    fetchServerMessage();
+  }, []);
 
   // 메모이제이션된 필터링된 강의 목록
   const filteredCourses = useMemo(() => {
@@ -230,6 +253,13 @@ const StudentLanding: FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      {/* Add server message display near the top of the page */}
+      {serverMessage && (
+        <div className="text-center py-4 bg-blue-100">
+          <p className="text-blue-800">{serverMessage}</p>
+        </div>
+      )}
+      
       {/* Enhanced Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="absolute inset-0">
@@ -365,7 +395,7 @@ const StudentLanding: FC = () => {
             <div className="relative p-8 rounded-2xl border border-orange-100 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
               <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center">
                 <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">성장 트래킹</h3>

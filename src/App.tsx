@@ -27,6 +27,9 @@ import { UserRole } from './config/cognito';
 import './App.css';
 
 const App = () => {
+  console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
+  console.log('🎯 API URL:', import.meta.env.VITE_API_URL);
+
   return (
     <BrowserRouter>
       <Routes>
