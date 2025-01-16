@@ -106,7 +106,8 @@ const AdminCourseCreate: FC = () => {
         description: formData.description,
         mainCategory: formData.mainCategory as MainCategory,
         subCategory: formData.subCategory,
-        instructor: user?.email || ''
+        instructor: user?.email || '',
+        thumbnail: formData.thumbnail
       });
 
       navigate('/admin/courses');

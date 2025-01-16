@@ -131,7 +131,7 @@ const NoticeColumn: FC<{ onPostClick: (postId: string) => void }> = ({ onPostCli
         </Space>
       }
       extra={
-        <Button type="link" onClick={() => navigate('/student/notices')}>
+        <Button type="link" onClick={() => navigate('/notices')}>
           더 보기
         </Button>
       }
@@ -187,7 +187,7 @@ const CommunityColumn: FC<CommunityColumnProps> = ({ onPostClick, onCreateClick 
       }
       extra={
         <Space>
-          <Button type="link" onClick={() => navigate('/student/community')}>
+          <Button type="link" onClick={() => navigate('/community')}>
             더 보기
           </Button>
           <Button type="primary" onClick={onCreateClick}>
@@ -289,7 +289,7 @@ const QnaColumn: FC<QnaColumnProps> = ({ onPostClick, onCreateClick }) => {
       }
       extra={
         <Space>
-          <Button type="link" onClick={() => navigate('/student/qna')}>
+          <Button type="link" onClick={() => navigate('/qna')}>
             더 보기
           </Button>
           <Button type="primary" onClick={onCreateClick}>

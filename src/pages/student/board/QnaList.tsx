@@ -36,11 +36,11 @@ const QnaList: FC = () => {
   }, []);
 
   const handlePostClick = (postId: string) => {
-    navigate(`/student/qna/${postId}`);
+    navigate(`/qna/${postId}`);
   };
 
   const handleCreateClick = () => {
-    navigate('/student/qna/create');
+    navigate('/qna/create');
   };
 
   if (loading) {

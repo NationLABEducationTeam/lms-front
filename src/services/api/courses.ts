@@ -9,7 +9,8 @@ const UPDATE_COURSE_URL = 'https://krhl5cd3wy2ejzcrxiviier2tu0owccb.lambda-url.a
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
-import { DynamoCourse, CourseListResponse } from '@/types/course';
+import { DynamoCourse, CourseListResponse, MainCategory } from '@/types/course';
+import axios from 'axios';
 
 interface ListResponse {
   folders: S3Structure[];
@@ -40,6 +41,14 @@ interface CourseDetail {
   };
 }
 
+interface CreateCourseParams {
+  title: string;
+  description: string;
+  mainCategory: MainCategory;
+  subCategory: string;
+  instructor: string;
+  thumbnail?: File;
+}
 
 // 카테고리 조회
 export const listCategories = async (path: string = ''): Promise<ListResponse> => {
@@ -161,92 +170,53 @@ export const listCourses = async (mainCategory: string, subCategory: string): Pr
 };
 
 // 강의 생성
-export const createCourse = async (courseData: Omit<Course, 'id' | 'createdAt' | 'updatedAt' | 'status'>): Promise<{ courseId: string }> => {
+export const createCourse = async (params: CreateCourseParams) => {
   try {
-    console.log('Fetching auth session...');
-    const session = await fetchAuthSession();
-    console.log('Full auth session:', {
-      hasTokens: !!session.tokens,
-      idToken: {
-        exists: !!session.tokens?.idToken,
-        payload: session.tokens?.idToken?.payload,
-      },
-      accessToken: {
-        exists: !!session.tokens?.accessToken,
-        payload: session.tokens?.accessToken?.payload,
-      }
-    });
+    const { title, description, mainCategory, subCategory, instructor, thumbnail } = params;
 
-    // Access 토큰 사용
+    // Cognito 세션 확인
+    const session = await fetchAuthSession();
     const token = session.tokens?.accessToken?.toString();
-    console.log('Access Token exists:', !!token);
-    
-    const user = await getCurrentUser();
-    console.log('Current user:', {
-      username: user.username,
-      userId: user.userId,
-      signInDetails: user.signInDetails,
-    });
     
     if (!token) {
       throw new Error('로그인이 필요합니다.');
     }
-    
-    // 사용자 권한 확인 (Access 토큰의 cognito:groups 확인)
-    const groups = session.tokens?.accessToken?.payload['cognito:groups'];
-    console.log('User groups:', groups);
-    
-    if (!Array.isArray(groups) || !groups.includes('ADMIN')) {
-      throw new Error('관리자 권한이 필요합니다.');
+
+    // Base64로 변환
+    let thumbnailBase64 = null;
+    if (thumbnail) {
+      const reader = new FileReader();
+      thumbnailBase64 = await new Promise((resolve) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.readAsDataURL(thumbnail);
+      });
     }
 
-    console.log('Request details:', {
-      url: CREATE_COURSE_URL,
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token.substring(0, 20)}...`
+    // API 호출
+    const response = await axios.post<{ courseId: string; message: string }>(
+      CREATE_COURSE_URL,
+      {
+        title,
+        description,
+        mainCategory,
+        subCategory,
+        instructor,
+        thumbnail: thumbnailBase64
       },
-      body: {
-        ...courseData,
-        instructor: user.username,
-        debug: true
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       }
-    });
+    );
 
-    const response = await fetch(CREATE_COURSE_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        ...courseData,
-        instructor: user.username,
-        debug: true
-      })
-    });
-
-    console.log('Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      headers: Object.fromEntries(response.headers.entries())
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Error response:', errorData);
-      throw new Error(errorData.message || 'Failed to create course');
-    }
-    return await response.json();
+    return {
+      courseId: response.data.courseId,
+      message: response.data.message
+    };
   } catch (error) {
-    console.error('Error creating course:', {
-      error,
-      name: error instanceof Error ? error.name : 'Unknown error',
-      message: error instanceof Error ? error.message : 'Unknown error message',
-      stack: error instanceof Error ? error.stack : 'No stack trace'
-    });
+    console.error('Error in createCourse:', error);
     throw error;
   }
 };

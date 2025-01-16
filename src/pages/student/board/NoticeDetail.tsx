@@ -41,7 +41,7 @@ const NoticeDetail: FC = () => {
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
+      document.body.removeChild(link);           
       window.URL.revokeObjectURL(downloadUrl);
     } catch (error) {
       console.error('파일 다운로드 실패:', error);
@@ -76,7 +76,7 @@ const NoticeDetail: FC = () => {
           <Button
             variant="ghost"
             className="hover:bg-gray-100"
-            onClick={() => navigate('/student')}
+            onClick={() => navigate('/')}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             목록으로

@@ -31,19 +31,19 @@ const StudentDashboard: FC = () => {
   const [error] = useState<string | null>(null);
 
   const handleJoinClass = (coursePath: string) => {
-    navigate(`/student/${coursePath}`);
+    navigate(`/${coursePath}`);
   };
 
   const handlePostClick = (boardType: 'notice' | 'community' | 'qna', postId: string) => {
     switch (boardType) {
       case 'notice':
-        navigate(`/student/notices/${postId}`);
+        navigate(`/notices/${postId}`);
         break;
       case 'community':
-        navigate(`/student/community/${postId}`);
+        navigate(`/community/${postId}`);
         break;
       case 'qna':
-        navigate(`/student/qna/${postId}`);
+        navigate(`/qna/${postId}`);
         break;
     }
   };
@@ -51,10 +51,10 @@ const StudentDashboard: FC = () => {
   const handleCreateClick = (boardType: 'community' | 'qna') => {
     switch (boardType) {
       case 'community':
-        navigate('/student/community/create');
+        navigate('/community/create');
         break;
       case 'qna':
-        navigate('/student/qna/create');
+        navigate('/qna/create');
         break;
     }
   };

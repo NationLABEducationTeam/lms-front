@@ -41,7 +41,7 @@ const QnaCreate: FC = () => {
       });
 
       toast.success('질문이 등록되었습니다.');
-      navigate('/student/qna');
+      navigate('/qna');
     } catch (error) {
       console.error('질문 등록 실패:', error);
       toast.error('질문 등록에 실패했습니다.');
@@ -95,7 +95,7 @@ const QnaCreate: FC = () => {
             <Button
               type="button"
               variant="outline"
-              onClick={() => navigate('/student/qna')}
+              onClick={() => navigate('/qna')}
             >
               취소
             </Button>
