@@ -36,11 +36,11 @@ const CommunityList: FC = () => {
   }, []);
 
   const handlePostClick = (postId: string) => {
-    navigate(`/student/community/${postId}`);
+    navigate(`/community/${postId}`);
   };
 
   const handleCreateClick = () => {
-    navigate('/student/board/community/create');
+    navigate('/board/community/create');
   };
 
   if (loading) {

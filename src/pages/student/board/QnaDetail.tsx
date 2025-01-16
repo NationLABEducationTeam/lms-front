@@ -66,7 +66,7 @@ const QnaDetail: FC = () => {
           <Button
             variant="ghost"
             className="mb-4"
-            onClick={() => navigate('/student/qna')}
+            onClick={() => navigate('/qna')}
           >
             <ArrowLeft className="w-4 h-4 mr-2" />
             목록으로

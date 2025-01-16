@@ -72,7 +72,7 @@ export const CourseList: FC<CourseListProps> = ({
   };
 
   const handleCourseClick = (course: Course) => {
-    navigate(`/student/${course.id}`);
+    navigate(`/courses/${course.id}`);
   };
 
   if (!courses.length) {

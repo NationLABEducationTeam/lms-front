@@ -75,7 +75,7 @@ const CommunityDetail: FC = () => {
         <Button
           variant="ghost"
           className="mb-4"
-          onClick={() => navigate('/student/community')}
+          onClick={() => navigate('/community')}
         >
           <ArrowLeft className="w-4 h-4 mr-2" />
           목록으로
