@@ -28,7 +28,7 @@ import './App.css';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
-  console.log('🎯 API URL:', import.meta.env.VITE_API_URL);
+  console.log('🎯 API URL haha:', import.meta.env.VITE_API_URL);
 
   return (
     <BrowserRouter>
