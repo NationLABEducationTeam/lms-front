@@ -13,6 +13,7 @@ import type { KeenSliderInstance } from 'keen-slider';
 import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
+import AttendanceStreak from '@/components/dashboard/AttendanceStreak';
 
 const CategoryIcon: FC<{ category: string }> = ({ category }) => {
   switch (category) {
@@ -261,7 +262,7 @@ const StudentLanding: FC = () => {
       )}
       
       {/* Enhanced Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
         <div className="absolute inset-0">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]"></div>
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent"></div>
@@ -286,6 +287,7 @@ const StudentLanding: FC = () => {
                   <span className="text-purple-100">Nations LAB과 함께하는 성장</span>
                 )}
               </h1>
+              {user && <AttendanceStreak days={3} />}
               <div className="mt-8 flex flex-col items-center justify-center space-y-4">
                 <div className="flex flex-wrap justify-center gap-4 text-lg sm:text-xl font-medium text-purple-200/90">
                   <span className="flex items-center">

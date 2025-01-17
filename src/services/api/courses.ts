@@ -6,6 +6,8 @@ const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap
 const DELETE_COURSE_URL = 'https://whym5n2vlkhep55o4j7i75znwa0dnipm.lambda-url.ap-northeast-2.on.aws/';
 const UPDATE_COURSE_URL = 'https://krhl5cd3wy2ejzcrxiviier2tu0owccb.lambda-url.ap-northeast-2.on.aws/';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
@@ -414,23 +416,19 @@ export const listPathContents = async (path: string): Promise<ListResponse> => {
   }
 }; 
 
-const LIST_PUBLIC_COURSES_URL = 'https://nbftw47jv4bz6xqqv3fluylvlq0lvylv.lambda-url.ap-northeast-2.on.aws/';
 
 export const listPublicCourses = async (): Promise<DynamoCourse[]> => {
   try {
-    const response = await fetch(LIST_PUBLIC_COURSES_URL, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    console.log('Fetching courses from:', API_URL);
+    const response = await axios.get(`${API_URL}/`);
+    
+    console.log('Response data:', response.data);
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch courses');
+    if (!response.data || !response.data.Items) {
+      throw new Error('Invalid response format');
     }
 
-    const data: CourseListResponse = await response.json();
-    return data.Items.filter(course => course.status === 'published');
+    return response.data.Items.filter((course: DynamoCourse) => course.status === 'published');
   } catch (error) {
     console.error('Error fetching courses:', error);
     throw error;
