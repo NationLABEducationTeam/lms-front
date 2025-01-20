@@ -247,11 +247,11 @@ const AuthForm = () => {
       <div className="flex-1 bg-blue-50 hidden lg:flex lg:items-center lg:justify-center p-12">
         <div className="text-center">
           <img 
-            src="/sideillustration.png" 
+            src="/long-logo.png" 
             alt="Auth illustration" 
             className="max-w-[70%] mx-auto mb-8 h-auto"
           />
-          <h2 className="text-2xl font-semibold text-gray-800 mb-3">Let's Nation's LAB!</h2>
+          <h2 className="text-2xl font-semibold text-gray-800 mb-3">AI NATIONS Education Product</h2>
         </div>
       </div>
 
@@ -260,7 +260,7 @@ const AuthForm = () => {
         <div className="max-w-[420px] mx-auto w-full">
           <div className="text-center space-y-2 mb-8">
             <div className="flex items-center justify-center mb-6">
-              <img src="/nationlmslogo.png" alt="NationsLAB" className="h-10 sm:h-12 w-auto" />
+              <img src="/logo.png" alt="NationsLAB" className="h-10 sm:h-12 w-auto" />
             </div>
             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Nation's LAB</h1>
             <p className="text-gray-300 text-sm sm:text-base">

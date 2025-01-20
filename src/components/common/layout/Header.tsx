@@ -46,8 +46,7 @@ const Header: FC = () => {
             className="flex items-center gap-2 cursor-pointer hover:opacity-80 transition-opacity"
             onClick={() => navigate('/')}
           >
-            <img src="/nationlmslogo.svg" alt="Nations LAB LMS" className="h-8 w-8" />
-            <span className="font-semibold text-lg">NationsLAB</span>
+            <img src="/long-logo.png" alt="Nations LAB LMS" className="h-8 w-auto" />
           </div>
 
           {/* Navigation */}

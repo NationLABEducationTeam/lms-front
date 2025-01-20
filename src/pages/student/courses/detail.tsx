@@ -16,6 +16,7 @@ const CourseDetailPage: FC = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showScrollTop, setShowScrollTop] = useState(false);
 
   // Refs for each section
   const introductionRef = useRef<HTMLDivElement>(null);
@@ -51,12 +52,25 @@ const CourseDetailPage: FC = () => {
     loadCourseDetails();
   }, [id]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 200);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   const scrollToSection = (sectionId: string) => {
     const section = sections.find(s => s.id === sectionId);
     if (section && section.ref.current) {
       section.ref.current.scrollIntoView({ behavior: 'smooth' });
       setActiveSection(sectionId);
     }
+  };
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   if (loading) {
@@ -252,7 +266,7 @@ const CourseDetailPage: FC = () => {
                 <img
                   src={course.instructorImage}
                   alt={course.instructor}
-                  className="w-32 h-32 rounded-lg object-cover"
+                  className="w-auto max-w-[200px] rounded-lg"
                 />
               )}
               <div>
@@ -329,6 +343,29 @@ const CourseDetailPage: FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Scroll to Top Button */}
+      {showScrollTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50"
+          aria-label="위로 가기"
+        >
+          <svg
+            className="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 10l7-7m0 0l7 7m-7-7v18"
+            />
+          </svg>
+        </button>
+      )}
     </div>
   );
 };
