@@ -22,17 +22,16 @@ const CourseDetailPage: FC = () => {
         const courseData = await getCourseDetail(id);
         setCourse({
           id,
-          title: courseData.courseInfo.title,
-          description: courseData.courseInfo.description,
-          instructor: courseData.courseInfo.instructor,
-          mainCategory: '',  // API 응답에서 가져올 수 있다면 추가
-          subCategory: '',   // API 응답에서 가져올 수 있다면 추가
+          title: courseData.title,
+          description: courseData.description,
+          instructor: courseData.instructor,
+          mainCategory: courseData.mainCategory || '',
+          subCategory: courseData.subCategory || '',
           status: 'published',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          price: 0,  // 기본값 설정 또는 API 응답에서 가져오기
-          thumbnail: '',  // 기본값 설정 또는 API 응답에서 가져오기
-          level: 'beginner' as const,  // 기본값 설정 또는 API 응답에서 가져오기
+          price: courseData.price || 0,
+          thumbnail: courseData.thumbnail || ''
         });
       } catch (err) {
         setError('강의 정보를 불러오는데 실패했습니다.');
@@ -88,11 +87,6 @@ const CourseDetailPage: FC = () => {
               <span className="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
                 {course.subCategory}
               </span>
-              {course.level && (
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                  {course.level}
-                </span>
-              )}
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-4">{course.title}</h1>
             <p className="text-lg text-gray-600 mb-6">{course.description}</p>
