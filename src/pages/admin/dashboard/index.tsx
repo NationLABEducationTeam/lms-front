@@ -16,6 +16,8 @@ import { getNotices } from '@/services/api/notices';
 import { getAllUsers } from '@/services/api/users';
 import { DBUser } from '@/types/user';
 import { Input } from "@/components/common/ui/input";
+import { listAllCourses } from '@/services/api/courses';
+import { Course } from '@/types/course';
 import {
   Table,
   TableBody,
@@ -76,6 +78,8 @@ const AdminDashboard: FC = () => {
   const [notices, setNotices] = useState<Notice[]>([]);
   const [noticesLoading, setNoticesLoading] = useState(true);
   const [noticesError, setNoticesError] = useState<string | null>(null);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [coursesLoading, setCoursesLoading] = useState(true);
 
   const fetchUsers = async () => {
     try {
@@ -92,8 +96,22 @@ const AdminDashboard: FC = () => {
     }
   };
 
+  // 모든 강의 목록 불러오기
+  const fetchAllCourses = async () => {
+    try {
+      setCoursesLoading(true);
+      const response = await listAllCourses();
+      setCourses(response.courses || []);
+    } catch (error) {
+      console.error('Error fetching all courses:', error);
+    } finally {
+      setCoursesLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchUsers();
+    fetchAllCourses();
   }, []);
 
   // 검색어에 따른 필터링
@@ -161,7 +179,7 @@ const AdminDashboard: FC = () => {
             description="강의 목록을 확인하고 새로운 강의를 생성합니다."
             icon={<BookOpen className="w-5 h-5 text-blue-600" />}
             onClick={() => navigate('/admin/courses')}
-            metric="3"
+            metric={coursesLoading ? "..." : String(courses.length)}
             metricLabel="총 강의 수"
           />
           

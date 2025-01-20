@@ -8,22 +8,23 @@ export const CATEGORY_MAPPING = {
   'CodeingTest': '코딩테스트'
 } as const;
 
-export type MainCategory = keyof typeof CATEGORY_MAPPING;
+export type MainCategory = 'CLOUD' | 'SECURITY' | 'NETWORK' | 'DEVELOPMENT';
 
 export interface Course {
   id: string;
   title: string;
   description: string;
-  instructor: string;
   mainCategory: MainCategory;
   subCategory: string;
-  status: 'draft' | 'published' | 'archived';
-  updatedAt: string;
-  totalWeeks?: number;
+  instructor: string;
+  instructorImage?: string;
+  instructorBio?: string;
   thumbnail?: string;
-  price?: number;
-  duration?: string;
-  level?: 'beginner' | 'intermediate' | 'advanced';
+  lessons?: Lesson[];
+  faqs?: FAQ[];
+  price: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface CourseFile {
@@ -34,15 +35,27 @@ export interface CourseFile {
 }
 
 export interface WeeklyContent {
-  weekNumber: number;
-  folderName: string;
-  files: CourseFile[];
+  weekNumber: string;
+  name: string;
+  files: {
+    name: string;
+    path: string;
+    size: number;
+    lastModified?: string;
+    type: string;
+  }[];
 }
 
-export interface CourseDetail extends Course {
+export interface CourseInfo {
+  title: string;
+  description: string;
+  instructor: string;
+  totalWeeks: number;
+}
+
+export interface CourseDetail {
   weeklyContents: WeeklyContent[];
-  thumbnail?: string;
-  materials?: CourseFile[];
+  courseInfo: CourseInfo;
 }
 
 export interface DynamoCourse {
@@ -65,4 +78,16 @@ export interface CourseListResponse {
   Items: DynamoCourse[];
   Count: number;
   ScannedCount: number;
+}
+
+interface Lesson {
+  id: string;
+  title: string;
+  duration: string;
+  content?: string;
+}
+
+interface FAQ {
+  question: string;
+  answer: string;
 }

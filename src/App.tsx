@@ -20,11 +20,12 @@ import CommunityDetail from './pages/student/board/CommunityDetail';
 import QnaList from './pages/student/board/QnaList';
 import QnaCreate from './pages/student/board/QnaCreate';
 import QnaDetail from './pages/student/board/QnaDetail';
-import CourseDetailPage from './pages/courses/[id]';
+import CourseDetailPage from './pages/student/courses/detail';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import AdminLayout from './components/common/layout/admin/AdminLayout';
 import { UserRole } from './config/cognito';
 import './App.css';
+import StudentCoursesPage from '@/pages/student/courses';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -37,10 +38,23 @@ const App = () => {
         <Route path="/auth" element={<AuthForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
 
-        {/* Routes with RootLayout */}
+        {/* Admin Routes with AdminLayout */}
+        <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
+          <Route element={<AdminLayout />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/notices" element={<AdminNotices />} />
+            <Route path="/admin/notices/create" element={<AdminNoticeCreate />} />
+            <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
+            <Route path="/admin/courses" element={<AdminCourses />} />
+            <Route path="/admin/courses/create" element={<AdminCourseCreate />} />
+          </Route>
+        </Route>
+
+        {/* Student/Instructor Routes with RootLayout */}
         <Route element={<RootLayout />}>
           {/* Public Routes */}
           <Route path="/" element={<StudentLanding />} />
+          <Route path="/courses" element={<StudentCoursesPage />} />
           <Route path="/courses/:id" element={<CourseDetailPage />} />
           
           {/* Protected Student Routes */}
@@ -59,18 +73,6 @@ const App = () => {
           {/* Protected Instructor Routes */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.INSTRUCTOR]} />}>
             <Route path="/instructor" element={<InstructorPage />} />
-          </Route>
-
-          {/* Protected Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
-            <Route element={<AdminLayout />}>
-              <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/notices" element={<AdminNotices />} />
-              <Route path="/admin/notices/create" element={<AdminNoticeCreate />} />
-              <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
-              <Route path="/admin/courses" element={<AdminCourses />} />
-              <Route path="/admin/courses/create" element={<AdminCourseCreate />} />
-            </Route>
           </Route>
         </Route>
       </Routes>
