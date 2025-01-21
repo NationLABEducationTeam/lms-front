@@ -8,7 +8,9 @@ import {
   GraduationCap,
   FileText,
   Bell,
-  Search
+  Search,
+  Eye,
+  Activity
 } from 'lucide-react';
 import { Card } from '@/components/common/ui/card';
 import { Notice } from '@/types/notice';
@@ -26,6 +28,32 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/common/ui/table";
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  icon: React.ElementType;
+  helpText?: string;
+}
+
+const StatCard: FC<StatCardProps> = ({ title, value, icon: Icon, helpText }) => (
+  <Card className="p-6 bg-white">
+    <div className="flex justify-between items-center">
+      <div>
+        <div className="text-sm text-gray-600">{title}</div>
+        <div className="text-3xl font-bold">{value}</div>
+        {helpText && (
+          <div className="text-sm text-gray-600 mt-2">
+            {helpText}
+          </div>
+        )}
+      </div>
+      <div className="text-blue-500">
+        <Icon size={40} />
+      </div>
+    </div>
+  </Card>
+);
 
 interface DashboardCardProps {
   title: string;
@@ -96,7 +124,6 @@ const AdminDashboard: FC = () => {
     }
   };
 
-  // 모든 강의 목록 불러오기
   const fetchAllCourses = async () => {
     try {
       setCoursesLoading(true);
@@ -114,7 +141,6 @@ const AdminDashboard: FC = () => {
     fetchAllCourses();
   }, []);
 
-  // 검색어에 따른 필터링
   useEffect(() => {
     if (!searchTerm.trim()) {
       setFilteredUsers(users);
@@ -130,7 +156,6 @@ const AdminDashboard: FC = () => {
     setFilteredUsers(filtered);
   }, [searchTerm, users]);
 
-  // 공지사항 불러오기
   useEffect(() => {
     const loadNotices = async () => {
       try {
@@ -148,6 +173,33 @@ const AdminDashboard: FC = () => {
 
     loadNotices();
   }, []);
+
+  const stats: StatCardProps[] = [
+    {
+      title: '총 방문자 수',
+      value: '52',
+      icon: Eye,
+      helpText: '지난 주 대비 12% 증가',
+    },
+    {
+      title: '수강생 수',
+      value: String(users.filter(u => u.role === 'STUDENT').length),
+      icon: Users,
+      helpText: '신규 가입 1명',
+    },
+    {
+      title: '개설된 클래스',
+      value: String(courses.length),
+      icon: BookOpen,
+      helpText: '진행중인 클래스',
+    },
+    {
+      title: '활성도',
+      value: '0',
+      icon: Activity,
+      helpText: '오늘의 활동',
+    },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -173,6 +225,12 @@ const AdminDashboard: FC = () => {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <StatCard key={stat.title} {...stat} />
+          ))}
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <DashboardCard
             title="강의 관리"
@@ -188,7 +246,7 @@ const AdminDashboard: FC = () => {
             description="등록된 학생들의 정보와 수강 현황을 관리합니다."
             icon={<Users className="w-5 h-5 text-green-600" />}
             onClick={() => navigate('/admin/students')}
-            metric="0"
+            metric={String(users.filter(u => u.role === 'STUDENT').length)}
             metricLabel="등록된 학생 수"
           />
 
