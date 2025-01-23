@@ -15,14 +15,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
 import AttendanceStreak from '@/components/dashboard/AttendanceStreak';
 
-const CategoryIcon: FC<{ category: string }> = ({ category }) => {
+const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, className }) => {
   switch (category) {
     case 'CLOUD':
       return (
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-sky-400/20 to-blue-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-sky-50 to-blue-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/cloudcomp.svg" alt="Cloud Computing" className="h-5 w-5" />
+            <img src="/icons/cloudcomp.svg" alt="Cloud Computing" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -31,7 +31,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-purple-400/20 to-indigo-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-purple-50 to-indigo-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/aiml.svg" alt="AI/ML" className="h-5 w-5" />
+            <img src="/icons/aiml.svg" alt="AI/ML" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -40,7 +40,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-pink-400/20 to-rose-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-pink-50 to-rose-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/webprogramming.svg" alt="Web Programming" className="h-5 w-5" />
+            <img src="/icons/webprogramming.svg" alt="Web Programming" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -49,7 +49,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-green-400/20 to-emerald-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/automation.svg" alt="Automation" className="h-5 w-5" />
+            <img src="/icons/automation.svg" alt="Automation" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -58,7 +58,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-orange-400/20 to-amber-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-orange-50 to-amber-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/devops.svg" alt="DevOps" className="h-5 w-5" />
+            <img src="/icons/devops.svg" alt="DevOps" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -67,7 +67,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-cyan-400/20 to-teal-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/data-engineering.svg" alt="Data Engineering" className="h-5 w-5" />
+            <img src="/icons/data-engineering.svg" alt="Data Engineering" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -76,7 +76,7 @@ const CategoryIcon: FC<{ category: string }> = ({ category }) => {
         <div className="relative group">
           <div className="absolute inset-0 bg-gradient-to-br from-violet-400/20 to-purple-500/20 rounded-lg blur-md opacity-25 group-hover:opacity-40 transition duration-200"></div>
           <div className="relative h-8 w-8 rounded-lg bg-gradient-to-br from-violet-50 to-purple-50 flex items-center justify-center shadow-sm group-hover:shadow-md transition-all duration-200">
-            <img src="/icons/codingtest.svg" alt="Coding Test" className="h-5 w-5" />
+            <img src="/icons/codingtest.svg" alt="Coding Test" className={cn("h-5 w-5", className)} />
           </div>
         </div>
       );
@@ -284,7 +284,7 @@ const StudentLanding: FC = () => {
                     <span className="text-purple-100">님의 성장.py</span>
                   </span>
                 ) : (
-                  <span className="text-purple-100">Nations LAB과 함께하는 성장</span>
+                  <span className="text-purple-100">Nation's LAB과 함께하는 성장</span>
                 )}
               </h1>
               {user && <AttendanceStreak days={3} />}
@@ -347,10 +347,60 @@ const StudentLanding: FC = () => {
       {/* Course Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
-          <h2 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 mb-4">
-            Nation's LAB만의 특별한 여정
-          </h2>
-          <p className="text-lg text-gray-600">상상을 현실로 만드는 실무 중심 커리큘럼을 경험하세요</p>
+          <div className="relative py-16 px-8 bg-gradient-to-br from-indigo-600 via-blue-500 to-sky-400 rounded-3xl overflow-hidden group">
+            {/* Animated background elements */}
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0d_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0d_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 via-transparent to-sky-300/10"></div>
+            
+            {/* Decorative circles */}
+            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-purple-400/30 via-fuchsia-300/20 to-sky-300/30 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-600/30 via-cyan-400/20 to-sky-300/30 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
+            
+            <div className="relative max-w-5xl mx-auto">
+              <div className="flex items-center space-x-4 mb-8 pl-4">
+                <div className="w-1.5 h-12 bg-gradient-to-b from-purple-300 to-sky-300 rounded-full"></div>
+                <h2 className="text-5xl font-bold text-white tracking-tight">
+                  Shaping the Future with AI
+                </h2>
+              </div>
+              
+              <div className="space-y-8 pl-4">
+                {/* Code block with enhanced styling */}
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
+                    <code className="font-mono text-lg text-white">{`class Future { start() {`}</code>
+                    <div className="absolute -right-2 -top-2">
+                      <span className="flex h-3 w-3">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main text content with enhanced styling */}
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                    <p className="text-xl text-white/90 leading-relaxed transform hover:-translate-x-2 transition-transform duration-300 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-purple-200 hover:to-sky-200">
+                      AI 전문 기업의 풍부한 경험과 기술을 바탕으로 설계된 교육을 통해<br />
+                      개인과 조직이 AI와 Cloud 기술을 통해 미래를 대비하고<br />
+                      지속 가능한 성장을 이룰 수 있도록 돕습니다
+                    </p>
+                  </div>
+                </div>
+
+                {/* Closing bracket with animation */}
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                    <code className="font-mono text-lg text-white">{`}}`}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Feature Cards */}
@@ -411,60 +461,76 @@ const StudentLanding: FC = () => {
         </div>
 
         {/* Category Filter Section */}
-        <div className="flex justify-center gap-4 mb-12 overflow-x-auto pb-2">
+        <div className="flex gap-3 mb-12 overflow-x-auto pb-4 px-1 -mx-1">
           <Button
             variant="outline"
             className={cn(
-              "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
-              "hover:scale-105 hover:shadow-md hover:border-transparent",
-              "bg-gradient-to-b from-slate-900/80 to-purple-900/80 backdrop-blur-sm",
+              "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
+              "hover:scale-102 hover:shadow-lg",
+              "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800",
               selectedMainCategory === 'all' 
-                ? "border-purple-400 shadow-purple-500/20 bg-gradient-to-br from-purple-900/90 to-slate-900/90" 
-                : "border-purple-500/20 hover:bg-gradient-to-br hover:from-purple-900/80 hover:to-slate-900/80"
+                ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg shadow-blue-500/20" 
+                : "border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
             )}
             onClick={() => setSelectedMainCategory('all')}
           >
-            <div className="h-8 w-8 mb-2 rounded-lg bg-gradient-to-br from-purple-400/20 to-purple-600/20 flex items-center justify-center shadow-sm">
-              <svg className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="h-10 w-10 mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-sky-50 flex items-center justify-center">
+              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
               </svg>
             </div>
-            <span className="font-medium text-sm text-purple-100">전체</span>
-            <span className="text-[10px] text-purple-300/80 mt-0.5">All Courses</span>
+            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">전체 과정</span>
+            <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">All Courses</span>
           </Button>
 
-          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
-            <Button
-              key={key}
-              variant="outline"
-              className={cn(
-                "relative flex flex-col items-center p-4 h-auto min-w-[120px] rounded-xl border-2 transition-all duration-300",
-                "hover:scale-105 hover:shadow-md hover:border-transparent",
-                "bg-gradient-to-b from-slate-900/80 to-purple-900/80 backdrop-blur-sm",
-                selectedMainCategory === key 
-                  ? "border-purple-400 shadow-purple-500/20 bg-gradient-to-br from-purple-900/90 to-slate-900/90" 
-                  : "border-purple-500/20 hover:bg-gradient-to-br hover:from-purple-900/80 hover:to-slate-900/80"
-              )}
-              onClick={() => setSelectedMainCategory(key)}
-            >
-              <CategoryIcon category={key} />
-              <span className="font-medium text-sm text-purple-100 mt-2">{value}</span>
-              <span className="text-[10px] text-purple-300/80 mt-0.5">
-                {(() => {
-                  switch(key) {
-                    case 'CLOUD': return 'Cloud Computing';
-                    case 'AI_ML': return 'AI & Machine Learning';
-                    case 'WEB': return 'Web Development';
-                    case 'AUTOMATION': return 'Automation';
-                    case 'DEVOPS': return 'DevOps';
-                    case 'DataEngineering': return 'Data Engineering';
-                    case 'CodeingTest': return 'Coding Test';
-                    default: return '';
-                  }
-                })()}
-              </span>
-            </Button>
-          ))}
+          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => {
+            const categoryColors = {
+              'CLOUD': { icon: 'text-sky-500', bg: 'from-sky-50 to-blue-50', ring: 'ring-sky-500 shadow-sky-500/20' },
+              'AI_ML': { icon: 'text-fuchsia-500', bg: 'from-fuchsia-50 to-purple-50', ring: 'ring-fuchsia-500 shadow-fuchsia-500/20' },
+              'WEB': { icon: 'text-indigo-500', bg: 'from-indigo-50 to-blue-50', ring: 'ring-indigo-500 shadow-indigo-500/20' },
+              'AUTOMATION': { icon: 'text-orange-500', bg: 'from-orange-50 to-amber-50', ring: 'ring-orange-500 shadow-orange-500/20' },
+              'DEVOPS': { icon: 'text-emerald-500', bg: 'from-emerald-50 to-green-50', ring: 'ring-emerald-500 shadow-emerald-500/20' },
+              'DataEngineering': { icon: 'text-cyan-500', bg: 'from-cyan-50 to-sky-50', ring: 'ring-cyan-500 shadow-cyan-500/20' },
+              'CodeingTest': { icon: 'text-violet-500', bg: 'from-violet-50 to-purple-50', ring: 'ring-violet-500 shadow-violet-500/20' }
+            };
+            
+            const colors = categoryColors[key as keyof typeof categoryColors];
+
+            return (
+              <Button
+                key={key}
+                variant="outline"
+                className={cn(
+                  "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
+                  "hover:scale-102 hover:shadow-lg",
+                  "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800",
+                  selectedMainCategory === key 
+                    ? `ring-2 ${colors.ring} ring-offset-2 shadow-lg` 
+                    : "border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
+                )}
+                onClick={() => setSelectedMainCategory(key)}
+              >
+                <div className={cn("h-10 w-10 mb-3 rounded-xl bg-gradient-to-br flex items-center justify-center", colors.bg)}>
+                  <CategoryIcon category={key} className={colors.icon} />
+                </div>
+                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{value}</span>
+                <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
+                  {(() => {
+                    switch(key) {
+                      case 'CLOUD': return 'Cloud Computing';
+                      case 'AI_ML': return 'AI & Machine Learning';
+                      case 'WEB': return 'Web Development';
+                      case 'AUTOMATION': return 'Automation';
+                      case 'DEVOPS': return 'DevOps';
+                      case 'DataEngineering': return 'Data Engineering';
+                      case 'CodeingTest': return 'Coding Test';
+                      default: return '';
+                    }
+                  })()}
+                </span>
+              </Button>
+            );
+          })}
         </div>
 
         {loading ? (

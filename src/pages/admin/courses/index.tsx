@@ -106,90 +106,72 @@ const AdminCourses: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#232f3e] text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">강의 관리</h1>
-            <p className="text-gray-400 mt-1">총 {courses.length}개의 강의</p>
+    <div className="p-4 sm:p-6 md:p-8">
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-6">
+            <h1 className="text-2xl font-bold text-gray-900">강의 관리</h1>
+            <Button
+              onClick={() => navigate('/admin/courses/new')}
+              className="bg-primary hover:bg-primary/90"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              새 강의 등록
+            </Button>
           </div>
-          <Button
-            onClick={() => navigate('/admin/courses/create')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            새 강의
-          </Button>
-        </div>
 
-        <div className="space-y-6">
-          <div className="bg-[#1a232e] rounded-lg p-6">
-            <h2 className="text-lg font-semibold mb-4">카테고리별 강의 목록</h2>
+          <div className="space-y-4">
             <CategorySelector
-              selectedMain={mainCategory as MainCategory}
-              selectedSub={subCategory}
-              onMainChange={handleMainCategoryChange}
-              onSubChange={handleSubCategoryChange}
+              mainCategory={mainCategory}
+              subCategory={subCategory}
+              onMainCategoryChange={handleMainCategoryChange}
+              onSubCategoryChange={handleSubCategoryChange}
+              className="text-gray-900"
             />
-          </div>
 
-          {isLoading ? (
-            <div className="text-center py-8">로딩 중...</div>
-          ) : error ? (
-            <div className="text-red-500 text-center py-8">{error}</div>
-          ) : filteredCourses.length === 0 ? (
-            <div className="text-center py-8 text-gray-400">
-              {mainCategory ? '해당 카테고리에 강의가 없습니다.' : '등록된 강의가 없습니다.'}
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCourses.map((course) => (
-                <div
-                  key={course.id}
-                  className="bg-[#1a232e] rounded-lg p-6 hover:bg-[#2c3b4e] transition-colors"
-                >
-                  <div className="aspect-video bg-gray-700 rounded-lg mb-4 overflow-hidden">
-                    {course.thumbnail && (
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = '/placeholder-course.png'; // 기본 이미지로 대체
-                        }}
-                      />
-                    )}
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">{course.title}</h3>
-                  <p className="text-gray-400 text-sm mb-2 line-clamp-2">
-                    {course.description}
-                  </p>
-                  <div className="flex items-center text-sm text-gray-400 mb-4">
-                    <span className="mr-4">{course.mainCategory}</span>
-                    <span>{course.subCategory}</span>
-                  </div>
-                  <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
-                      className="border-gray-700 text-gray-300 hover:bg-[#2c3b4e]"
+            <div className="mt-6">
+              {isLoading ? (
+                <div className="text-gray-600">로딩 중...</div>
+              ) : (
+                <div className="space-y-4">
+                  {filteredCourses.map((course) => (
+                    <div
+                      key={course.id}
+                      className="p-4 rounded-lg border border-gray-200 hover:bg-gray-50"
                     >
-                      수정
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => handleDeleteClick(course)}
-                    >
-                      삭제
-                    </Button>
-                  </div>
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {course.title}
+                          </h3>
+                          <p className="text-gray-600">
+                            {course.mainCategory} &gt; {course.subCategory}
+                          </p>
+                        </div>
+                        <div className="flex justify-end space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
+                            className="border-gray-700 text-gray-300 hover:bg-[#2c3b4e]"
+                          >
+                            수정
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteClick(course)}
+                          >
+                            삭제
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 

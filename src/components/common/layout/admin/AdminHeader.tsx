@@ -20,7 +20,6 @@ const AdminHeader: FC = () => {
   return (
     <header className="border-b bg-white">
       <div className="flex h-16 items-center px-8 justify-between">
-        {/* 로고 영역 */}
         <div 
           className="flex items-center gap-2 cursor-pointer"
           onClick={() => navigate('/admin')}
@@ -31,29 +30,6 @@ const AdminHeader: FC = () => {
           </div>
         </div>
 
-        {/* 네비게이션 */}
-        <nav className="flex items-center gap-6">
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/admin/courses')}
-          >
-            강의 관리
-          </Button>
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/admin/students')}
-          >
-            수강생 관리
-          </Button>
-          <Button 
-            variant="ghost" 
-            onClick={() => navigate('/admin/settings')}
-          >
-            설정
-          </Button>
-        </nav>
-
-        {/* 프로필 메뉴 */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon">
             <Settings className="h-5 w-5" />

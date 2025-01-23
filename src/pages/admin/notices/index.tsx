@@ -30,7 +30,7 @@ const NoticeList: FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-black text-white p-4 sm:p-6 md:p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">공지사항 관리</h1>
@@ -43,7 +43,7 @@ const NoticeList: FC = () => {
           </Button>
         </div>
 
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
+        <div className="bg-white rounded-xl p-6 shadow-lg">
           {loading ? (
             <div className="text-center py-4">로딩 중...</div>
           ) : notices.length === 0 ? (

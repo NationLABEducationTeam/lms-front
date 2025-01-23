@@ -81,6 +81,18 @@ const Header: FC = () => {
             >
               커뮤니티
             </button>
+            <button 
+              onClick={() => handleProtectedNavigation('/community')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              Blog
+            </button>
+            <button 
+              onClick={() => handleProtectedNavigation('/community')} 
+              className="text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              기업교육
+            </button>
           </nav>
 
           {/* User Profile or Login Button */}
