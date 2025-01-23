@@ -40,7 +40,7 @@ const CommunityList: FC = () => {
   };
 
   const handleCreateClick = () => {
-    navigate('/board/community/create');
+    navigate('/community/create');
   };
 
   if (loading) {

@@ -64,31 +64,19 @@ const Header: FC = () => {
               강의실
             </button>
             <button 
-              onClick={() => handleProtectedNavigation('/assignments')} 
-              className="text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              과제
-            </button>
-            <button 
-              onClick={() => handleProtectedNavigation('/calendar')} 
-              className="text-gray-600 hover:text-blue-600 transition-colors"
-            >
-              일정
-            </button>
-            <button 
               onClick={() => handleProtectedNavigation('/community')} 
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               커뮤니티
             </button>
             <button 
-              onClick={() => handleProtectedNavigation('/community')} 
+              onClick={() => handleProtectedNavigation('/blog')} 
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               Blog
             </button>
             <button 
-              onClick={() => handleProtectedNavigation('/community')} 
+              onClick={() => handleProtectedNavigation('/corporate')} 
               className="text-gray-600 hover:text-blue-600 transition-colors"
             >
               기업교육

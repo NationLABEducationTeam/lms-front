@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CourseList } from '@/components/courses/CourseList';
 import { TodoCalendar } from '../calendar/TodoCalendar';
@@ -12,6 +12,10 @@ import { BookOpen, FileText, BrainCircuit, Calendar, MessageSquare, Notebook } f
 import { motion } from 'framer-motion';
 import { Alert } from '@/components/common/ui/alert';
 import { Button } from '@/components/common/ui/button';
+import { getQnaPosts } from '@/services/api/qna';
+import { QnaPost } from '@/types/qna';
+import { formatDistanceToNow } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const fadeInUp = {
   initial: { opacity: 0, y: 20 },
@@ -22,14 +26,31 @@ const fadeInUp = {
 const StudentDashboard: FC = () => {
   const navigate = useNavigate();
   const [courses] = useState<any[]>([]);
-  
+  const [error] = useState<string | null>(null);
+  const [recentQnaPosts, setRecentQnaPosts] = useState<QnaPost[]>([]);
+
+  useEffect(() => {
+    const fetchQnaPosts = async () => {
+      try {
+        const posts = await getQnaPosts();
+        // 최신순으로 정렬하고 상위 2개만 선택
+        const sortedPosts = posts.sort((a, b) => 
+          new Date(b.metadata.createdAt).getTime() - new Date(a.metadata.createdAt).getTime()
+        ).slice(0, 2);
+        setRecentQnaPosts(sortedPosts);
+      } catch (error) {
+        console.error('Error fetching QnA posts:', error);
+      }
+    };
+
+    fetchQnaPosts();
+  }, []);
+
   // TODO: 학생이 수강 신청한 과목 목록을 가져오는 로직 추가
   // 1. useEffect 내에서 백엔드 API 호출
   // 2. Express 서버에서 RDS의 student_courses 테이블 조회
   // 3. 조회된 course_id들을 기반으로 DynamoDB에서 해당 과목들의 정보를 가져옴
   // 4. 최종 결과를 courses state에 설정
-
-  const [error] = useState<string | null>(null);
 
   const handleJoinClass = (coursePath: string) => {
     navigate(`/${coursePath}`);
@@ -62,20 +83,6 @@ const StudentDashboard: FC = () => {
 
   return (
     <DashboardLayout>
-      {/* Header Banner */}
-      <div className="relative bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-        <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
-        <div className="relative px-6 py-12 max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold mb-4 text-gray-900">
-            학습 대시보드
-          </h1>
-          <p className="text-lg text-gray-600">
-            학습 진행 상황과 일정을 한눈에 확인하고 관리하세요
-          </p>
-        </div>
-      </div>
-
-      {/* Main Content */}
       <div className="px-6 py-8 bg-gray-50 min-h-screen">
         <div className="max-w-7xl mx-auto space-y-8">
           {error && (
@@ -83,6 +90,16 @@ const StudentDashboard: FC = () => {
               <p>{error}</p>
             </Alert>
           )}
+
+          {/* 대시보드 제목 */}
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">
+              학습 대시보드
+            </h1>
+            <p className="mt-2 text-gray-600">
+              학습 진행 상황과 일정을 한눈에 확인하고 관리하세요
+            </p>
+          </div>
 
           {/* 상단 카드 섹션 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -224,7 +241,15 @@ const StudentDashboard: FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500 text-sm">수강 중인 강의가 없습니다</p>
+                      <div className="space-y-4">
+                        <p className="text-gray-500 text-sm">수강 중인 강의가 없습니다</p>
+                        <Button 
+                          onClick={() => navigate('/courses')}
+                          className="w-full bg-blue-50 hover:bg-blue-100 text-blue-600"
+                        >
+                          강의 둘러보기
+                        </Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
@@ -232,32 +257,53 @@ const StudentDashboard: FC = () => {
                 <Card className="group hover:shadow-lg transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-lg font-medium text-gray-900">
-                      진행 중인 과제
+                      Q&A
                     </CardTitle>
-                    <div className="p-2 rounded-full bg-emerald-100">
-                      <FileText className="h-5 w-5 text-emerald-600" />
+                    <div className="p-2 rounded-full bg-purple-100">
+                      <MessageSquare className="h-5 w-5 text-purple-600" />
                     </div>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      <div className="p-3 rounded-lg bg-gray-50">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-gray-900">데이터베이스 과제 3</h4>
-                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">D-2</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '70%' }}></div>
-                        </div>
+                      <div className="space-y-3">
+                        {recentQnaPosts.map((post) => (
+                          <div 
+                            key={post.metadata.id} 
+                            className="p-3 rounded-lg bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                            onClick={() => navigate(`/qna/${post.metadata.id}`)}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className={`text-xs ${
+                                post.metadata.isAnswered 
+                                  ? 'bg-emerald-100 text-emerald-600' 
+                                  : 'bg-purple-100 text-purple-600'
+                              } px-2 py-1 rounded-full`}>
+                                {post.metadata.isAnswered ? '답변 완료' : '답변 대기'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {formatDistanceToNow(new Date(post.metadata.createdAt), { 
+                                  addSuffix: true,
+                                  locale: ko 
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-900 line-clamp-1">
+                              {post.content.title}
+                            </p>
+                          </div>
+                        ))}
+                        {recentQnaPosts.length === 0 && (
+                          <div className="p-3 rounded-lg bg-gray-50">
+                            <p className="text-sm text-gray-500">아직 Q&A 게시물이 없습니다</p>
+                          </div>
+                        )}
                       </div>
-                      <div className="p-3 rounded-lg bg-gray-50">
-                        <div className="flex justify-between items-center mb-2">
-                          <h4 className="font-medium text-gray-900">알고리즘 과제 2</h4>
-                          <span className="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full">D-5</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-1.5">
-                          <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '30%' }}></div>
-                        </div>
-                      </div>
+                      <Button 
+                        onClick={() => navigate('/qna')}
+                        className="w-full bg-purple-50 hover:bg-purple-100 text-purple-600"
+                      >
+                        Q&A 게시판으로 이동
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
@@ -265,38 +311,115 @@ const StudentDashboard: FC = () => {
                 <Card className="group hover:shadow-lg transition-all duration-300">
                   <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                     <CardTitle className="text-lg font-medium text-gray-900">
-                      이번 주 일정
+                      과제 관리
                     </CardTitle>
-                    <div className="p-2 rounded-full bg-purple-100">
-                      <Calendar className="h-5 w-5 text-purple-600" />
+                    <div className="p-2 rounded-full bg-emerald-100">
+                      <FileText className="h-5 w-5 text-emerald-600" />
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="bg-purple-100 text-purple-600 px-2 py-1 rounded text-sm">오늘</div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">데이터베이스 중간고사</p>
-                          <p className="text-xs text-gray-500">14:00 - 16:00</p>
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="p-3 rounded-lg bg-gray-50">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-medium text-gray-900">진행중인 과제</h4>
+                            <span className="text-sm text-emerald-600">3개</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5">
+                            <div className="bg-emerald-500 h-1.5 rounded-full" style={{ width: '60%' }}></div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 rounded-lg bg-gray-50">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">다가오는 마감</p>
+                            <p className="text-xs text-gray-500">데이터베이스 과제 3</p>
+                          </div>
+                          <span className="text-xs bg-red-100 text-red-600 px-2 py-1 rounded-full">D-2</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">내일</div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">알고리즘 조별 미팅</p>
-                          <p className="text-xs text-gray-500">10:00 - 12:00</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">금요일</div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">프로젝트 발표</p>
-                          <p className="text-xs text-gray-500">15:00 - 17:00</p>
-                        </div>
-                      </div>
+                      <Button 
+                        onClick={() => navigate('/assignments')}
+                        className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-600"
+                      >
+                        과제 관리로 이동
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>
+
+                <Card className="group hover:shadow-lg transition-all duration-300">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg font-medium text-gray-900">
+                      일정 관리
+                    </CardTitle>
+                    <div className="p-2 rounded-full bg-rose-100">
+                      <Calendar className="h-5 w-5 text-rose-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-rose-100 text-rose-600 px-2 py-1 rounded text-sm">오늘</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">데이터베이스 중간고사</p>
+                            <p className="text-xs text-gray-500">14:00 - 16:00</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="bg-gray-100 text-gray-600 px-2 py-1 rounded text-sm">내일</div>
+                          <div>
+                            <p className="text-sm font-medium text-gray-900">알고리즘 조별 미팅</p>
+                            <p className="text-xs text-gray-500">10:00 - 12:00</p>
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => navigate('/calendar')}
+                        className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600"
+                      >
+                        일정 관리로 이동
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="group hover:shadow-lg transition-all duration-300">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-lg font-medium text-gray-900">
+                      학습 노트
+                    </CardTitle>
+                    <div className="p-2 rounded-full bg-amber-100">
+                      <Notebook className="h-5 w-5 text-amber-600" />
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="space-y-3">
+                        <div className="p-3 rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">최근 작성</span>
+                            <span className="text-xs text-gray-500">1시간 전</span>
+                          </div>
+                          <p className="text-sm text-gray-900 line-clamp-1">데이터베이스 정규화 정리노트</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-gray-50">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-xs bg-amber-100 text-amber-600 px-2 py-1 rounded-full">자주 찾는 노트</span>
+                          </div>
+                          <p className="text-sm text-gray-900 line-clamp-1">알고리즘 개념 정리</p>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => navigate('/notes')}
+                        className="w-full bg-amber-50 hover:bg-amber-100 text-amber-600"
+                      >
+                        학습 노트로 이동
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
               </div>
             </div>
           </div>

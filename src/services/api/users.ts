@@ -1,10 +1,28 @@
 import { DBUser } from '../../types/user';
+import { fetchAuthSession } from 'aws-amplify/auth';
 
 const LAMBDA_URL = 'https://5bcilg42fyfb6eww3ubuvezbyy0cbfrs.lambda-url.ap-northeast-2.on.aws';
 
 export const getAllUsers = async (): Promise<DBUser[]> => {
   try {
-    const response = await fetch(LAMBDA_URL);
+    // Get the current session to extract the JWT token
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
+    
+    if (!token) {
+      throw new Error('인증 토큰이 없습니다.');
+    }
+
+    console.log('=== JWT Token for testing ===');
+    console.log(token);
+    console.log('===========================');
+
+    const response = await fetch(LAMBDA_URL, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
     
     if (!response.ok) {
       const errorData = await response.json();
@@ -32,9 +50,18 @@ export const getAllUsers = async (): Promise<DBUser[]> => {
 // 캐시 무효화 (전체)
 export const invalidateCache = async (): Promise<void> => {
   try {
+    // Get the current session to extract the JWT token
+    const session = await fetchAuthSession();
+    const token = session.tokens?.idToken?.toString();
+    
+    if (!token) {
+      throw new Error('인증 토큰이 없습니다.');
+    }
+
     const response = await fetch(`${LAMBDA_URL}/invalidate`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
       }
     });
