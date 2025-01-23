@@ -45,4 +45,5 @@ export const API_ENDPOINTS = {
   QNA: '/qna',
   STUDENT_DASHBOARD: '/dashboard/student',
   USERS: '/users',
+  ENROLLMENTS: '/enrollments'
 } as const;

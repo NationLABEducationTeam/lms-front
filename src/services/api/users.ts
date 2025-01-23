@@ -1,7 +1,6 @@
 import { DBUser } from '../../types/user';
 import { fetchAuthSession } from 'aws-amplify/auth';
-
-const LAMBDA_URL = 'https://5bcilg42fyfb6eww3ubuvezbyy0cbfrs.lambda-url.ap-northeast-2.on.aws';
+import { getApiUrl, API_ENDPOINTS } from '@/config/api';
 
 export const getAllUsers = async (): Promise<DBUser[]> => {
   try {
@@ -13,11 +12,11 @@ export const getAllUsers = async (): Promise<DBUser[]> => {
       throw new Error('인증 토큰이 없습니다.');
     }
 
-    console.log('=== JWT Token for testing ===');
-    console.log(token);
-    console.log('===========================');
+    // console.log('=== JWT Token for testing ===');
+    // console.log(token);
+    // console.log('===========================');
 
-    const response = await fetch(LAMBDA_URL, {
+    const response = await fetch(getApiUrl(API_ENDPOINTS.USERS), {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -29,10 +28,18 @@ export const getAllUsers = async (): Promise<DBUser[]> => {
       throw new Error(errorData.error || '사용자 목록을 불러오는데 실패했습니다.');
     }
 
-    const { data, source } = await response.json();
-    console.log('Data source:', source); // 'cache' 또는 'database'
+    const responseData = await response.json();
+    console.log('Response data:', responseData);
 
-    return data.map((user: any) => ({
+    // Express 서버의 응답 구조에 맞게 수정
+    const users = responseData.data || responseData;
+    
+    if (!Array.isArray(users)) {
+      console.error('Unexpected data structure:', users);
+      throw new Error('Unexpected data structure from server');
+    }
+
+    return users.map((user: any) => ({
       cognito_user_id: user.cognito_user_id,
       email: user.email,
       name: user.name,
@@ -58,7 +65,7 @@ export const invalidateCache = async (): Promise<void> => {
       throw new Error('인증 토큰이 없습니다.');
     }
 
-    const response = await fetch(`${LAMBDA_URL}/invalidate`, {
+    const response = await fetch(getApiUrl(`${API_ENDPOINTS.USERS}/invalidate`), {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${token}`,

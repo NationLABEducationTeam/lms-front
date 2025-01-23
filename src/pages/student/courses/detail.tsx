@@ -2,7 +2,10 @@ import { FC, useState, useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Course } from '@/types/course';
 import { getCourseDetail } from '@/services/api/courses';
+import { enrollInCourse } from '@/services/api/enrollments';
 import { PlayCircle, Book, User, Gift, HelpCircle } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { Button } from '@/components/common/ui/button';
 
 interface Section {
   id: string;
@@ -17,6 +20,8 @@ const CourseDetailPage: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [enrolling, setEnrolling] = useState(false);
+  const { user } = useAuth();
 
   // Refs for each section
   const introductionRef = useRef<HTMLDivElement>(null);
@@ -71,6 +76,29 @@ const CourseDetailPage: FC = () => {
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleEnrollment = async () => {
+    if (!course?.id || !user?.cognito_user_id) {
+      alert("수강신청에 필요한 정보가 없습니다.");
+      return;
+    }
+
+    try {
+      setEnrolling(true);
+      await enrollInCourse({
+        courseId: course.id,
+        userId: user.cognito_user_id,
+        enrolledAt: new Date().toISOString()
+      });
+
+      alert("성공적으로 수강신청이 완료되었습니다.");
+    } catch (error) {
+      console.error('Enrollment error:', error);
+      alert(error instanceof Error ? error.message : "수강신청 중 오류가 발생했습니다.");
+    } finally {
+      setEnrolling(false);
+    }
   };
 
   if (loading) {
@@ -338,8 +366,14 @@ const CourseDetailPage: FC = () => {
             <span className="text-sm text-blue-100">수강료</span>
             <span className="text-xl font-bold text-white">{(course?.price || 0).toLocaleString()}원</span>
           </div>
-          <button className="bg-white text-blue-600 px-8 py-2 rounded-full font-medium hover:bg-blue-50 transition-colors">
-            수강신청
+          <button 
+            onClick={handleEnrollment}
+            disabled={enrolling}
+            className={`bg-white text-blue-600 px-8 py-2 rounded-full font-medium transition-colors ${
+              enrolling ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-50'
+            }`}
+          >
+            {enrolling ? '처리중...' : '수강신청'}
           </button>
         </div>
       </div>
