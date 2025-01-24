@@ -32,8 +32,8 @@ export const CourseList: FC<CourseListProps> = ({
     const subCats = new Set<string>();
     
     courses.forEach(course => {
-      mainCats.add(course.mainCategory);
-      subCats.add(course.subCategory);
+      mainCats.add(course.main_category_id);
+      subCats.add(course.sub_category_id);
     });
     
     return {
@@ -45,8 +45,8 @@ export const CourseList: FC<CourseListProps> = ({
   // 필터링된 강의 목록
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      const matchMainCategory = !selectedMainCategory || course.mainCategory === selectedMainCategory;
-      const matchSubCategory = !selectedSubCategory || course.subCategory === selectedSubCategory;
+      const matchMainCategory = !selectedMainCategory || course.main_category_id === selectedMainCategory;
+      const matchSubCategory = !selectedSubCategory || course.sub_category_id === selectedSubCategory;
       return matchMainCategory && matchSubCategory;
     });
   }, [courses, selectedMainCategory, selectedSubCategory]);
@@ -183,11 +183,11 @@ export const CourseList: FC<CourseListProps> = ({
                     {course.title}
                   </Text>
                   <Space size={[0, 8]} wrap>
-                    <Tag color={getTagColor(course.mainCategory)}>
-                      {getCategoryLabel(course.mainCategory)}
+                    <Tag color={getTagColor(course.main_category_id)}>
+                      {getCategoryLabel(course.main_category_id)}
                     </Tag>
                     <Tag color="default">
-                      {getCategoryLabel(course.subCategory)}
+                      {getCategoryLabel(course.sub_category_id)}
                     </Tag>
                   </Space>
                 </div>

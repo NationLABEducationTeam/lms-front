@@ -71,11 +71,11 @@ const CourseDetail: FC = () => {
 
         // AI_ML/MACHINE_LEARNING 형식의 경로 구성
         const coursePath = `AI_ML/${courseId}`;
-        console.log('Loading course contents from:', coursePath);
+        // console.log('Loading course contents from:', coursePath);
 
         // 해당 경로의 모든 폴더와 파일 가져오기
         const response = await listCategories(coursePath);
-        console.log('Course contents:', response);
+        // console.log('Course contents:', response);
 
         // 주차 폴더만 필터링하고 정렬
         const weekFolders = response.folders
@@ -90,14 +90,14 @@ const CourseDetail: FC = () => {
           }))
           .sort((a, b) => parseInt(a.weekNumber) - parseInt(b.weekNumber));
 
-        console.log('Filtered week folders:', weekFolders);
+        // console.log('Filtered week folders:', weekFolders);
 
         // 각 주차 폴더의 내용 가져오기
         const weeklyContents = await Promise.all(
           weekFolders.map(async (week) => {
-            console.log('Fetching contents for week:', week.path);
+            // console.log('Fetching contents for week:', week.path);
             const weekContents = await listCategories(week.path);
-            console.log('Week contents:', weekContents);
+            // console.log('Week contents:', weekContents);
             return {
               ...week,
               contents: weekContents

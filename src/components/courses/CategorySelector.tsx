@@ -10,10 +10,11 @@ import {
 import { Input } from '@/components/common/ui/input';
 
 interface CategorySelectorProps {
-  selectedMain: MainCategory;
+  selectedMain: MainCategory | '';
   selectedSub: string;
   onMainChange: (category: MainCategory) => void;
   onSubChange: (category: string) => void;
+  className?: string;
 }
 
 export const CategorySelector: React.FC<CategorySelectorProps> = ({

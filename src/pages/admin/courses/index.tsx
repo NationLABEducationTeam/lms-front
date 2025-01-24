@@ -122,10 +122,10 @@ const AdminCourses: FC = () => {
 
           <div className="space-y-4">
             <CategorySelector
-              mainCategory={mainCategory}
-              subCategory={subCategory}
-              onMainCategoryChange={handleMainCategoryChange}
-              onSubCategoryChange={handleSubCategoryChange}
+              selectedMain={mainCategory}
+              selectedSub={subCategory}
+              onMainChange={handleMainCategoryChange}
+              onSubChange={handleSubCategoryChange}
               className="text-gray-900"
             />
 
@@ -145,7 +145,7 @@ const AdminCourses: FC = () => {
                             {course.title}
                           </h3>
                           <p className="text-gray-600">
-                            {course.mainCategory} &gt; {course.subCategory}
+                            {course.main_category_id} &gt; {course.sub_category_id}
                           </p>
                         </div>
                         <div className="flex justify-end space-x-2">
