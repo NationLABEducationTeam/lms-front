@@ -14,17 +14,20 @@ export interface Course {
   id: string;
   title: string;
   description: string;
-  mainCategory: MainCategory;
-  subCategory: string;
-  instructor: string;
-  instructorImage?: string;
-  instructorBio?: string;
-  thumbnail?: string;
-  lessons?: Lesson[];
-  faqs?: FAQ[];
+  instructor_id: string;
+  instructor_name: string;
+  instructor_image?: string;
+  instructor_bio?: string;
+  main_category_id: string;
+  main_category_name: string;
+  sub_category_id: string;
+  sub_category_name: string;
+  thumbnail_url?: string;
   price: number;
-  createdAt: string;
-  updatedAt: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CourseFile {
@@ -68,10 +71,10 @@ export interface DynamoCourse {
   price: number;
   createdAt: string;
   updatedAt: string;
-  status: 'draft' | 'published' | 'archived';
+  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
   thumbnail?: string;
   duration?: string;
-  level?: 'beginner' | 'intermediate' | 'advanced';
+  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
 }
 
 export interface CourseListResponse {

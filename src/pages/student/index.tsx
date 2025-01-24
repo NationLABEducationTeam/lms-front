@@ -14,6 +14,7 @@ import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
 import AttendanceStreak from '@/components/dashboard/AttendanceStreak';
+import { Target } from 'lucide-react';
 
 const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, className }) => {
   switch (category) {
@@ -189,6 +190,72 @@ const ImageCarousel: FC = () => {
   );
 };
 
+const CourseCard = ({ course }: { course: DynamoCourse }) => {
+  const navigate = useNavigate();
+
+  return (
+    <div
+      onClick={() => navigate(`/courses/${course.id}`, { state: { course } })}
+      className="group relative bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer"
+    >
+      {/* 썸네일 이미지 */}
+      <div className="aspect-video w-full overflow-hidden">
+        <img
+          src={course.thumbnail || '/default-course-thumbnail.jpg'}
+          alt={course.title}
+          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+        />
+      </div>
+
+      {/* 기본 정보 */}
+      <div className="p-5">
+        {/* 카테고리 */}
+        <div className="flex gap-2 mb-3">
+          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+            {CATEGORY_MAPPING[course.mainCategory as keyof typeof CATEGORY_MAPPING]}
+          </span>
+          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
+            {course.subCategory}
+          </span>
+        </div>
+
+        {/* 제목 */}
+        <h3 className="text-lg font-semibold mb-2 line-clamp-2 h-14">
+          {course.title}
+        </h3>
+
+        {/* 강사명 */}
+        <p className="text-sm text-gray-600 mb-2">
+          {course.instructor}
+        </p>
+      </div>
+
+      {/* Hover 시 나타나는 추가 정보 */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+          {/* 설명 */}
+          <p className="text-sm mb-3 line-clamp-3">
+            {course.description}
+          </p>
+
+          {/* 부가 정보 */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-2">
+              <Target className="w-4 h-4" />
+              <span>{course.level === 'BEGINNER' ? '초급' : course.level === 'INTERMEDIATE' ? '중급' : '고급'}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">
+                {course.price ? `${course.price.toLocaleString()}원` : '무료'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const StudentLanding: FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -208,9 +275,9 @@ const StudentLanding: FC = () => {
         }
         const data = await response.json();
         setServerMessage(data.message);
-        console.log('Current Environment:', process.env.REACT_APP_ENV || 'development');
-        console.log('Server URL:', baseUrl);
-        console.log('Server response:', data);
+        // console.log('Current Environment:', import.meta.env.VITE_ENV || 'development');
+        // console.log('Server URL:', baseUrl);
+        // console.log('Server response:', data);
       } catch (err) {
         console.error('Error fetching server message:', err);
       }
@@ -548,77 +615,7 @@ const StudentLanding: FC = () => {
                 animate={fadeInUp.animate}
                 transition={fadeInUp.transition}
               >
-                <Card 
-                  className="group h-full hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden relative"
-                  onClick={() => navigate(`/courses/${course.id}`)}
-                >
-                  {course.thumbnail ? (
-                    <div className="aspect-video w-full overflow-hidden">
-                      <img
-                        src={course.thumbnail}
-                        alt={course.title}
-                        className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ) : (
-                    <div className="aspect-video w-full bg-gray-100 flex items-center justify-center">
-                      <svg className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                  )}
-                  <div className="absolute top-4 left-4 flex gap-2 z-10">
-                    <span className="px-2 py-1 bg-blue-600/90 text-white text-xs rounded-full backdrop-blur-sm shadow-sm">
-                      {CATEGORY_MAPPING[course.mainCategory as keyof typeof CATEGORY_MAPPING]}
-                    </span>
-                    <span className="px-2 py-1 bg-blue-400/90 text-white text-xs rounded-full backdrop-blur-sm shadow-sm">
-                      {course.subCategory}
-                    </span>
-                  </div>
-                  <CardHeader>
-                    <CardTitle className="line-clamp-2 text-lg font-bold group-hover:text-blue-600 transition-colors">
-                      {course.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-gray-600 mb-4 line-clamp-2 text-sm">{course.description}</p>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                            <svg className="h-4 w-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-sm font-medium">{course.instructor}</p>
-                            <p className="text-xs text-gray-500">강사</p>
-                          </div>
-                        </div>
-                        {course.level && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs rounded-full">
-                            {course.level}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center justify-between pt-2 border-t">
-                        <div className="flex items-center gap-2">
-                          <div className="h-6 w-6 rounded-full bg-green-100 flex items-center justify-center">
-                            <svg className="h-3 w-3 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <span className="text-xs text-gray-500">
-                            {new Date(course.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                        <span className="font-semibold text-sm">
-                          {course.price ? `${course.price.toLocaleString()}원` : '무료'}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                <CourseCard course={course} />
               </motion.div>
             ))}
           </div>

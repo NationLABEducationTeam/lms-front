@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import type { Course } from '@/types/course';
 import { getCourseDetail } from '@/services/api/courses';
 import { enrollInCourse } from '@/services/api/enrollments';
-import { PlayCircle, Book, User, Gift, HelpCircle } from 'lucide-react';
+import { PlayCircle, Book, User, Gift, HelpCircle, Clock, Target } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/common/ui/button';
 
@@ -25,18 +25,19 @@ const CourseDetailPage: FC = () => {
 
   // Refs for each section
   const introductionRef = useRef<HTMLDivElement>(null);
-  const curriculumRef = useRef<HTMLDivElement>(null);
   const instructorRef = useRef<HTMLDivElement>(null);
   const servicesRef = useRef<HTMLDivElement>(null);
-  const faqRef = useRef<HTMLDivElement>(null);
 
   const sections: Section[] = [
     { id: 'introduction', title: '강의소개', ref: introductionRef },
-    { id: 'curriculum', title: '커리큘럼', ref: curriculumRef },
     { id: 'instructor', title: '강사소개', ref: instructorRef },
     { id: 'services', title: '부가서비스', ref: servicesRef },
-    { id: 'faq', title: 'FAQ', ref: faqRef },
   ];
+
+  // 페이지 진입 시 스크롤 위치 초기화
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   useEffect(() => {
     const loadCourseDetails = async () => {
@@ -45,11 +46,12 @@ const CourseDetailPage: FC = () => {
       try {
         setLoading(true);
         const courseData = await getCourseDetail(id);
+        // console.log('Loaded course data:', courseData);
         setCourse(courseData);
-        setLoading(false);
       } catch (error) {
         console.error('Error loading course details:', error);
-        setError('강의 정보를 불러오는데 실패했습니다.');
+        setError(error instanceof Error ? error.message : '강의 정보를 불러오는데 실패했습니다.');
+      } finally {
         setLoading(false);
       }
     };
@@ -80,7 +82,8 @@ const CourseDetailPage: FC = () => {
 
   const handleEnrollment = async () => {
     if (!course?.id || !user?.cognito_user_id) {
-      alert("수강신청에 필요한 정보가 없습니다.");
+      alert("로그인을 먼저 해주세요");
+      window.location.href = '/auth';
       return;
     }
 
@@ -127,29 +130,62 @@ const CourseDetailPage: FC = () => {
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Course Header with Background Image */}
       <div className="bg-[#232f3e] text-white relative overflow-hidden">
-        {course?.thumbnail && (
+        {course?.thumbnail_url && (
           <div className="absolute inset-0 opacity-10">
-            <img src={course.thumbnail} alt="" className="w-full h-full object-cover" />
+            <img src={course.thumbnail_url} alt={course.title} className="w-full h-full object-cover" />
           </div>
         )}
         <div className="max-w-7xl mx-auto px-4 py-12 relative z-10">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div>
-              <div className="inline-flex items-center bg-blue-600 rounded-full px-3 py-1 text-sm mb-4">
-                <span>{course?.mainCategory}</span>
-                <span className="mx-2">•</span>
-                <span>{course?.subCategory}</span>
+              <div className="flex gap-2 mb-4">
+                <span className="px-3 py-1 bg-blue-600/90 text-white text-sm rounded-full backdrop-blur-sm">
+                  {course?.main_category_name}
+                </span>
+                <span className="px-3 py-1 bg-blue-400/90 text-white text-sm rounded-full backdrop-blur-sm">
+                  {course?.sub_category_name}
+                </span>
               </div>
               <h1 className="text-4xl font-bold mb-4">{course?.title}</h1>
               <p className="text-gray-300 text-lg mb-6">{course?.description}</p>
-              <div className="flex items-center text-sm">
-                <img 
-                  src={course?.instructorImage || '/default-avatar.png'} 
-                  alt={course?.instructor} 
-                  className="w-10 h-10 rounded-full mr-3"
-                />
-                <span>{course?.instructor}</span>
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-600/20 flex items-center justify-center">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-300">강사</p>
+                    <p className="font-medium">{course?.instructor_name}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-600/20 flex items-center justify-center">
+                    <Target className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-300">난이도</p>
+                    <p className="font-medium">
+                      {course?.level === 'BEGINNER' ? '초급' : course?.level === 'INTERMEDIATE' ? '중급' : '고급'}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 rounded-full bg-blue-600/20 flex items-center justify-center">
+                    <Clock className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-300">등록일</p>
+                    <p className="font-medium">{new Date(course?.created_at).toLocaleDateString()}</p>
+                  </div>
+                </div>
               </div>
+            </div>
+            <div className="aspect-video w-full rounded-lg overflow-hidden">
+              <img
+                src={course.thumbnail_url}
+                alt={course.title}
+                className="w-full h-full object-cover"
+              />
             </div>
           </div>
         </div>
@@ -170,10 +206,8 @@ const CourseDetailPage: FC = () => {
                 }`}
               >
                 {section.id === 'introduction' && <Book className="w-4 h-4 mr-2" />}
-                {section.id === 'curriculum' && <PlayCircle className="w-4 h-4 mr-2" />}
                 {section.id === 'instructor' && <User className="w-4 h-4 mr-2" />}
                 {section.id === 'services' && <Gift className="w-4 h-4 mr-2" />}
-                {section.id === 'faq' && <HelpCircle className="w-4 h-4 mr-2" />}
                 {section.title}
               </button>
             ))}
@@ -182,124 +216,33 @@ const CourseDetailPage: FC = () => {
       </div>
 
       {/* Content Sections */}
-      <div className="max-w-7xl mx-auto px-4 py-8 mb-24">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Course Introduction */}
-        <div className="mb-16">
+        <div ref={introductionRef} className="mb-16">
           <h2 className="text-2xl font-bold text-slate-900 mb-8">강의 소개</h2>
           <div className="prose prose-slate max-w-none">
             <p>{course?.description}</p>
           </div>
         </div>
 
-        {/* Recommended For Section */}
-        <div className="mb-16">
-          <h2 className="text-2xl font-bold text-slate-900 mb-8">이런 분께 추천드려요</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-start space-x-4 p-6 bg-slate-50 rounded-xl">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">클라우드 입문자</h3>
-                <p className="text-slate-600">AWS 클라우드를 처음 시작하시는 분들에게 적합한 기초 과정입니다.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-6 bg-slate-50 rounded-xl">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">IT 기업 취업 준비생</h3>
-                <p className="text-slate-600">클라우드 엔지니어로 취업을 준비하시는 분들을 위한 실무 중심 커리큘럼입니다.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-6 bg-slate-50 rounded-xl">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">현직 개발자</h3>
-                <p className="text-slate-600">클라우드 기술을 활용한 인프라 구축 및 운영 능력을 향상시키고 싶은 개발자분들께 추천드립니다.</p>
-              </div>
-            </div>
-            
-            <div className="flex items-start space-x-4 p-6 bg-slate-50 rounded-xl">
-              <div className="flex-shrink-0">
-                <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                </div>
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-900 mb-2">IT 관리자</h3>
-                <p className="text-slate-600">클라우드 도입을 고려하는 기업의 IT 관리자분들을 위한 실용적인 내용을 다룹니다.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Curriculum Section */}
-        <div ref={curriculumRef} className="mb-16">
-          <h2 className="text-2xl font-bold mb-6 flex items-center">
-            <PlayCircle className="w-6 h-6 mr-2" />
-            커리큘럼
-          </h2>
-          <div className="space-y-4">
-            {course?.lessons?.map((lesson, index) => (
-              <div key={lesson.id} className="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
-                <div className="px-6 py-4">
-                  <div className="flex items-start">
-                    <div className="flex-shrink-0 bg-blue-100 rounded-full w-8 h-8 flex items-center justify-center text-blue-600 mr-4">
-                      {index + 1}
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-lg mb-2">{lesson.title}</h3>
-                      <p className="text-gray-600">{lesson.content}</p>
-                      <div className="mt-2 text-sm text-gray-500 flex items-center">
-                        <PlayCircle className="w-4 h-4 mr-1" />
-                        {lesson.duration}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
         {/* Instructor Section */}
         <div ref={instructorRef} className="mb-16">
-          <h2 className="text-2xl font-bold mb-6 flex items-center">
+          <h2 className="text-2xl font-bold mb-8 flex items-center">
             <User className="w-6 h-6 mr-2" />
             강사소개
           </h2>
-          <div className="bg-white rounded-lg shadow-sm p-6">
+          <div className="bg-white rounded-xl shadow-sm p-8">
             <div className="flex items-start space-x-6">
-              {course?.instructorImage && (
-                <img
-                  src={course.instructorImage}
-                  alt={course.instructor}
-                  className="w-auto max-w-[200px] rounded-lg"
-                />
-              )}
+              <img
+                src={course.instructor_image || '/default-avatar.png'}
+                alt={course.instructor_name}
+                className="w-32 h-32 rounded-xl object-cover"
+              />
               <div>
-                <h3 className="text-xl font-medium mb-3">{course?.instructor}</h3>
-                <p className="text-gray-600 leading-relaxed">{course?.instructorBio || '강사 소개가 준비중입니다.'}</p>
+                <h3 className="text-xl font-medium mb-4">{course.instructor_name}</h3>
+                <p className="text-gray-600 leading-relaxed">
+                  {course.instructor_bio || '강사 소개가 준비중입니다.'}
+                </p>
               </div>
             </div>
           </div>
@@ -307,73 +250,63 @@ const CourseDetailPage: FC = () => {
 
         {/* Additional Services Section */}
         <div ref={servicesRef} className="mb-16">
-          <h2 className="text-2xl font-bold mb-6 flex items-center">
+          <h2 className="text-2xl font-bold mb-8 flex items-center">
             <Gift className="w-6 h-6 mr-2" />
             부가서비스
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                수료증 발급
-              </h3>
-              <p className="text-gray-600">강의 수료 후 수료증을 발급받을 수 있습니다.</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-medium mb-3 flex items-center">
-                <svg className="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                실습 자료 제공
-              </h3>
-              <p className="text-gray-600">강의에 필요한 실습 자료를 제공합니다.</p>
-            </div>
-          </div>
-        </div>
-
-        {/* FAQ Section */}
-        <div ref={faqRef} className="mb-16">
-          <h2 className="text-2xl font-bold mb-6 flex items-center">
-            <HelpCircle className="w-6 h-6 mr-2" />
-            FAQ
-          </h2>
-          <div className="space-y-4">
-            {course?.faqs?.map((faq, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                <button className="w-full text-left px-6 py-4 focus:outline-none hover:bg-gray-50">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900">{faq.question}</span>
-                    <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </button>
-                <div className="px-6 py-4 bg-gray-50 border-t">
-                  <p className="text-gray-600">{faq.answer}</p>
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center mb-4">
+                <Clock className="w-6 h-6 text-blue-600" />
               </div>
-            ))}
+              <h3 className="text-lg font-medium mb-3">무제한 수강</h3>
+              <p className="text-gray-600">기간 제한 없이 무제한으로 수강할 수 있습니다.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center mb-4">
+                <Book className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-lg font-medium mb-3">학습 자료</h3>
+              <p className="text-gray-600">강의에 필요한 학습 자료를 제공합니다.</p>
+            </div>
+            <div className="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition-shadow">
+              <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center mb-4">
+                <HelpCircle className="w-6 h-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-medium mb-3">질문 답변</h3>
+              <p className="text-gray-600">학습 중 궁금한 점을 질문하고 답변받을 수 있습니다.</p>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Fixed Purchase Button */}
       <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-30">
-        <div className="bg-blue-600 rounded-full shadow-lg py-3 px-6 flex items-center space-x-4 hover:bg-blue-700 transition-colors">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-blue-100">수강료</span>
-            <span className="text-xl font-bold text-white">{(course?.price || 0).toLocaleString()}원</span>
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl shadow-lg py-4 px-6 flex items-center space-x-6">
+          <div className="flex flex-col">
+            <span className="text-sm text-blue-200">수강료</span>
+            <span className="text-2xl font-bold text-white">
+              {course.price ? 
+                `${Number(course.price).toLocaleString('ko-KR', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+                })}원` 
+                : '무료'}
+            </span>
           </div>
           <button 
             onClick={handleEnrollment}
-            disabled={enrolling}
-            className={`bg-white text-blue-600 px-8 py-2 rounded-full font-medium transition-colors ${
-              enrolling ? 'opacity-75 cursor-not-allowed' : 'hover:bg-blue-50'
-            }`}
+            disabled={enrolling || course.status !== 'PUBLISHED'}
+            className={`
+              px-8 py-3 rounded-xl font-medium text-base
+              ${enrolling || course.status !== 'PUBLISHED'
+                ? 'bg-blue-400 text-blue-100 cursor-not-allowed'
+                : 'bg-white text-blue-600 hover:bg-blue-50 transition-colors'}
+            `}
           >
-            {enrolling ? '처리중...' : '수강신청'}
+            {enrolling ? '처리중...' : 
+             course.status !== 'PUBLISHED' ? '준비중' : 
+             '수강신청하기'}
           </button>
         </div>
       </div>
@@ -382,7 +315,7 @@ const CourseDetailPage: FC = () => {
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-50"
+          className="fixed bottom-8 right-8 bg-white text-blue-600 p-3 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-50 border border-gray-200"
           aria-label="위로 가기"
         >
           <svg

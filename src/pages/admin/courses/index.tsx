@@ -29,7 +29,7 @@ const AdminCourses: FC = () => {
     setIsLoading(true);
     try {
       const response = await listAllCourses();
-      console.log('Fetched courses:', response);
+      // console.log('Fetched courses:', response);
       setCourses(response.courses || []);
     } catch (error) {
       console.error('Error fetching all courses:', error);
@@ -64,8 +64,8 @@ const AdminCourses: FC = () => {
   // 필터링된 강의 목록
   const filteredCourses = courses.filter(course => {
     if (!mainCategory) return true;
-    if (!subCategory) return course.mainCategory === mainCategory;
-    return course.mainCategory === mainCategory && course.subCategory === subCategory;
+    if (!subCategory) return course.main_category_id === mainCategory;
+    return course.main_category_id === mainCategory && course.sub_category_id === subCategory;
   });
 
   const handleDeleteClick = (course: Course) => {

@@ -24,14 +24,14 @@ const CourseDetailPage: FC = () => {
           id,
           title: courseData.title,
           description: courseData.description,
-          instructor: courseData.instructor,
-          mainCategory: courseData.mainCategory || '',
-          subCategory: courseData.subCategory || '',
-          status: 'published',
+          instructor: courseData.instructor_id,
+          mainCategory: courseData.main_category_id || '',
+          subCategory: courseData.sub_category_id || '',
+          status: 'PUBLISHED',
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           price: courseData.price || 0,
-          thumbnail: courseData.thumbnail || ''
+          thumbnail: courseData.thumbnail_url || ''
         });
       } catch (err) {
         setError('강의 정보를 불러오는데 실패했습니다.');
