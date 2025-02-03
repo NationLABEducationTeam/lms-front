@@ -121,14 +121,13 @@ const AdminCourses: FC = () => {
           </div>
 
           <div className="space-y-4">
-            <CategorySelector
+          <CategorySelector
               selectedMain={mainCategory}
               selectedSub={subCategory}
               onMainChange={handleMainCategoryChange}
               onSubChange={handleSubCategoryChange}
               className="text-gray-900"
             />
-
             <div className="mt-6">
               {isLoading ? (
                 <div className="text-gray-600">로딩 중...</div>

@@ -38,7 +38,6 @@ export const getApiUrl = (endpoint: string) => {
 // API 엔드포인트
 export const API_ENDPOINTS = {
   COURSES: '/courses',
-  MY_COURSES: '/courses/my',
   COURSE_DETAIL: (courseId: string) => `/courses/${courseId}`,
   NOTICES: '/notices',
   COMMUNITY: '/community',

@@ -122,6 +122,10 @@ export const createCourse = async (params: CreateCourseParams) => {
       throw new Error('로그인이 필요합니다.');
     }
 
+    // Cognito 사용자 ID 가져오기
+    const currentUser = await getCurrentUser();
+    const instructorId = currentUser.userId;
+
     // Base64로 변환
     let thumbnailBase64 = null;
     if (thumbnail) {
@@ -133,15 +137,17 @@ export const createCourse = async (params: CreateCourseParams) => {
     }
 
     // API 호출
-    const response = await axios.post<{ courseId: string; message: string }>(
-      CREATE_COURSE_URL,
+    const response = await axios.post(
+      getApiUrl(API_ENDPOINTS.COURSES),
       {
         title,
         description,
-        mainCategory,
-        subCategory,
-        instructor,
-        thumbnail: thumbnailBase64
+        instructor_id: instructorId,
+        main_category_id: mainCategory,
+        sub_category_id: subCategory,
+        thumbnail_url: thumbnailBase64,
+        price: 0, // 기본값
+        level: 'BEGINNER' // 기본값
       },
       {
         headers: {
@@ -151,8 +157,12 @@ export const createCourse = async (params: CreateCourseParams) => {
       }
     );
 
+    if (!response.data.success) {
+      throw new Error(response.data.message || '강의 생성에 실패했습니다.');
+    }
+
     return {
-      courseId: response.data.courseId,
+      courseId: response.data.data.course.id,
       message: response.data.message
     };
   } catch (error) {
@@ -462,17 +472,37 @@ export const listAllCourses = async (): Promise<CoursesResponse> => {
   }
 }; 
 
-export const getEnrolledCourses = async () => {
+// 수강 중인 강의 목록 조회
+export const getEnrolledCourses = async (): Promise<CoursesResponse> => {
   try {
-    const response = await axios.get(`${API_URL}/courses`, {
-      withCredentials: true
-    });
-
-    if (!response.data) {
-      throw new Error('Failed to fetch enrolled courses');
+    const session = await fetchAuthSession();
+    const token = session.tokens?.accessToken?.toString();
+    const currentUser = await getCurrentUser();
+    const userId = currentUser.userId;
+    
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
     }
 
-    return response.data;
+    const response = await fetch(getApiUrl(`${API_ENDPOINTS.COURSES}/enrolled/${userId}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || '수강 목록을 불러오는데 실패했습니다.');
+    }
+    
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || '수강 목록을 불러오는데 실패했습니다.');
+    }
+    
+    return { courses: data.data.courses };
   } catch (error) {
     console.error('Error fetching enrolled courses:', error);
     throw error;
