@@ -7,7 +7,7 @@ import { Button } from '@/components/common/ui/button';
 import { Plus } from 'lucide-react';
 import { CategorySelector } from '@/components/courses/CategorySelector';
 import { MainCategory, Course } from '@/types/course';
-import { deleteCourse, listAllCourses } from '@/services/api/courses';
+import { deleteCourse, listPublicCourses } from '@/services/api/courses';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import * as Toast from '@radix-ui/react-toast';
 
@@ -25,14 +25,13 @@ const AdminCourses: FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   // 모든 강의 목록 불러오기
-  const fetchAllCourses = async () => {
+  const fetchCourses = async () => {
     setIsLoading(true);
     try {
-      const response = await listAllCourses();
-      // console.log('Fetched courses:', response);
-      setCourses(response.courses || []);
+      const courses = await listPublicCourses();
+      setCourses(courses);
     } catch (error) {
-      console.error('Error fetching all courses:', error);
+      console.error('Error fetching courses:', error);
       showToast(
         "강의 목록 로딩 실패",
         "강의 목록을 불러오는데 실패했습니다.",
@@ -45,7 +44,7 @@ const AdminCourses: FC = () => {
 
   useEffect(() => {
     dispatch(fetchCategories());
-    fetchAllCourses();
+    fetchCourses();
   }, [dispatch]);
 
   const handleMainCategoryChange = (category: MainCategory) => {
@@ -93,7 +92,7 @@ const AdminCourses: FC = () => {
       setCourseToDelete(null);
       // 1초 후에 전체 목록 새로고침
       setTimeout(() => {
-        fetchAllCourses();
+        fetchCourses();
       }, 1000);
     } catch (error) {
       showToast(

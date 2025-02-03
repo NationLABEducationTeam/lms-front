@@ -13,7 +13,7 @@ import { getApiUrl, API_ENDPOINTS } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
-import { DynamoCourse, CourseListResponse, MainCategory } from '@/types/course';
+import { MainCategory } from '@/types/course';
 import axios from 'axios';
 
 interface ListResponse {
@@ -88,7 +88,7 @@ export const listCategories = async (path: string = ''): Promise<ListResponse> =
 // 강의 목록 조회
 export const listCourses = async (mainCategory: string, subCategory: string): Promise<CoursesResponse> => {
   try {
-    const response = await fetch(`${API_URL}/courses?mainCategory=${mainCategory}&subCategory=${subCategory}`, {
+    const response = await fetch(`${getApiUrl(API_ENDPOINTS.COURSES)}?mainCategory=${mainCategory}&subCategory=${subCategory}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'
@@ -100,9 +100,11 @@ export const listCourses = async (mainCategory: string, subCategory: string): Pr
     }
     
     const data = await response.json();
-    // console.log('Received courses data:', data);
+    if (!data.success) {
+      throw new Error(data.message || '강의 목록을 불러오는데 실패했습니다.');
+    }
 
-    return { courses: data.courses };
+    return { courses: data.data.courses };
   } catch (error) {
     console.error('Error fetching courses:', error);
     throw error;
@@ -223,7 +225,7 @@ export const deleteCourse = async (courseId: string) => {
       throw new Error('로그인이 필요합니다.');
     }
     
-    const response = await fetch(`${DELETE_COURSE_URL}?courseId=${courseId}`, {
+    const response = await fetch(`${getApiUrl(API_ENDPOINTS.COURSES)}/${courseId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -252,16 +254,18 @@ export const updateCourse = async (courseId: string, updateData: Partial<Course>
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(UPDATE_COURSE_URL, {
-      method: 'POST',
+    const response = await fetch(`${getApiUrl(API_ENDPOINTS.COURSES)}/${courseId}`, {
+      method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ courseId, ...updateData })
+      body: JSON.stringify(updateData)
     });
+
     if (!response.ok) {
-      throw new Error('Failed to update course');
+      const errorData = await response.json();
+      throw new Error(errorData.message || '강의 정보 수정에 실패했습니다.');
     }
   } catch (error) {
     console.error('Error updating course:', error);
@@ -411,7 +415,7 @@ export const listPathContents = async (path: string): Promise<ListResponse> => {
   }
 }; 
 
-export const listPublicCourses = async (): Promise<DynamoCourse[]> => {
+export const listPublicCourses = async (): Promise<Course[]> => {
   try {
     const response = await fetch(getApiUrl(API_ENDPOINTS.COURSES), {
       headers: {
@@ -425,47 +429,30 @@ export const listPublicCourses = async (): Promise<DynamoCourse[]> => {
     }
 
     const responseData = await response.json();
-    // console.log('Received courses data:', responseData);
     
     if (!responseData.success || !responseData.data?.courses) {
       console.error('Unexpected response format:', responseData);
       return [];
     }
 
-    // 응답 데이터 구조 매핑
+    // API 응답 데이터를 Course 타입에 맞게 매핑
     return responseData.data.courses.map((course: any) => ({
       id: course.id,
       title: course.title,
       description: course.description,
-      instructor: course.instructor_name,
-      mainCategory: course.main_category_id,
-      subCategory: course.sub_category_name,
-      thumbnail: course.thumbnail_url,
+      instructor_id: course.instructor_id,
+      instructor_name: course.instructor_name,
+      main_category_id: course.main_category_id,
+      main_category_name: course.main_category_name,
+      sub_category_id: course.sub_category_id,
+      sub_category_name: course.sub_category_name,
+      thumbnail_url: course.thumbnail_url,
       price: parseFloat(course.price),
       level: course.level,
       status: course.status,
-      createdAt: course.created_at,
-      updatedAt: course.updated_at
+      created_at: course.created_at,
+      updated_at: course.updated_at
     }));
-  } catch (error) {
-    console.error('Error fetching courses:', error);
-    throw error;
-  }
-}; 
-
-// 모든 강의 목록 조회 (관리자용)
-export const listAllCourses = async (): Promise<CoursesResponse> => {
-  try {
-    // console.log('Fetching courses from:', API_URL);
-    const response = await axios.get(`${API_URL}/`);
-    
-    // console.log('Response data:', response.data);
-
-    if (!response.data || !response.data.Items) {
-      throw new Error('Invalid response format');
-    }
-
-    return { courses: response.data.Items };
   } catch (error) {
     console.error('Error fetching courses:', error);
     throw error;

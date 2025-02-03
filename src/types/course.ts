@@ -16,71 +16,76 @@ export interface Course {
   description: string;
   instructor_id: string;
   instructor_name: string;
-  instructor_image?: string;
-  instructor_bio?: string;
   main_category_id: string;
   main_category_name: string;
   sub_category_id: string;
   sub_category_name: string;
   thumbnail_url?: string;
   price: number;
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  level: CourseLevel;
+  status: CourseStatus;
   created_at: string;
   updated_at: string;
 }
 
 export interface CourseFile {
-  name: string;
-  path: string;
-  size: number;
-  lastModified: Date;
+  id: string;
+  course_id: string;
+  week_number: number;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  file_type: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface WeeklyContent {
-  weekNumber: string;
-  name: string;
-  files: {
-    name: string;
-    path: string;
-    size: number;
-    lastModified?: string;
-    type: string;
-  }[];
+  week_number: number;
+  title: string;
+  description?: string;
+  files: CourseFile[];
 }
+
+export interface CourseDetail extends Course {
+  weekly_contents: WeeklyContent[];
+}
+
+export type CourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+
+export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+
+export interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MainCategoryInfo extends Category {}
+
+export interface SubCategory extends Category {
+  main_category_id: string;
+}
+
+export interface CourseEnrollment {
+  id: string;
+  course_id: string;
+  user_id: string;
+  status: EnrollmentStatus;
+  progress: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export type EnrollmentStatus = 'ENROLLED' | 'COMPLETED' | 'DROPPED';
 
 export interface CourseInfo {
   title: string;
   description: string;
   instructor: string;
   totalWeeks: number;
-}
-
-export interface CourseDetail {
-  weeklyContents: WeeklyContent[];
-  courseInfo: CourseInfo;
-}
-
-export interface DynamoCourse {
-  id: string;
-  title: string;
-  description: string;
-  mainCategory: string;
-  subCategory: string;
-  instructor: string;
-  price: number;
-  createdAt: string;
-  updatedAt: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
-  thumbnail?: string;
-  duration?: string;
-  level?: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-}
-
-export interface CourseListResponse {
-  Items: DynamoCourse[];
-  Count: number;
-  ScannedCount: number;
 }
 
 interface Lesson {

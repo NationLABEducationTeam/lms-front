@@ -1,5 +1,10 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+import typography from '@tailwindcss/typography';
+import forms from '@tailwindcss/forms';
+import aspectRatio from '@tailwindcss/aspect-ratio';
+import animate from 'tailwindcss-animate';
+
+export default {
   darkMode: ["class"],
   content: [
     './pages/**/*.{ts,tsx}',
@@ -88,7 +93,12 @@ module.exports = {
   	}
   },
   plugins: [
-  	require("tailwindcss-animate"),
-  	require("@tailwindcss/typography")
+  	typography,
+  	forms,
+  	aspectRatio,
+  	animate,
+  	function({ addVariant }) {
+  		addVariant('dashboard-layout', '.dashboard-layout &')
+  	}
   ],
 } 

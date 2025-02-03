@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Button } from '@/components/common/ui/button';
 import { motion } from 'framer-motion';
-import { DynamoCourse, CATEGORY_MAPPING } from '@/types/course';
+import { Course, CATEGORY_MAPPING } from '@/types/course';
 import { listPublicCourses } from '@/services/api/courses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
 import AttendanceStreak from '@/components/dashboard/AttendanceStreak';
 import { Target } from 'lucide-react';
+import { Badge } from '@/components/common/ui/badge';
 
 const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, className }) => {
   switch (category) {
@@ -100,6 +101,7 @@ const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, 
 const ImageCarousel: FC = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [loaded, setLoaded] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [sliderRef, instanceRef] = useKeenSlider<HTMLDivElement>({
     initial: 0,
     slideChanged(slider: KeenSliderInstance) {
@@ -112,19 +114,26 @@ const ImageCarousel: FC = () => {
     mode: "snap",
     rtl: false,
     slides: { perView: 1 },
+    drag: true,
+    renderMode: "performance",
+    defaultAnimation: {
+      duration: 1000,
+    },
   });
 
   useEffect(() => {
-    const autoplayInterval = setInterval(() => {
-      if (instanceRef.current) {
-        instanceRef.current.next();
-      }
-    }, 5000);
+    let intervalId: NodeJS.Timeout;
+
+    if (isPlaying && instanceRef.current) {
+      intervalId = setInterval(() => {
+        instanceRef.current?.next();
+      }, 5000);
+    }
 
     return () => {
-      clearInterval(autoplayInterval);
+      if (intervalId) clearInterval(intervalId);
     };
-  }, [instanceRef]);
+  }, [instanceRef, isPlaying]);
 
   const images = [
     {
@@ -155,111 +164,188 @@ const ImageCarousel: FC = () => {
   ];
 
   return (
-    <div className="relative">
-      <div ref={sliderRef} className="keen-slider h-[400px]">
+    <div className="relative group">
+      {/* Main Slider */}
+      <div ref={sliderRef} className="keen-slider h-[400px] rounded-2xl overflow-hidden">
         {images.map((image, idx) => (
-          <div key={idx} className="keen-slider__slide relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-black/60 to-transparent z-10" />
+          <div 
+            key={idx} 
+            className="keen-slider__slide relative"
+            role="group"
+            aria-roledescription="slide"
+            aria-label={`${idx + 1} of ${images.length}`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-transparent z-10" />
             <img
               src={image.url}
               alt={image.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-105"
             />
-            <div className="absolute bottom-0 left-0 right-0 p-8 z-20 text-white">
-              <h3 className="text-2xl font-bold mb-2">{image.title}</h3>
-              <p className="text-lg">{image.description}</p>
+            <div className="absolute bottom-0 left-0 right-0 p-8 z-20">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: currentSlide === idx ? 1 : 0, y: currentSlide === idx ? 0 : 20 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <h3 className="text-3xl font-bold text-white mb-3">{image.title}</h3>
+                <p className="text-xl text-white/90">{image.description}</p>
+              </motion.div>
             </div>
           </div>
         ))}
       </div>
+
+      {/* Navigation Controls */}
       {loaded && instanceRef.current && (
-        <div className="absolute bottom-4 right-4 z-30 flex gap-2">
-          {[...Array(images.length)].map((_, idx) => (
-            <button
-              key={idx}
-              onClick={() => instanceRef.current?.moveToIdx(idx)}
-              className={cn(
-                "w-2 h-2 rounded-full transition-all",
-                currentSlide === idx ? "bg-white w-4" : "bg-white/50"
-              )}
-            />
-          ))}
+        <>
+          {/* Arrow Navigation */}
+          <button
+            onClick={() => instanceRef.current?.prev()}
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white/50"
+            aria-label="Previous slide"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={() => instanceRef.current?.next()}
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200 opacity-0 group-hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-white/50"
+            aria-label="Next slide"
+          >
+            <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Progress Bar and Controls */}
+          <div className="absolute bottom-0 left-0 right-0 z-30 p-4 flex items-center justify-between">
+            {/* Progress Bar */}
+            <div className="flex-1 mx-4">
+              <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white transition-all duration-300 rounded-full"
+                  style={{ width: `${((currentSlide + 1) / images.length) * 100}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Dot Navigation and Controls */}
+            <div className="flex items-center gap-4">
+              {/* Play/Pause Button */}
+              <button
+                onClick={() => setIsPlaying(!isPlaying)}
+                className="p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-all duration-200"
+                aria-label={isPlaying ? "Pause slideshow" : "Play slideshow"}
+              >
+                {isPlaying ? (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Dot Navigation */}
+              <div className="flex gap-2">
+                {[...Array(images.length)].map((_, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => instanceRef.current?.moveToIdx(idx)}
+                    className={cn(
+                      "w-2 h-2 rounded-full transition-all duration-300",
+                      currentSlide === idx 
+                        ? "bg-white w-6" 
+                        : "bg-white/50 hover:bg-white/70"
+                    )}
+                    aria-label={`Go to slide ${idx + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Loading State */}
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-900/20 backdrop-blur-sm">
+          <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
         </div>
       )}
     </div>
   );
 };
 
-const CourseCard = ({ course }: { course: DynamoCourse }) => {
+const CourseCard = ({ course }: { course: Course }) => {
   const navigate = useNavigate();
 
   return (
-    <div
-      onClick={() => navigate(`/courses/${course.id}`, { state: { course } })}
-      className="group relative bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden cursor-pointer"
+    <Card 
+      className="w-full h-full flex flex-col cursor-pointer hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden bg-gradient-to-br from-white to-slate-50/80"
+      onClick={() => navigate(`/courses/${course.id}`)}
     >
-      {/* 썸네일 이미지 */}
-      <div className="aspect-video w-full overflow-hidden">
+      <div className="relative">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         <img
-          src={course.thumbnail || '/default-course-thumbnail.jpg'}
+          src={course.thumbnail_url || '/placeholder-course.jpg'}
           alt={course.title}
-          className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+          className="w-full h-48 object-cover"
         />
       </div>
-
-      {/* 기본 정보 */}
-      <div className="p-5">
-        {/* 카테고리 */}
-        <div className="flex gap-2 mb-3">
-          <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
-            {CATEGORY_MAPPING[course.mainCategory as keyof typeof CATEGORY_MAPPING]}
-          </span>
-          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-            {course.subCategory}
-          </span>
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap gap-2 mb-3">
+          <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-none">
+            {course.main_category_name}
+          </Badge>
+          {course.sub_category_name && (
+            <Badge className="bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border-none">
+              {course.sub_category_name}
+            </Badge>
+          )}
         </div>
-
-        {/* 제목 */}
-        <h3 className="text-lg font-semibold mb-2 line-clamp-2 h-14">
+        <CardTitle className="text-lg font-semibold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">
           {course.title}
-        </h3>
-
-        {/* 강사명 */}
-        <p className="text-sm text-gray-600 mb-2">
-          {course.instructor}
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col">
+        <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
+          {course.description}
         </p>
-      </div>
-
-      {/* Hover 시 나타나는 추가 정보 */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
-          {/* 설명 */}
-          <p className="text-sm mb-3 line-clamp-3">
-            {course.description}
-          </p>
-
-          {/* 부가 정보 */}
-          <div className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-2">
-              <Target className="w-4 h-4" />
-              <span>{course.level === 'BEGINNER' ? '초급' : course.level === 'INTERMEDIATE' ? '중급' : '고급'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="font-semibold">
-                {course.price ? `${course.price.toLocaleString()}원` : '무료'}
-              </span>
-            </div>
+        <div className="mt-auto space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
+              {course.instructor_name}
+            </span>
+            <Badge className={cn(
+              "rounded-lg border-none",
+              course.level === 'BEGINNER' ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700' :
+              course.level === 'INTERMEDIATE' ? 'bg-amber-50 hover:bg-amber-100 text-amber-700' :
+              'bg-rose-50 hover:bg-rose-100 text-rose-700'
+            )}>
+              {course.level === 'BEGINNER' ? '입문' : 
+               course.level === 'INTERMEDIATE' ? '중급' : '고급'}
+            </Badge>
+          </div>
+          <div className="text-right">
+            <span className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              {course.price.toLocaleString()}원
+            </span>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 };
 
 const StudentLanding: FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [courses, setCourses] = useState<DynamoCourse[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
@@ -289,7 +375,7 @@ const StudentLanding: FC = () => {
   // 메모이제이션된 필터링된 강의 목록
   const filteredCourses = useMemo(() => {
     return courses.filter(course => {
-      if (selectedMainCategory && selectedMainCategory !== 'all' && course.mainCategory !== selectedMainCategory) {
+      if (selectedMainCategory && selectedMainCategory !== 'all' && course.main_category_id !== selectedMainCategory) {
         return false;
       }
       return true;

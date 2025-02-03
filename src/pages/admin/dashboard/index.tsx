@@ -18,7 +18,7 @@ import { getNotices } from '@/services/api/notices';
 import { getAllUsers } from '@/services/api/users';
 import { DBUser } from '@/types/user';
 import { Input } from "@/components/common/ui/input";
-import { listAllCourses } from '@/services/api/courses';
+import { listPublicCourses } from '@/services/api/courses';
 import { Course } from '@/types/course';
 import {
   Table,
@@ -124,13 +124,14 @@ const AdminDashboard: FC = () => {
     }
   };
 
-  const fetchAllCourses = async () => {
+  const fetchCourses = async () => {
     try {
       setCoursesLoading(true);
-      const response = await listAllCourses();
-      setCourses(response.courses || []);
+      const courses = await listPublicCourses();
+      setCourses(courses);
     } catch (error) {
-      console.error('Error fetching all courses:', error);
+      console.error('Error fetching courses:', error);
+      setError('강의 목록을 불러오는데 실패했습니다.');
     } finally {
       setCoursesLoading(false);
     }
@@ -138,7 +139,7 @@ const AdminDashboard: FC = () => {
 
   useEffect(() => {
     fetchUsers();
-    fetchAllCourses();
+    fetchCourses();
   }, []);
 
   useEffect(() => {

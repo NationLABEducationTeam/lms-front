@@ -32,6 +32,7 @@ import AdminLayout from './components/common/layout/admin/AdminLayout';
 import { UserRole } from './config/cognito';
 import './App.css';
 import StudentCoursesPage from '@/pages/student/courses';
+import CorporatePage from '@/pages/corporate';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -43,6 +44,9 @@ const App = () => {
         {/* Auth Routes - No Layout */}
         <Route path="/auth" element={<AuthForm />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
+
+        {/* Corporate Page - No Layout */}
+        <Route path="/corporate" element={<CorporatePage />} />
 
         {/* Admin Routes with AdminLayout */}
         <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
