@@ -40,8 +40,13 @@ const fadeInUp = {
 };
 
 interface AttendanceRecord {
-  date: string;
-  status: 'present' | 'absent' | 'late';
+  courseId: string;
+  courseName: string;
+  sessionDate: string;
+  status: 'present' | 'late' | 'absent';
+  duration?: number;
+  joinTime?: string;
+  leaveTime?: string;
 }
 
 interface UserAttendanceResponse {

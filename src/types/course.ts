@@ -16,6 +16,8 @@ export interface Course {
   description: string;
   instructor_id: string;
   instructor_name: string;
+  instructor_image?: string;
+  instructor_bio?: string;
   main_category_id: string;
   main_category_name: string;
   sub_category_id: string;

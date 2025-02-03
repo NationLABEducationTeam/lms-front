@@ -8,6 +8,7 @@ export interface DBUser {
   updated_at?: string;
   enrolled_courses?: string[];
   last_login?: string;
+  sub?: string;
 }
 
 export interface UserProfile extends DBUser {
