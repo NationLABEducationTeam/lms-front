@@ -11,48 +11,84 @@ import {
 } from "@/components/common/ui/table";
 import { getAllUsers } from '@/services/api/users';
 import { DBUser } from '@/types/user';
+import { getAllEnrollments, StudentEnrollment } from '@/services/api/enrollments';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Progress } from "@/components/ui/progress";
 
 const AdminStudents: FC = () => {
-  const [users, setUsers] = useState<DBUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<DBUser[]>([]);
+  const [students, setStudents] = useState<StudentEnrollment[]>([]);
+  const [filteredStudents, setFilteredStudents] = useState<StudentEnrollment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalStudents, setTotalStudents] = useState(0);
 
-  const fetchUsers = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
-      const userData = await getAllUsers();
-      const students = userData.filter(user => user.role === 'STUDENT');
-      setUsers(students);
-      setFilteredUsers(students);
+      const response = await getAllEnrollments();
+      if (response.success) {
+        setStudents(response.data.students);
+        setFilteredStudents(response.data.students);
+        setTotalStudents(response.data.total);
+      }
       setError(null);
     } catch (err) {
-      console.error('Error fetching users:', err);
-      setError('학생 목록을 불러오는데 실패했습니다.');
+      console.error('Error fetching data:', err);
+      setError('데이터를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchUsers();
+    fetchData();
   }, []);
 
   useEffect(() => {
     if (!searchTerm.trim()) {
-      setFilteredUsers(users);
+      setFilteredStudents(students);
       return;
     }
 
     const searchTermLower = searchTerm.toLowerCase();
-    const filtered = users.filter(user => 
-      user.email.toLowerCase().includes(searchTermLower) ||
-      user.name?.toLowerCase().includes(searchTermLower) ||
-      user.given_name?.toLowerCase().includes(searchTermLower)
+    const filtered = students.filter(student => 
+      student.student_email.toLowerCase().includes(searchTermLower) ||
+      student.student_name.toLowerCase().includes(searchTermLower)
     );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
+    setFilteredStudents(filtered);
+  }, [searchTerm, students]);
+
+  const getProgressPercentage = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 100;
+      case 'IN_PROGRESS':
+        return 50;
+      case 'NOT_STARTED':
+        return 0;
+      default:
+        return 0;
+    }
+  };
+
+  const getEnrollmentStatusColor = (status: string) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'text-green-600 bg-green-100';
+      case 'ACTIVE':
+        return 'text-blue-600 bg-blue-100';
+      case 'DROPPED':
+        return 'text-red-600 bg-red-100';
+      default:
+        return 'text-gray-600 bg-gray-100';
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
@@ -60,7 +96,7 @@ const AdminStudents: FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">수강생 관리</h1>
-            <p className="text-gray-600 mt-1">총 {users.length}명의 수강생</p>
+            <p className="text-gray-600 mt-1">총 {totalStudents}명의 수강생</p>
           </div>
         </div>
 
@@ -89,36 +125,73 @@ const AdminStudents: FC = () => {
                 {error}
               </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50 border-gray-200">
-                    <TableHead className="text-gray-600">이름</TableHead>
-                    <TableHead className="text-gray-600">이메일</TableHead>
-                    <TableHead className="text-gray-600">가입일</TableHead>
-                    <TableHead className="text-gray-600">수강 중인 강의</TableHead>
-                    <TableHead className="text-gray-600">최근 접속일</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredUsers.map((user) => (
-                    <TableRow key={user.cognito_user_id} className="hover:bg-gray-50 border-gray-200">
-                      <TableCell className="font-medium text-gray-900">
-                        {user.given_name || user.name}
-                      </TableCell>
-                      <TableCell className="text-gray-600">{user.email}</TableCell>
-                      <TableCell className="text-gray-600">
-                        {new Date(user.created_at).toLocaleDateString('ko-KR')}
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {user.enrolled_courses?.length || 0}개
-                      </TableCell>
-                      <TableCell className="text-gray-600">
-                        {user.last_login ? new Date(user.last_login).toLocaleDateString('ko-KR') : '-'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <Accordion type="single" collapsible className="w-full">
+                {filteredStudents.map((student) => (
+                  <AccordionItem key={student.cognito_user_id} value={student.cognito_user_id}>
+                    <AccordionTrigger className="px-4 hover:no-underline">
+                      <div className="flex items-center justify-between w-full">
+                        <div className="flex items-center space-x-4">
+                          <div>
+                            <p className="font-medium text-gray-900">{student.student_name}</p>
+                            <p className="text-sm text-gray-500">{student.student_email}</p>
+                          </div>
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          수강 강의: {student.enrolled_courses.length}개
+                        </div>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="px-4 py-2">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>강의명</TableHead>
+                              <TableHead>카테고리</TableHead>
+                              <TableHead>상태</TableHead>
+                              <TableHead>진도율</TableHead>
+                              <TableHead>등록일</TableHead>
+                              <TableHead>최근 접속일</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {student.enrolled_courses.map((course) => (
+                              <TableRow key={course.course_id}>
+                                <TableCell className="font-medium">
+                                  {course.course_title}
+                                </TableCell>
+                                <TableCell className="text-sm text-gray-500">
+                                  {course.main_category} &gt; {course.sub_category}
+                                </TableCell>
+                                <TableCell>
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getEnrollmentStatusColor(course.enrollment_status)}`}>
+                                    {course.enrollment_status === 'ACTIVE' ? '수강중' :
+                                     course.enrollment_status === 'COMPLETED' ? '수료' : '중단'}
+                                  </span>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="w-full max-w-xs">
+                                    <Progress value={getProgressPercentage(course.progress_status)} className="h-2" />
+                                    <span className="text-xs text-gray-500 mt-1">
+                                      {getProgressPercentage(course.progress_status)}%
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell className="text-gray-500">
+                                  {new Date(course.enrolled_at).toLocaleDateString('ko-KR')}
+                                </TableCell>
+                                <TableCell className="text-gray-500">
+                                  {new Date(course.last_accessed_at).toLocaleDateString('ko-KR')}
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             )}
           </div>
         </div>
