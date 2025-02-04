@@ -113,8 +113,8 @@ const AdminDashboard: FC = () => {
     try {
       setLoading(true);
       const userData = await getAllUsers();
-      setUsers(userData);
-      setFilteredUsers(userData);
+      setUsers(userData.users);
+      setFilteredUsers(userData.users);
       setError(null);
     } catch (err) {
       console.error('Error fetching users:', err);

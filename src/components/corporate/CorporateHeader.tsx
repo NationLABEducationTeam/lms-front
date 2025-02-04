@@ -51,4 +51,4 @@ const CorporateHeader: FC = () => {
   );
 };
 
-export default CorporateHeader; 
+export default CorporateHeader;

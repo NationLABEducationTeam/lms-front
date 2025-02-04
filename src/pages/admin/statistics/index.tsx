@@ -110,19 +110,19 @@ const AdminStatistics: FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">총 수강생 수</span>
-                <span className="text-lg font-semibold text-gray-900">670명</span>
+                <span className="text-lg font-semibold text-gray-900">2명</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">이번 달 신규 수강생</span>
-                <span className="text-lg font-semibold text-gray-900">70명</span>
+                <span className="text-lg font-semibold text-gray-900">2명</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">수료율</span>
-                <span className="text-lg font-semibold text-gray-900">75%</span>
+                <span className="text-lg font-semibold text-gray-900">- %</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">평균 수강 기간</span>
-                <span className="text-lg font-semibold text-gray-900">3.5개월</span>
+                <span className="text-lg font-semibold text-gray-900"> - 개월</span>
               </div>
             </div>
           </Card>

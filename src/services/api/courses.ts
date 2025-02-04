@@ -11,9 +11,8 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 import { getApiUrl, API_ENDPOINTS } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
-import { Course } from '@/types/course';
+import { Course, MainCategory, CourseLevel } from '@/types/course';
 import { S3Structure } from '@/types/s3';
-import { MainCategory } from '@/types/course';
 import axios from 'axios';
 
 interface ListResponse {
@@ -52,6 +51,8 @@ interface CreateCourseParams {
   subCategory: string;
   instructor: string;
   thumbnail?: File;
+  level: CourseLevel;
+  price: number;
 }
 
 // 카테고리 조회
@@ -114,7 +115,7 @@ export const listCourses = async (mainCategory: string, subCategory: string): Pr
 // 강의 생성
 export const createCourse = async (params: CreateCourseParams) => {
   try {
-    const { title, description, mainCategory, subCategory, instructor, thumbnail } = params;
+    const { title, description, mainCategory, subCategory, instructor, thumbnail, level, price } = params;
 
     // Cognito 세션 확인
     const session = await fetchAuthSession();
@@ -148,8 +149,8 @@ export const createCourse = async (params: CreateCourseParams) => {
         main_category_id: mainCategory,
         sub_category_id: subCategory,
         thumbnail_url: thumbnailBase64,
-        price: 0, // 기본값
-        level: 'BEGINNER' // 기본값
+        price,
+        level,
       },
       {
         headers: {
