@@ -270,7 +270,15 @@ const AdminCourseCreate: FC = () => {
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-lg font-semibold text-gray-900">썸네일 이미지</h2>
-                  <HelpCircle className="w-5 h-5 text-gray-400 cursor-help" title="권장 크기: 1290 x 960 px" />
+                  <div className="relative group">
+                    <HelpCircle 
+                      className="w-5 h-5 text-gray-400 cursor-help" 
+                      aria-label="썸네일 이미지 권장 크기"
+                    />
+                    <div className="absolute right-0 top-full mt-2 p-2 bg-gray-800 text-white text-sm rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                      권장 크기: 1290 x 960 px
+                    </div>
+                  </div>
                 </div>
                 
                 <div className="space-y-4">
