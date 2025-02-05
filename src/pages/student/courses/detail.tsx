@@ -1,5 +1,5 @@
 import { FC, useState, useRef, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { Course } from '@/types/course';
 import { getCourseDetail } from '@/services/api/courses';
 import { enrollInCourse } from '@/services/api/enrollments';
@@ -22,6 +22,7 @@ const CourseDetailPage: FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   // Refs for each section
   const introductionRef = useRef<HTMLDivElement>(null);
@@ -96,6 +97,7 @@ const CourseDetailPage: FC = () => {
       });
 
       alert("성공적으로 수강신청이 완료되었습니다.");
+      navigate('/courses');
     } catch (error) {
       console.error('Enrollment error:', error);
       alert(error instanceof Error ? error.message : "수강신청 중 오류가 발생했습니다.");

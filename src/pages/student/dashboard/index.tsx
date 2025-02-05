@@ -129,7 +129,7 @@ const StudentDashboard: FC = () => {
             className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-8 text-white"
           >
             <h1 className="text-3xl font-bold mb-2">
-              안녕하세요, {user?.name || '학생'}님 👋
+              안녕하세요, {user?.given_name || '학생'}님 👋
             </h1>
             <p className="text-blue-100">
               오늘도 함께 성장하는 하루 되세요!

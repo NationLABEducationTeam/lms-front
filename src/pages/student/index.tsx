@@ -407,71 +407,72 @@ const StudentLanding: FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Add server message display near the top of the page */}
+      {/* Server message display */}
       {serverMessage && (
         <div className="text-center py-4 bg-blue-100">
           <p className="text-blue-800">{serverMessage}</p>
         </div>
       )}
       
-      {/* Enhanced Hero Section */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+      {/* Enhanced Hero Section with Instagram Landing Image */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-[#39A0FF] via-[#4B8BFF] to-[#68FD57]">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/10 to-transparent"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
         </div>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
-          <div className="text-center relative">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Left Content */}
             <motion.div
               initial={fadeInUp.initial}
               animate={fadeInUp.animate}
               transition={fadeInUp.transition}
-              className="text-center max-w-3xl mx-auto"
+              className="text-left relative z-10"
             >
               <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
                 {user ? (
-                  <span>
-                    <span className="text-orange-400 font-mono">{"{"}</span>
-                    <span className="text-purple-200">{user.name}</span>
-                    <span className="text-orange-400 font-mono">{"}"}</span>
-                    <span className="text-purple-100">님의 성장.py</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-white/90">Welcome</span>
+                    <span className="bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20">
+                      {user.name}
+                    </span>
                   </span>
                 ) : (
-                  <span className="text-purple-100">Nation's LAB과 함께하는 성장</span>
+                  <span>Nation's LAB과 함께하는 성장</span>
                 )}
               </h1>
               {user && <AttendanceStreak days={3} />}
-              <div className="mt-8 flex flex-col items-center justify-center space-y-4">
-                <div className="flex flex-wrap justify-center gap-4 text-lg sm:text-xl font-medium text-purple-200/90">
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="mt-8 space-y-4">
+                <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium text-white/90">
+                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     AWS 클라우드
                   </span>
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     AI/머신러닝
                   </span>
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     데이터 엔지니어링
                   </span>
                 </div>
-                <p className="max-w-2xl mx-auto text-purple-100/80 text-lg">
-                  단순한 이론 교육이 아닌, <span className="text-purple-300 font-semibold">실무 프로젝트 기반</span>의 
+                <p className="max-w-2xl text-white/90 text-lg mt-6 px-4 py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                  단순한 이론 교육이 아닌, <span className="text-[#68FD57] font-semibold">실무 프로젝트 기반</span>의 
                   전문가 양성 프로그램으로 당신의 커리어를 한 단계 도약시키세요
                 </p>
               </div>
-              <div className="mt-10 flex justify-center gap-4">
+              <div className="mt-10 flex gap-4">
                 {user ? (
                   <Button
                     size="lg"
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300"
+                    className="bg-white hover:bg-white/90 text-[#39A0FF] px-8 py-6 text-lg rounded-xl shadow-lg shadow-black/10 hover:shadow-black/20 transition-all duration-300"
                     onClick={() => navigate('/dashboard')}
                   >
                     대시보드로 이동
@@ -479,7 +480,7 @@ const StudentLanding: FC = () => {
                 ) : (
                   <Button
                     size="lg"
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-300"
+                    className="bg-white hover:bg-white/90 text-[#39A0FF] px-8 py-6 text-lg rounded-xl shadow-lg shadow-black/10 hover:shadow-black/20 transition-all duration-300"
                     onClick={() => navigate('/auth')}
                   >
                     무료로 시작하기
@@ -487,9 +488,26 @@ const StudentLanding: FC = () => {
                 )}
               </div>
             </motion.div>
+
+            {/* Right Content - Instagram Landing SVG */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5 }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative w-full h-full flex items-center justify-center">
+                <div className="relative bg-black">
+                  <img
+                    src="/instagramlanding.svg"
+                    alt="Instagram Landing Illustration"
+                    className="w-full h-auto max-w-[500px]"
+                  />
+                </div>
+              </div>
+            </motion.div>
           </div>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50 to-transparent"></div>
       </div>
 
       {/* Image Carousel Section */}
