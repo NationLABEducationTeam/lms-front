@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, createRoutesFromElements } from 'react-router-dom';
 import RootLayout from './components/common/layout/RootLayout';
 import StudentDashboard from './pages/student/dashboard';
 import StudentLanding from './pages/student';
@@ -33,13 +33,14 @@ import { UserRole } from './config/cognito';
 import './App.css';
 import StudentCoursesPage from '@/pages/student/courses';
 import CorporatePage from '@/pages/corporate';
+import CourseLessons from './pages/admin/courses/lessons/[id]';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
   console.log('🎯 API URL haha:', import.meta.env.VITE_API_URL);
 
   return (
-    <BrowserRouter>
+    <BrowserRouter future={{ v7_startTransition: true }}>
       <Routes>
         {/* Auth Routes - No Layout */}
         <Route path="/auth" element={<AuthForm />} />
@@ -57,6 +58,7 @@ const App = () => {
             <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
             <Route path="/admin/courses" element={<AdminCourses />} />
             <Route path="/admin/courses/create" element={<AdminCourseCreate />} />
+            <Route path="/admin/courses/:id" element={<CourseLessons />} />
             <Route path="/admin/students" element={<AdminStudents />} />
             <Route path="/admin/system" element={<AdminSystem />} />
             <Route path="/admin/statistics" element={<AdminStatistics />} />
@@ -76,6 +78,7 @@ const App = () => {
           {/* Protected Student Routes */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
             <Route path="/dashboard" element={<StudentDashboard />} />
+            <Route path="/mycourse" element={<StudentCoursesPage />} />
             <Route path="/notices" element={<NoticeList />} />
             <Route path="/notices/:id" element={<NoticeDetail />} />
             <Route path="/community" element={<CommunityList />} />

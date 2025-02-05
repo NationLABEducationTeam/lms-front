@@ -168,7 +168,8 @@ const AdminCourses: FC = () => {
                 {filteredCourses.map((course) => (
                   <div
                     key={course.id}
-                    className="p-6 hover:bg-gray-50 transition-colors"
+                    className="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/admin/courses/${course.id}`)}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">

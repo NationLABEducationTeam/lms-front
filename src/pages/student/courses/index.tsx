@@ -1,12 +1,49 @@
 import { FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEnrolledCourses } from '@/services/api/courses';
-import { Course } from '@/types/course';
+import { Course as BaseCourse } from '@/types/course';
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
+import * as Accordion from '@radix-ui/react-accordion';
+
+// 주차별 자료 타입 정의
+interface Material {
+  fileName: string;
+  downloadUrl: string;
+  lastModified: string;
+  size: number;
+}
+
+interface WeekMaterials {
+  document?: Material[];
+  video?: Material[];
+  quiz?: Material[];
+  spreadsheet?: Material[];  // 엑셀 파일을 위한 필드 추가
+}
+
+interface Week {
+  weekName: string;
+  weekNumber: number;
+  materials: WeekMaterials;
+}
+
+interface Course extends BaseCourse {
+  weeks: Week[];
+  enrolled_at: string;
+  enrollment_status: string;
+  progress_status: string;
+  last_accessed_at: string;
+}
+
+const transformApiResponse = (apiCourse: any): Course => {
+  return {
+    ...apiCourse,
+    weeks: apiCourse.weeks || []
+  };
+};
 
 const StudentCoursesPage: FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -16,6 +53,7 @@ const StudentCoursesPage: FC = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'curriculum' | 'notices' | 'assignments' | 'qna' | 'notes' | 'posts' | 'progress'>('curriculum');
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
+  const [openWeeks, setOpenWeeks] = useState<string[]>([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,7 +76,7 @@ const StudentCoursesPage: FC = () => {
         setLoading(true);
         const response = await getEnrolledCourses();
         console.log('Enrolled courses response:', response);
-        const fetchedCourses = response.courses || [];
+        const fetchedCourses = response.courses.map(transformApiResponse) || [];
         setCourses(fetchedCourses);
         // 첫 번째 강의를 기본 선택
         if (fetchedCourses.length > 0) {
@@ -55,6 +93,25 @@ const StudentCoursesPage: FC = () => {
 
     checkAuth().then(() => fetchEnrolledCourses());
   }, [navigate]);
+
+  // URL 해시 기반 상태 관리
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#week-')) {
+      const weekNumber = hash.replace('#week-', '');
+      setOpenWeeks([weekNumber]);
+    }
+  }, []);
+
+  const handleWeekToggle = (weekNumbers: string[]) => {
+    setOpenWeeks(weekNumbers);
+    if (weekNumbers.length > 0) {
+      const lastOpenedWeek = weekNumbers[weekNumbers.length - 1];
+      window.history.replaceState(null, '', `#week-${lastOpenedWeek}`);
+    } else {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  };
 
   if (loading) {
     return (
@@ -103,6 +160,80 @@ const StudentCoursesPage: FC = () => {
 
   // 실시간 수업 입장 가능 여부 체크 (현재 시간 기준 15분 전부터 입장 가능)
   const isLiveClassAvailable = selectedCourse ? new Date(selectedCourse.created_at).getTime() - Date.now() <= 15 * 60 * 1000 : false;
+
+  // 파일 아이콘 선택 함수 추가
+  const getFileIcon = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    switch (extension) {
+      case 'pdf':
+        return <FileText className="w-5 h-5 text-red-600" />;
+      case 'xlsx':
+      case 'xls':
+        return <FileText className="w-5 h-5 text-green-600" />;
+      case 'doc':
+      case 'docx':
+        return <FileText className="w-5 h-5 text-blue-600" />;
+      case 'ppt':
+      case 'pptx':
+        return <FileText className="w-5 h-5 text-orange-600" />;
+      case 'mp4':
+      case 'mov':
+        return <Video className="w-5 h-5 text-purple-600" />;
+      default:
+        return <FileText className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  // 파일 크기 포맷팅 함수
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  };
+
+  // 주차별 자료 렌더링
+  const renderWeekMaterials = (materials: WeekMaterials) => {
+    const renderMaterialList = (items: Material[] | undefined, title: string) => {
+      if (!items || items.length === 0) return null;
+      
+      return (
+        <div className="mb-6 last:mb-0">
+          <h4 className="text-sm font-medium text-slate-500 mb-2">{title}</h4>
+          <div className="space-y-2">
+            {items.map((item, index) => (
+              <a
+                key={index}
+                href={item.downloadUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+              >
+                <div className="flex items-center">
+                  {getFileIcon(item.fileName)}
+                  <div className="ml-3">
+                    <div className="font-medium text-slate-900">{item.fileName}</div>
+                    <div className="text-sm text-slate-500">
+                      {new Date(item.lastModified).toLocaleDateString()} • {formatFileSize(item.size)}
+                    </div>
+                  </div>
+                </div>
+                <Download className="w-5 h-5 text-slate-400" />
+              </a>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-4">
+        {renderMaterialList(materials.document, '강의 자료')}
+        {renderMaterialList(materials.spreadsheet, '엑셀 자료')}
+        {renderMaterialList(materials.video, '강의 영상')}
+        {renderMaterialList(materials.quiz, '퀴즈')}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -266,87 +397,53 @@ const StudentCoursesPage: FC = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 bg-white rounded-2xl shadow-sm shadow-slate-200">
-            <div className="p-8">
-              {/* Tab Content */}
-              <div className="mt-8">
-                {activeTab === 'curriculum' && (
-                  <div>
-                    {/* Week Selection */}
-                    <div className="mb-8">
-                      <div className="inline-flex p-1 space-x-1 bg-slate-100 rounded-lg">
-                        {[1, 2, 3, 4].map((week) => (
-                          <button
-                            key={week}
-                            onClick={() => setSelectedWeek(week)}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                              selectedWeek === week
-                                ? 'bg-white text-slate-900 shadow-sm'
-                                : 'text-slate-600 hover:text-slate-900'
-                            }`}
-                          >
-                            {week}주차
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Weekly Content */}
-                    <div className="space-y-6">
-                      <div className="rounded-xl border border-slate-200 divide-y divide-slate-200">
-                        <div className="p-6">
-                          <h3 className="text-lg font-semibold text-slate-900">
-                            {selectedWeek}주차: {selectedCourse?.title}
-                          </h3>
-                        </div>
-                        
-                        {/* Live Class or VOD */}
-                        <div className="p-6">
-                          <h4 className="text-sm font-medium text-slate-500 mb-3">이번 주 수업</h4>
-                          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-                            <div className="flex items-center">
-                              <Calendar className="w-5 h-5 text-blue-600 mr-3" />
-                              <div>
-                                <div className="font-medium text-slate-900">
-                                  {new Date(selectedCourse?.created_at || '').toLocaleString()}
-                                </div>
-                                <div className="text-sm text-slate-600">{selectedCourse?.description}</div>
-                              </div>
-                            </div>
-                            <button 
-                              className={`px-4 py-2 ${
-                                isLiveClassAvailable
-                                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                              } rounded-lg shadow-sm transition-colors`}
-                              disabled={!isLiveClassAvailable}
-                            >
-                              {isLiveClassAvailable ? '입장하기' : '수업 준비중'}
-                            </button>
+          <div className="flex-1">
+            {activeTab === 'curriculum' && (
+              <div className="space-y-6">
+                <Accordion.Root 
+                  type="multiple" 
+                  value={openWeeks}
+                  onValueChange={handleWeekToggle}
+                  className="space-y-4"
+                >
+                  {selectedCourse?.weeks.map((week) => (
+                    <Accordion.Item 
+                      key={week.weekNumber} 
+                      value={week.weekNumber.toString()}
+                      className="rounded-xl border border-slate-200 overflow-hidden"
+                    >
+                      <Accordion.Header>
+                        <Accordion.Trigger className="w-full">
+                          <div className="flex items-center justify-between p-6 bg-white hover:bg-slate-50 transition-colors">
+                            <h3 className="text-lg font-semibold text-slate-900">
+                              {week.weekNumber}주차
+                            </h3>
+                            <ChevronDown 
+                              className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${
+                                openWeeks.includes(week.weekNumber.toString()) ? 'transform rotate-180' : ''
+                              }`}
+                            />
                           </div>
+                        </Accordion.Trigger>
+                      </Accordion.Header>
+                      <Accordion.Content>
+                        <div className="p-6 bg-white border-t border-slate-200">
+                          {renderWeekMaterials(week.materials)}
                         </div>
-
-                        {/* Materials */}
-                        <div className="p-6">
-                          <h4 className="text-sm font-medium text-slate-500 mb-3">학습 자료</h4>
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl group hover:bg-slate-100 transition-colors">
-                              <div className="flex items-center">
-                                <Download className="w-5 h-5 text-slate-400 mr-3" />
-                                <div className="font-medium text-slate-900">{selectedWeek}주차 강의자료.pdf</div>
-                              </div>
-                              <button className="text-blue-600 font-medium hover:text-blue-700">다운로드</button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                      </Accordion.Content>
+                    </Accordion.Item>
+                  ))}
+                </Accordion.Root>
+                {(!selectedCourse?.weeks || selectedCourse.weeks.length === 0) && (
+                  <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
+                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto" />
+                    <h3 className="mt-4 text-lg font-medium text-gray-900">등록된 강의 자료가 없습니다</h3>
+                    <p className="mt-2 text-sm text-gray-500">강의 자료가 곧 업로드될 예정입니다.</p>
                   </div>
                 )}
-
-                {/* 나머지 탭 컨텐츠는 동일하게 유지 */}
               </div>
-            </div>
+            )}
+            {/* ... other tab contents ... */}
           </div>
         </div>
       </div>

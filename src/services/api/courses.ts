@@ -1,13 +1,8 @@
 // Lambda URLs
 const LIST_STUDENT_COURSES_URL = 'https://ixnk2hrpzmae6rn7xa6dgox57a0fofid.lambda-url.ap-northeast-2.on.aws/';
-const CREATE_COURSE_URL = 'https://jwhf5pie4ahdzfd6ce3ha4ddya0joopm.lambda-url.ap-northeast-2.on.aws/';
 const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-northeast-2.on.aws/';
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
-const DELETE_COURSE_URL = 'https://whym5n2vlkhep55o4j7i75znwa0dnipm.lambda-url.ap-northeast-2.on.aws/';
-const UPDATE_COURSE_URL = 'https://krhl5cd3wy2ejzcrxiviier2tu0owccb.lambda-url.ap-northeast-2.on.aws/';
-const GET_COURSE_DETAIL_URL = 'https://dwv5b4lus57dwmjsiqnmoyvgge0hmkwh.lambda-url.ap-northeast-2.on.aws/';
 
-const API_URL = import.meta.env.VITE_API_URL;
 
 import { getApiUrl, API_ENDPOINTS } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
@@ -277,7 +272,7 @@ export const updateCourse = async (courseId: string, updateData: Partial<Course>
 // 강의 상세 정보 조회
 export const getCourseDetail = async (courseId: string): Promise<Course> => {
   try {
-    const { data } = await axios.get(`${getApiUrl(API_ENDPOINTS.COURSES)}/${courseId}`);
+    const { data } = await axios.get(`${getApiUrl(API_ENDPOINTS.COURSES)}/public/${courseId}`);
     
     if (!data.success) {
       throw new Error(data.message || '강의 정보를 불러오는데 실패했습니다.');
@@ -418,7 +413,7 @@ export const listPathContents = async (path: string): Promise<ListResponse> => {
 
 export const listPublicCourses = async (): Promise<Course[]> => {
   try {
-    const response = await fetch(getApiUrl(API_ENDPOINTS.COURSES), {
+    const response = await fetch(getApiUrl(API_ENDPOINTS.PUBLIC_COURSES), {
       headers: {
         'Content-Type': 'application/json'
       }

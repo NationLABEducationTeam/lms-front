@@ -125,7 +125,7 @@ const Header: FC = () => {
                     대시보드
                   </button>
                   <button 
-                    onClick={() => handleProtectedNavigation('/courses')} 
+                    onClick={() => handleProtectedNavigation('/mycourse')} 
                     className="text-gray-600 hover:text-blue-600 transition-colors font-medium"
                   >
                     강의실
