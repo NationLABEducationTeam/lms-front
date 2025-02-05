@@ -406,65 +406,73 @@ const StudentLanding: FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Server message display */}
       {serverMessage && (
-        <div className="text-center py-4 bg-blue-100">
-          <p className="text-blue-800">{serverMessage}</p>
+        <div className="bg-blue-50 border-b border-blue-100">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <p className="text-sm text-blue-700">{serverMessage}</p>
+          </div>
         </div>
       )}
-      
-      {/* Enhanced Hero Section with Instagram Landing Image */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-[#39A0FF] via-[#4B8BFF] to-[#68FD57]">
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff1a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff1a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-[#111827]">
+        {/* Stock Video Background */}
+        <div className="absolute inset-0 z-0">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover opacity-50"
+          >
+            <source src="/stockvideo.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-gradient-to-r from-[#111827]/80 via-transparent to-[#111827]/80"></div>
         </div>
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             {/* Left Content */}
             <motion.div
               initial={fadeInUp.initial}
               animate={fadeInUp.animate}
               transition={fadeInUp.transition}
-              className="text-left relative z-10"
+              className="text-left"
             >
               <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
                 {user ? (
-                  <span className="flex items-center gap-3">
-                    <span className="text-white/90">Welcome</span>
-                    <span className="bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20">
+                  <span className="flex flex-col gap-3">
+                    <span className="text-white/90">Welcome back,</span>
+                    <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                       {user.name}
                     </span>
                   </span>
                 ) : (
-                  <span>Nation's LAB과 함께하는 성장</span>
+                  <span className="flex flex-col gap-3">
+                    <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                      Nation's LAB
+                    </span>
+                    <span className="text-white/90">과 함께하는 성장</span>
+                  </span>
                 )}
               </h1>
               {user && <AttendanceStreak days={3} />}
               <div className="mt-8 space-y-4">
-                <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium text-white/90">
-                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    AWS 클라우드
-                  </span>
-                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    AI/머신러닝
-                  </span>
-                  <span className="flex items-center px-4 py-2 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                    <svg className="w-5 h-5 mr-2 text-[#68FD57]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    데이터 엔지니어링
-                  </span>
+                <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium">
+                  {['AWS 클라우드', 'AI/머신러닝', '데이터 엔지니어링'].map((tech) => (
+                    <span
+                      key={tech}
+                      className="flex items-center px-4 py-2 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
+                    >
+                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-300 mr-2 shadow-glow"></span>
+                      {tech}
+                    </span>
+                  ))}
                 </div>
-                <p className="max-w-2xl text-white/90 text-lg mt-6 px-4 py-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                  단순한 이론 교육이 아닌, <span className="text-[#68FD57] font-semibold">실무 프로젝트 기반</span>의 
+                <p className="max-w-2xl text-white text-lg mt-6">
+                  단순한 이론 교육이 아닌, <span className="text-cyan-300 font-semibold">실무 프로젝트 기반</span>의 
                   전문가 양성 프로그램으로 당신의 커리어를 한 단계 도약시키세요
                 </p>
               </div>
@@ -472,7 +480,7 @@ const StudentLanding: FC = () => {
                 {user ? (
                   <Button
                     size="lg"
-                    className="bg-white hover:bg-white/90 text-[#39A0FF] px-8 py-6 text-lg rounded-xl shadow-lg shadow-black/10 hover:shadow-black/20 transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
                     onClick={() => navigate('/dashboard')}
                   >
                     대시보드로 이동
@@ -480,32 +488,55 @@ const StudentLanding: FC = () => {
                 ) : (
                   <Button
                     size="lg"
-                    className="bg-white hover:bg-white/90 text-[#39A0FF] px-8 py-6 text-lg rounded-xl shadow-lg shadow-black/10 hover:shadow-black/20 transition-all duration-300"
+                    className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
                     onClick={() => navigate('/auth')}
                   >
-                    무료로 시작하기
+                    시작하기
                   </Button>
                 )}
               </div>
             </motion.div>
+          </div>
+        </div>
+      </div>
 
-            {/* Right Content - Instagram Landing SVG */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.5 }}
-              className="relative hidden lg:block"
-            >
-              <div className="relative w-full h-full flex items-center justify-center">
-                <div className="relative bg-black">
-                  <img
-                    src="/instagramlanding.svg"
-                    alt="Instagram Landing Illustration"
-                    className="w-full h-auto max-w-[500px]"
-                  />
-                </div>
-              </div>
-            </motion.div>
+      {/* Instagram Landing SVG Section */}
+      <div className="bg-gradient-to-b from-slate-900 to-slate-800 py-24">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="order-2 lg:order-1">
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+                className="text-white space-y-6"
+              >
+                <h2 className="text-3xl font-bold">
+                  <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                    실무 중심의 교육
+                  </span>
+                </h2>
+                <p className="text-gray-300 text-lg leading-relaxed">
+                  현업 전문가들과 함께 실제 프로젝트를 수행하며 실무 경험을 쌓아보세요.
+                  이론에서 그치지 않는 실질적인 성장을 경험할 수 있습니다.
+                </p>
+              </motion.div>
+            </div>
+            <div className="order-1 lg:order-2">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5 }}
+                className="relative"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-400/10 rounded-3xl blur-3xl"></div>
+                <img
+                  src="/instagramlanding.svg"
+                  alt="Instagram Landing Illustration"
+                  className="relative z-10 w-full h-auto max-w-[500px] mx-auto"
+                />
+              </motion.div>
+            </div>
           </div>
         </div>
       </div>
@@ -515,220 +546,10 @@ const StudentLanding: FC = () => {
         <ImageCarousel />
       </div>
 
-      {/* Course Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <div className="relative py-16 px-8 bg-gradient-to-br from-indigo-600 via-blue-500 to-sky-400 rounded-3xl overflow-hidden group">
-            {/* Animated background elements */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0d_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0d_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-purple-500/10 via-transparent to-sky-300/10"></div>
-            
-            {/* Decorative circles */}
-            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-purple-400/30 via-fuchsia-300/20 to-sky-300/30 rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
-            <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-600/30 via-cyan-400/20 to-sky-300/30 rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
-            
-            <div className="relative max-w-5xl mx-auto">
-              <div className="flex items-center space-x-4 mb-8 pl-4">
-                <div className="w-1.5 h-12 bg-gradient-to-b from-purple-300 to-sky-300 rounded-full"></div>
-                <h2 className="text-5xl font-bold text-white tracking-tight">
-                  Shaping the Future with AI
-                </h2>
-              </div>
-              
-              <div className="space-y-8 pl-4">
-                {/* Code block with enhanced styling */}
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10 shadow-lg">
-                    <code className="font-mono text-lg text-white">{`class Future { start() {`}</code>
-                    <div className="absolute -right-2 -top-2">
-                      <span className="flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Main text content with enhanced styling */}
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                    <p className="text-xl text-white/90 leading-relaxed transform hover:-translate-x-2 transition-transform duration-300 hover:text-transparent hover:bg-clip-text hover:bg-gradient-to-r hover:from-purple-200 hover:to-sky-200">
-                      AI 전문 기업의 풍부한 경험과 기술을 바탕으로 설계된 교육을 통해<br />
-                      개인과 조직이 AI와 Cloud 기술을 통해 미래를 대비하고<br />
-                      지속 가능한 성장을 이룰 수 있도록 돕습니다
-                    </p>
-                  </div>
-                </div>
-
-                {/* Closing bracket with animation */}
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-400/20 via-blue-300/20 to-sky-300/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                    <code className="font-mono text-lg text-white">{`}}`}</code>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Feature Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-          {/* Curriculum Card */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-            <div className="relative p-8 rounded-2xl border border-purple-100 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">코드로 쓰는 성장 스토리</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-purple-600">{`if (열정 == true)`}</span><br />
-                실무 전문가가 설계한 커리큘럼으로<br />
-                당신의 성장 스토리를 함께 써내려갑니다
-              </p>
-            </div>
-          </div>
-
-          {/* Feedback Card */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-            <div className="relative p-8 rounded-2xl border border-blue-100 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">실시간 코드 리뷰</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-blue-600">{`while (학습중) {`}</span><br />
-                전문가의 코드 리뷰와 동료들의<br />
-                피드백으로 함께 성장합니다
-              </p>
-            </div>
-          </div>
-
-          {/* Progress Card */}
-          <div className="relative group">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500 to-amber-500 rounded-2xl blur-xl opacity-20 group-hover:opacity-30 transition-opacity duration-300"></div>
-            <div className="relative p-8 rounded-2xl border border-orange-100 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">성장 트래킹</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-orange-600">{`for (성장; 성공; 도약) {`}</span><br />
-                데이터 기반 학습 분석으로<br />
-                당신의 성장을 실시간 확인하세요
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Category Filter Section */}
-        <div className="flex gap-3 mb-12 overflow-x-auto pb-4 px-1 -mx-1">
-          <Button
-            variant="outline"
-            className={cn(
-              "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
-              "hover:scale-102 hover:shadow-lg",
-              "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800",
-              selectedMainCategory === 'all' 
-                ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg shadow-blue-500/20" 
-                : "border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
-            )}
-            onClick={() => setSelectedMainCategory('all')}
-          >
-            <div className="h-10 w-10 mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-sky-50 flex items-center justify-center">
-              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
-            </div>
-            <span className="font-medium text-sm text-gray-900 dark:text-gray-100">전체 과정</span>
-            <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">All Courses</span>
-          </Button>
-
-          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => {
-            const categoryColors = {
-              'CLOUD': { icon: 'text-sky-500', bg: 'from-sky-50 to-blue-50', ring: 'ring-sky-500 shadow-sky-500/20' },
-              'AI_ML': { icon: 'text-fuchsia-500', bg: 'from-fuchsia-50 to-purple-50', ring: 'ring-fuchsia-500 shadow-fuchsia-500/20' },
-              'WEB': { icon: 'text-indigo-500', bg: 'from-indigo-50 to-blue-50', ring: 'ring-indigo-500 shadow-indigo-500/20' },
-              'AUTOMATION': { icon: 'text-orange-500', bg: 'from-orange-50 to-amber-50', ring: 'ring-orange-500 shadow-orange-500/20' },
-              'DEVOPS': { icon: 'text-emerald-500', bg: 'from-emerald-50 to-green-50', ring: 'ring-emerald-500 shadow-emerald-500/20' },
-              'DataEngineering': { icon: 'text-cyan-500', bg: 'from-cyan-50 to-sky-50', ring: 'ring-cyan-500 shadow-cyan-500/20' },
-              'CodeingTest': { icon: 'text-violet-500', bg: 'from-violet-50 to-purple-50', ring: 'ring-violet-500 shadow-violet-500/20' }
-            };
-            
-            const colors = categoryColors[key as keyof typeof categoryColors];
-
-            return (
-              <Button
-                key={key}
-                variant="outline"
-                className={cn(
-                  "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
-                  "hover:scale-102 hover:shadow-lg",
-                  "bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800",
-                  selectedMainCategory === key 
-                    ? `ring-2 ${colors.ring} ring-offset-2 shadow-lg` 
-                    : "border border-gray-200 dark:border-gray-700 hover:border-blue-200 dark:hover:border-blue-800"
-                )}
-                onClick={() => setSelectedMainCategory(key)}
-              >
-                <div className={cn("h-10 w-10 mb-3 rounded-xl bg-gradient-to-br flex items-center justify-center", colors.bg)}>
-                  <CategoryIcon category={key} className={colors.icon} />
-                </div>
-                <span className="font-medium text-sm text-gray-900 dark:text-gray-100">{value}</span>
-                <span className="text-[11px] text-gray-500 dark:text-gray-400 mt-1">
-                  {(() => {
-                    switch(key) {
-                      case 'CLOUD': return 'Cloud Computing';
-                      case 'AI_ML': return 'AI & Machine Learning';
-                      case 'WEB': return 'Web Development';
-                      case 'AUTOMATION': return 'Automation';
-                      case 'DEVOPS': return 'DevOps';
-                      case 'DataEngineering': return 'Data Engineering';
-                      case 'CodeingTest': return 'Coding Test';
-                      default: return '';
-                    }
-                  })()}
-                </span>
-              </Button>
-            );
-          })}
-        </div>
-
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-8">{error}</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredCourses.map((course) => (
-              <motion.div
-                key={course.id}
-                initial={fadeInUp.initial}
-                animate={fadeInUp.animate}
-                transition={fadeInUp.transition}
-              >
-                <CourseCard course={course} />
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Features Section */}
+      {/* Feature Cards */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Curriculum Card */}
           <motion.div
             initial={fadeInUp.initial}
             animate={fadeInUp.animate}
@@ -751,6 +572,7 @@ const StudentLanding: FC = () => {
             </div>
           </motion.div>
 
+          {/* Feedback Card */}
           <motion.div
             initial={fadeInUp.initial}
             animate={fadeInUp.animate}
@@ -773,6 +595,7 @@ const StudentLanding: FC = () => {
             </div>
           </motion.div>
 
+          {/* Progress Card */}
           <motion.div
             initial={fadeInUp.initial}
             animate={fadeInUp.animate}
@@ -796,6 +619,151 @@ const StudentLanding: FC = () => {
             </div>
           </motion.div>
         </div>
+      </div>
+
+      {/* Course Section */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <div className="text-center mb-16">
+          <div className="relative py-16 px-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl overflow-hidden group">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 via-transparent to-cyan-400/10"></div>
+            
+            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-blue-500/20 via-cyan-400/20 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
+            <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-600/20 via-cyan-400/20 to-transparent rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
+            
+            <div className="relative max-w-5xl mx-auto">
+              <div className="flex items-center space-x-4 mb-8 pl-4">
+                <div className="w-1.5 h-12 bg-gradient-to-b from-blue-400 to-cyan-300 rounded-full"></div>
+                <h2 className="text-5xl font-bold text-white tracking-tight">
+                  Shaping the Future with AI
+                </h2>
+              </div>
+              
+              <div className="space-y-8 pl-4">
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <code className="font-mono text-lg text-white">{`class Future { start() {`}</code>
+                  </div>
+                </div>
+
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <p className="text-xl text-white leading-relaxed">
+                      AI 전문 기업의 풍부한 경험과 기술을 바탕으로 설계된 교육을 통해<br />
+                      개인과 조직이 AI와 Cloud 기술을 통해 미래를 대비하고<br />
+                      지속 가능한 성장을 이룰 수 있도록 돕습니다
+                    </p>
+                  </div>
+                </div>
+
+                <div className="relative group/code w-fit">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
+                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
+                    <code className="font-mono text-lg text-white">{`}}`}</code>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Category Filter Section */}
+        <div className="flex gap-3 mb-12 overflow-x-auto pb-4 px-1 -mx-1">
+          <Button
+            variant="outline"
+            className={cn(
+              "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
+              "hover:scale-102 hover:shadow-lg",
+              "bg-gradient-to-b from-white to-gray-50",
+              selectedMainCategory === 'all' 
+                ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg shadow-blue-500/20" 
+                : "border border-gray-200 hover:border-blue-200"
+            )}
+            onClick={() => setSelectedMainCategory('all')}
+          >
+            <div className="h-10 w-10 mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
+              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+            </div>
+            <span className="font-medium text-sm text-gray-900">전체 과정</span>
+            <span className="text-[11px] text-gray-500 mt-1">All Courses</span>
+          </Button>
+
+          {/* Existing category buttons */}
+          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => {
+            const categoryColors = {
+              'CLOUD': { icon: 'text-sky-500', bg: 'from-sky-50 to-blue-50', ring: 'ring-sky-500 shadow-sky-500/20' },
+              'AI_ML': { icon: 'text-blue-500', bg: 'from-blue-50 to-cyan-50', ring: 'ring-blue-500 shadow-blue-500/20' },
+              'WEB': { icon: 'text-indigo-500', bg: 'from-indigo-50 to-blue-50', ring: 'ring-indigo-500 shadow-indigo-500/20' },
+              'AUTOMATION': { icon: 'text-orange-500', bg: 'from-orange-50 to-amber-50', ring: 'ring-orange-500 shadow-orange-500/20' },
+              'DEVOPS': { icon: 'text-emerald-500', bg: 'from-emerald-50 to-green-50', ring: 'ring-emerald-500 shadow-emerald-500/20' },
+              'DataEngineering': { icon: 'text-cyan-500', bg: 'from-cyan-50 to-sky-50', ring: 'ring-cyan-500 shadow-cyan-500/20' },
+              'CodeingTest': { icon: 'text-violet-500', bg: 'from-violet-50 to-purple-50', ring: 'ring-violet-500 shadow-violet-500/20' }
+            };
+            
+            const colors = categoryColors[key as keyof typeof categoryColors];
+
+            return (
+              <Button
+                key={key}
+                variant="outline"
+                className={cn(
+                  "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
+                  "hover:scale-102 hover:shadow-lg",
+                  "bg-gradient-to-b from-white to-gray-50",
+                  selectedMainCategory === key 
+                    ? `ring-2 ${colors.ring} ring-offset-2 shadow-lg` 
+                    : "border border-gray-200 hover:border-blue-200"
+                )}
+                onClick={() => setSelectedMainCategory(key)}
+              >
+                <div className={cn("h-10 w-10 mb-3 rounded-xl bg-gradient-to-br flex items-center justify-center", colors.bg)}>
+                  <CategoryIcon category={key} className={colors.icon} />
+                </div>
+                <span className="font-medium text-sm text-gray-900">{value}</span>
+                <span className="text-[11px] text-gray-500 mt-1">
+                  {(() => {
+                    switch(key) {
+                      case 'CLOUD': return 'Cloud Computing';
+                      case 'AI_ML': return 'AI & Machine Learning';
+                      case 'WEB': return 'Web Development';
+                      case 'AUTOMATION': return 'Automation';
+                      case 'DEVOPS': return 'DevOps';
+                      case 'DataEngineering': return 'Data Engineering';
+                      case 'CodeingTest': return 'Coding Test';
+                      default: return '';
+                    }
+                  })()}
+                </span>
+              </Button>
+            );
+          })}
+        </div>
+
+        {/* Course List */}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          </div>
+        ) : error ? (
+          <div className="text-center text-red-500 py-8">{error}</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {filteredCourses.map((course) => (
+              <motion.div
+                key={course.id}
+                initial={fadeInUp.initial}
+                animate={fadeInUp.animate}
+                transition={fadeInUp.transition}
+              >
+                <CourseCard course={course} />
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
