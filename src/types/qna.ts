@@ -12,6 +12,7 @@ export interface QnaMetadata {
 export interface QnaContent {
   title: string;
   content: string;
+  summary?: string;
 }
 
 export interface QnaAttachment {

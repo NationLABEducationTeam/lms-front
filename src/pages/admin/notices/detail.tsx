@@ -143,7 +143,7 @@ const NoticeDetail: FC = () => {
 
           {/* 본문 */}
           <div className="prose prose-invert max-w-none mb-6"
-            dangerouslySetInnerHTML={{ __html: notice.content.body }}
+            dangerouslySetInnerHTML={{ __html: notice.content.content }}
           />
 
           {/* 첨부파일 */}

@@ -93,7 +93,7 @@ const CommunityDetail: FC = () => {
           <CardContent>
             {/* 본문 */}
             <div className="prose max-w-none mb-6"
-              dangerouslySetInnerHTML={{ __html: post.content.body }}
+              dangerouslySetInnerHTML={{ __html: post.content.content }}
             />
 
             {/* 첨부파일 */}

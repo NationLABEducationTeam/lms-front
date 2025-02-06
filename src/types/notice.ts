@@ -13,6 +13,7 @@ export interface NoticeMetadata {
 export interface NoticeContent {
   title: string;
   content: string;
+  summary?: string;
 }
 
 export interface Notice {

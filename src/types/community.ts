@@ -13,6 +13,7 @@ export interface CommunityMetadata {
 export interface CommunityContent {
   title: string;
   content: string;
+  summary?: string;
 }
 
 export interface CommunityPost {
