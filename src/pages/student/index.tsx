@@ -417,7 +417,7 @@ const StudentLanding: FC = () => {
       )}
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden bg-[#111827]">
+      <div className="relative overflow-hidden">
         {/* Stock Video Background */}
         <div className="absolute inset-0 z-0">
           <video
@@ -425,11 +425,11 @@ const StudentLanding: FC = () => {
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover opacity-50"
+            className="absolute inset-0 w-full h-full object-cover"
           >
             <source src="/stockvideo.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 bg-gradient-to-r from-[#111827]/80 via-transparent to-[#111827]/80"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
