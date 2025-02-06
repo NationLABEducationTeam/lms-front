@@ -77,7 +77,6 @@ interface UploadModalProps {
   onClose: () => void;
   weekNumber: number;
   courseId: string;
-  onUploadComplete: () => void;
 }
 
 interface PresignedUrlResponse {
@@ -94,7 +93,7 @@ interface ToastMessage {
   type: ToastType;
 }
 
-const UploadModal: FC<UploadModalProps> = ({ isOpen, onClose, weekNumber, courseId, onUploadComplete }) => {
+const UploadModal: FC<UploadModalProps> = ({ isOpen, onClose, weekNumber, courseId }) => {
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -476,13 +475,6 @@ const CourseLessons: FC = () => {
     setUploadModalOpen(true);
   };
 
-  const handleUploadComplete = () => {
-    // 페이지 새로고침 대신 해당 주차의 데이터만 다시 로드
-    if (selectedWeekForUpload) {
-      loadWeekData(selectedWeekForUpload);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-[#f8fafc] p-8">
       <div className="max-w-7xl mx-auto">
@@ -770,7 +762,6 @@ const CourseLessons: FC = () => {
             }}
             weekNumber={selectedWeekForUpload}
             courseId={id}
-            onUploadComplete={handleUploadComplete}
           />
         )}
       </div>
