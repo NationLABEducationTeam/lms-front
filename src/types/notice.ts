@@ -1,20 +1,23 @@
+export interface NoticeMetadata {
+  id: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+  category: string;
+  tags: string[];
+  status: 'active' | 'inactive';
+  viewCount: number;
+  isImportant: boolean;
+}
+
+export interface NoticeContent {
+  title: string;
+  content: string;
+}
+
 export interface Notice {
-  metadata: {
-    id: string;
-    author: string;
-    createdAt: string;
-    updatedAt: string;
-    category: string;
-    tags: string[];
-    status: 'active' | 'inactive';
-    viewCount: number;
-    isImportant: boolean;
-  };
-  content: {
-    title: string;
-    body: string;
-    summary?: string;
-  };
+  metadata: NoticeMetadata;
+  content: NoticeContent;
   attachments: {
     id: string;
     name: string;

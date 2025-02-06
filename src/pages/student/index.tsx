@@ -461,7 +461,7 @@ const StudentLanding: FC = () => {
               {user && <AttendanceStreak days={3} />}
               <div className="mt-8 space-y-4">
                 <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium">
-                  {['AWS 클라우드', 'AI/머신러닝', '데이터 엔지니어링'].map((tech) => (
+                  {['AWS 클라우드', '컴퓨터 비전/AI', '데이터 엔지니어링'].map((tech) => (
                     <span
                       key={tech}
                       className="flex items-center px-4 py-2 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"

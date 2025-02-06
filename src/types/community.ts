@@ -1,17 +1,23 @@
+export interface CommunityMetadata {
+  id: string;
+  author: string;
+  createdAt: string;
+  updatedAt: string;
+  viewCount: number;
+  commentCount: number;
+  likeCount: number;
+  category: string;
+  tags: string[];
+}
+
+export interface CommunityContent {
+  title: string;
+  content: string;
+}
+
 export interface CommunityPost {
-  metadata: {
-    id: string;
-    author: string;
-    createdAt: string;
-    updatedAt: string;
-    viewCount: number;
-    commentCount: number;
-  };
-  content: {
-    title: string;
-    body: string;
-    summary?: string;
-  };
+  metadata: CommunityMetadata;
+  content: CommunityContent;
   attachments: {
     id: string;
     name: string;

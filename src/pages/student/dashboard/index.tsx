@@ -27,7 +27,8 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  HelpCircle
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -203,11 +204,96 @@ const StudentDashboard: FC = () => {
           </motion.div>
         </div>
 
+        {/* Quick Navigation Cards */}
+        <div className="mb-8">
+          <motion.div
+            initial={fadeInUp.initial}
+            animate={fadeInUp.animate}
+            transition={{ ...fadeInUp.transition, delay: 0.5 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4"
+          >
+            {/* 공지사항 카드 */}
+            <div
+              onClick={() => navigate('/notices')}
+              className="group cursor-pointer bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-6 border border-orange-200/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-orange-500/10 rounded-xl">
+                  <Bell className="w-6 h-6 text-orange-600" />
+                </div>
+                <span className="text-orange-600 font-medium text-sm bg-orange-100 px-3 py-1 rounded-full">
+                  {notices.length} 개의 새 공지
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-orange-600 transition-colors">
+                공지사항
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                중요한 공지사항과 업데이트를 확인하세요
+              </p>
+              <div className="flex items-center text-orange-600 font-medium">
+                <span className="text-sm">바로가기</span>
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* Q&A 카드 */}
+            <div
+              onClick={() => navigate('/qna')}
+              className="group cursor-pointer bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-blue-500/10 rounded-xl">
+                  <HelpCircle className="w-6 h-6 text-blue-600" />
+                </div>
+                <span className="text-blue-600 font-medium text-sm bg-blue-100 px-3 py-1 rounded-full">
+                  {qnaPosts.length} 개의 질문
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-blue-600 transition-colors">
+                질의응답
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                학습 관련 질문과 답변을 확인하세요
+              </p>
+              <div className="flex items-center text-blue-600 font-medium">
+                <span className="text-sm">바로가기</span>
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+
+            {/* 커뮤니티 카드 */}
+            <div
+              onClick={() => navigate('/community')}
+              className="group cursor-pointer bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-6 border border-purple-200/50 hover:shadow-lg transition-all duration-200 hover:-translate-y-1"
+            >
+              <div className="flex items-start justify-between mb-4">
+                <div className="p-3 bg-purple-500/10 rounded-xl">
+                  <Users className="w-6 h-6 text-purple-600" />
+                </div>
+                <span className="text-purple-600 font-medium text-sm bg-purple-100 px-3 py-1 rounded-full">
+                  {communityPosts.length} 개의 게시글
+                </span>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-purple-600 transition-colors">
+                커뮤니티
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                다른 학습자들과 소통하고 정보를 공유하세요
+              </p>
+              <div className="flex items-center text-purple-600 font-medium">
+                <span className="text-sm">바로가기</span>
+                <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+
         {/* 메인 콘텐츠 */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 왼쪽: 수강 중인 강의 */}
           <motion.div 
-            className="lg:col-span-2"
+            className="lg:col-span-3"
             {...fadeInUp}
             transition={{ ...fadeInUp.transition, delay: 0.5 }}
           >
@@ -230,14 +316,14 @@ const StudentDashboard: FC = () => {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
                   </div>
                 ) : courses.length > 0 ? (
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {courses.map((course, index) => (
                       <motion.div
                         key={course.id}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
-                        className="group flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                        className="group flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100"
                         onClick={() => navigate(`/courses/${course.id}`)}
                       >
                         <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden">
@@ -274,121 +360,25 @@ const StudentDashboard: FC = () => {
             </Card>
           </motion.div>
 
-          {/* 오른쪽: 활동 피드 */}
+          {/* 마감 임박 알림 */}
           <motion.div
+            className="lg:col-span-3"
             {...fadeInUp}
             transition={{ ...fadeInUp.transition, delay: 0.6 }}
           >
             <Card className="bg-white">
               <CardHeader>
-                <CardTitle className="text-xl">최근 활동</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="notices" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="notices" className="text-xs">
-                      공지사항
-                    </TabsTrigger>
-                    <TabsTrigger value="qna" className="text-xs">
-                      QnA
-                    </TabsTrigger>
-                    <TabsTrigger value="community" className="text-xs">
-                      커뮤니티
-                    </TabsTrigger>
-                  </TabsList>
-                  
-                  <TabsContent value="notices">
-                    <div className="space-y-4">
-                      {notices.slice(0, 5).map((notice, index) => (
-                        <motion.div
-                          key={notice.metadata.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/notices/${notice.metadata.id}`)}
-                        >
-                          <Bell className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">
-                              {notice.content.title}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDistanceToNow(new Date(notice.metadata.createdAt), { addSuffix: true, locale: ko })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="qna">
-                    <div className="space-y-4">
-                      {qnaPosts.slice(0, 5).map((post, index) => (
-                        <motion.div
-                          key={post.metadata.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/qna/${post.metadata.id}`)}
-                        >
-                          <MessageSquare className="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">
-                              {post.content.title}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDistanceToNow(new Date(post.metadata.createdAt), { addSuffix: true, locale: ko })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="community">
-                    <div className="space-y-4">
-                      {communityPosts.slice(0, 5).map((post, index) => (
-                        <motion.div
-                          key={post.metadata.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                          className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
-                          onClick={() => navigate(`/community/${post.metadata.id}`)}
-                        >
-                          <Users className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-                          <div>
-                            <h4 className="font-medium text-gray-900 text-sm">
-                              {post.content.title}
-                            </h4>
-                            <p className="text-xs text-gray-500 mt-1">
-                              {formatDistanceToNow(new Date(post.metadata.createdAt), { addSuffix: true, locale: ko })}
-                            </p>
-                          </div>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-
-            {/* 마감 임박 알림 */}
-            <Card className="bg-white mt-6">
-              <CardHeader>
                 <CardTitle className="text-xl">마감 임박</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {getUpcomingDeadlines().map((deadline, index) => (
                     <motion.div
                       key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="flex items-start gap-3 p-3 rounded-lg bg-orange-50 border border-orange-100"
+                      className="flex items-start gap-3 p-4 rounded-lg bg-orange-50 border border-orange-100"
                     >
                       <AlertCircle className="w-5 h-5 text-orange-500 flex-shrink-0 mt-0.5" />
                       <div>

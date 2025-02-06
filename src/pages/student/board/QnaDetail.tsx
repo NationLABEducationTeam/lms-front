@@ -2,7 +2,7 @@ import { FC, useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
-import { MessageCircle, Eye, ArrowLeft } from 'lucide-react';
+import { MessageCircle, Eye, ArrowLeft, Download } from 'lucide-react';
 import { QnaPost } from '@/types/qna';
 import { getQnaPost } from '@/services/api/qna';
 import { toast } from 'sonner';
@@ -30,6 +30,24 @@ const QnaDetail: FC = () => {
 
     fetchPost();
   }, [id]);
+
+  const handleDownload = async (url: string, fileName: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('파일 다운로드 실패:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
+    }
+  };
 
   if (loading) {
     return (
@@ -71,11 +89,13 @@ const QnaDetail: FC = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             목록으로
           </Button>
-          {post.metadata.isAnswered && (
-            <span className="px-3 py-1 text-sm font-medium text-green-700 bg-green-100 rounded-full">
-              답변완료
-            </span>
-          )}
+          <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+            post.metadata.status === 'resolved'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}>
+            {post.metadata.status === 'resolved' ? '해결됨' : '답변 대기중'}
+          </span>
         </div>
         <div>
           <CardTitle className="text-2xl mb-2">{post.content.title}</CardTitle>
@@ -91,32 +111,52 @@ const QnaDetail: FC = () => {
               <span>{post.metadata.commentCount}</span>
             </div>
           </div>
+          {post.metadata.tags && post.metadata.tags.length > 0 && (
+            <div className="flex gap-2 mt-2">
+              {post.metadata.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="px-2 py-1 text-sm bg-gray-100 text-gray-700 rounded-full"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 질문 내용 */}
         <div className="prose max-w-none">
-          <div dangerouslySetInnerHTML={{ __html: post.content.body }} />
+          <div dangerouslySetInnerHTML={{ __html: post.content.content }} />
         </div>
 
         {/* 첨부파일 */}
-        {post.content.attachments && post.content.attachments.length > 0 && (
+        {post.attachments && post.attachments.length > 0 && (
           <div className="border-t pt-4">
             <h3 className="font-medium mb-2">첨부파일</h3>
-            <ul className="space-y-1">
-              {post.content.attachments.map((file, index) => (
-                <li key={index}>
-                  <a
-                    href={file}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-600 hover:underline"
+            <div className="space-y-2">
+              {post.attachments.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex items-center justify-between bg-gray-50 rounded-lg p-3"
+                >
+                  <div className="flex-1">
+                    <div className="font-medium">{file.name}</div>
+                    <div className="text-sm text-gray-500">
+                      {(file.size / 1024 / 1024).toFixed(2)} MB
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    className="hover:bg-gray-200"
+                    onClick={() => handleDownload(file.url, file.name)}
                   >
-                    첨부파일 {index + 1}
-                  </a>
-                </li>
+                    <Download className="w-4 h-4" />
+                  </Button>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
