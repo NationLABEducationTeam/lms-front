@@ -221,7 +221,7 @@ const StudentDashboard: FC = () => {
                   variant="outline"
                   onClick={() => navigate('/courses')}
                 >
-                  전체보기
+                  강의실 바로가기
                 </Button>
               </CardHeader>
               <CardContent>

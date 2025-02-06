@@ -23,6 +23,7 @@ export interface Course {
   sub_category_id: string;
   sub_category_name: string;
   thumbnail_url?: string;
+  zoom_link?: string;
   price: number;
   level: CourseLevel;
   status: CourseStatus;

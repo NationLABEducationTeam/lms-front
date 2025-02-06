@@ -50,6 +50,12 @@ interface CreateCourseParams {
   price: number;
 }
 
+interface PresignedUrlResponse {
+  fileName: string;
+  url: string;
+  key: string;
+}
+
 // 카테고리 조회
 export const listCategories = async (path: string = ''): Promise<ListResponse> => {
   try {
@@ -170,27 +176,39 @@ export const createCourse = async (params: CreateCourseParams) => {
 };
 
 // 파일 업로드를 위한 presigned URL 요청
-export const getUploadUrls = async (path: string, files: { name: string; type: string; size: number }[]): Promise<{ urls: string[] }> => {
+export const getUploadUrls = async (
+  courseId: string, 
+  weekNumber: number, 
+  files: { name: string; type: string; size: number }[]
+): Promise<{ urls: PresignedUrlResponse[] }> => {
   try {
     const session = await fetchAuthSession();
-    const token = session.tokens?.idToken?.toString();
+    const token = session.tokens?.accessToken?.toString();
     
     if (!token) {
       throw new Error('로그인이 필요합니다.');
     }
 
-    const response = await fetch(UPLOAD_FILE_URL, {
+    const response = await fetch(getApiUrl(`/admin/courses/${courseId}/${weekNumber}/upload`), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify({ path, files })
+      body: JSON.stringify({ files })
     });
+
     if (!response.ok) {
-      throw new Error('Failed to get upload URLs');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to get upload URLs');
     }
-    return await response.json();
+
+    const data = await response.json();
+    if (!data.success) {
+      throw new Error(data.message || 'Failed to get upload URLs');
+    }
+
+    return { urls: data.data.urls };
   } catch (error) {
     console.error('Error getting upload URLs:', error);
     throw error;
@@ -221,7 +239,7 @@ export const deleteCourse = async (courseId: string) => {
       throw new Error('로그인이 필요합니다.');
     }
     
-    const response = await fetch(`${getApiUrl(API_ENDPOINTS.COURSES)}/${courseId}`, {
+    const response = await fetch(`${getApiUrl('/admin/courses')}/${courseId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -488,6 +506,56 @@ export const getEnrolledCourses = async (): Promise<CoursesResponse> => {
     return { courses: data.data.courses };
   } catch (error) {
     console.error('Error fetching enrolled courses:', error);
+    throw error;
+  }
+}; 
+
+// 관리자용 강의 상세 정보 조회 (주차별 자료 포함)
+export const getAdminCourseDetail = async (courseId: string): Promise<{
+  course: Course;
+  weeks: {
+    weekName: string;
+    weekNumber: number;
+    materials: {
+      [key: string]: {
+        fileName: string;
+        downloadUrl: string;
+        lastModified: string;
+        size: number;
+      }[];
+    };
+  }[];
+}> => {
+  try {
+    const session = await fetchAuthSession();
+    const token = session.tokens?.accessToken?.toString();
+    
+    if (!token) {
+      throw new Error('로그인이 필요합니다.');
+    }
+
+    const response = await fetch(`${getApiUrl(API_ENDPOINTS.COURSES)}/${courseId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || '강의 정보를 불러오는데 실패했습니다.');
+    }
+
+    const data = await response.json();
+    
+    if (!data.success) {
+      throw new Error(data.message || '강의 정보를 불러오는데 실패했습니다.');
+    }
+
+    return data.data;
+  } catch (error) {
+    console.error('Error fetching admin course details:', error);
     throw error;
   }
 }; 

@@ -546,78 +546,97 @@ const StudentLanding: FC = () => {
         <ImageCarousel />
       </div>
 
-      {/* Feature Cards */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Curriculum Card */}
-          <motion.div
-            initial={fadeInUp.initial}
-            animate={fadeInUp.animate}
-            transition={{ ...fadeInUp.transition, delay: 0.1 }}
-            className="relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-60 transition-all duration-500"></div>
-            <div className="relative p-8 rounded-2xl bg-gradient-to-br from-white to-purple-50/50 border border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-indigo-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">체계적인 커리큘럼</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-purple-600">{`def learn_step_by_step():`}</span><br />
-                전문가가 설계한 커리큘럼으로<br />
-                단계별 학습을 경험하세요
-              </p>
-            </div>
-          </motion.div>
+      {/* Feature Cards Section */}
+      <div className="w-full bg-gradient-to-b from-slate-900 to-slate-800 py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative">
+            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
+            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
+              {/* Curriculum Card */}
+              <motion.div
+                initial={fadeInUp.initial}
+                animate={fadeInUp.animate}
+                transition={{ ...fadeInUp.transition, delay: 0.1 }}
+                className="group"
+              >
+                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-700"></div>
+                  <div className="relative">
+                    <div className="h-12 w-12 mb-6 rounded-xl bg-purple-500/10 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">체계적인 커리큘럼</h3>
+                    <div className="space-y-2">
+                      <code className="block text-sm text-purple-300 font-mono">def learn_step_by_step():</code>
+                      <p className="text-slate-300 leading-relaxed">
+                        전문가가 설계한 커리큘럼으로<br />
+                        단계별 학습을 경험하세요
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
 
-          {/* Feedback Card */}
-          <motion.div
-            initial={fadeInUp.initial}
-            animate={fadeInUp.animate}
-            transition={{ ...fadeInUp.transition, delay: 0.2 }}
-            className="relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-60 transition-all duration-500"></div>
-            <div className="relative p-8 rounded-2xl bg-gradient-to-br from-white to-blue-50/50 border border-blue-100 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-cyan-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">실시간 피드백</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-blue-600">{`async function review() {`}</span><br />
-                강사와 동료들의 피드백으로<br />
-                더 빠른 성장을 이루세요
-              </p>
-            </div>
-          </motion.div>
+              {/* Feedback Card */}
+              <motion.div
+                initial={fadeInUp.initial}
+                animate={fadeInUp.animate}
+                transition={{ ...fadeInUp.transition, delay: 0.2 }}
+                className="group"
+              >
+                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700"></div>
+                  <div className="relative">
+                    <div className="h-12 w-12 mb-6 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">실시간 피드백</h3>
+                    <div className="space-y-2">
+                      <code className="block text-sm text-blue-300 font-mono">async function review() &#123;</code>
+                      <p className="text-slate-300 leading-relaxed">
+                        강사와 동료들의 피드백으로<br />
+                        더 빠른 성장을 이루세요
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
 
-          {/* Progress Card */}
-          <motion.div
-            initial={fadeInUp.initial}
-            animate={fadeInUp.animate}
-            transition={{ ...fadeInUp.transition, delay: 0.3 }}
-            className="relative group"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-amber-500/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-60 transition-all duration-500"></div>
-            <div className="relative p-8 rounded-2xl bg-gradient-to-br from-white to-orange-50/50 border border-orange-100 shadow-lg hover:shadow-xl transition-all duration-300">
-              <div className="h-12 w-12 mb-6 rounded-xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 flex items-center justify-center">
-                <svg className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-3">학습 관리</h3>
-              <p className="text-gray-600">
-                <span className="font-mono text-orange-600">{`const progress = new`}</span><br />
-                <span className="font-mono text-orange-600">{`Dashboard();`}</span><br />
-                대시보드를 통해 나의 학습 현황을<br />
-                한눈에 파악하세요
-              </p>
+              {/* Progress Card */}
+              <motion.div
+                initial={fadeInUp.initial}
+                animate={fadeInUp.animate}
+                transition={{ ...fadeInUp.transition, delay: 0.3 }}
+                className="group"
+              >
+                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
+                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-700"></div>
+                  <div className="relative">
+                    <div className="h-12 w-12 mb-6 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                      <svg className="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-white mb-3">학습 관리</h3>
+                    <div className="space-y-2">
+                      <code className="block text-sm text-cyan-300 font-mono">const progress = new<br />Dashboard();</code>
+                      <p className="text-slate-300 leading-relaxed">
+                        대시보드를 통해 나의 학습 현황을<br />
+                        한눈에 파악하세요
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
+          </div>
         </div>
       </div>
 

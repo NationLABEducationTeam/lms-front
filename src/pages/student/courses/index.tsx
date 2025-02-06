@@ -22,6 +22,8 @@ interface WeekMaterials {
   video?: Material[];
   quiz?: Material[];
   spreadsheet?: Material[];  // 엑셀 파일을 위한 필드 추가
+  image?: Material[];
+  unknown?: Material[];
 }
 
 interface Week {
@@ -161,7 +163,7 @@ const StudentCoursesPage: FC = () => {
   // 실시간 수업 입장 가능 여부 체크 (현재 시간 기준 15분 전부터 입장 가능)
   const isLiveClassAvailable = selectedCourse ? new Date(selectedCourse.created_at).getTime() - Date.now() <= 15 * 60 * 1000 : false;
 
-  // 파일 아이콘 선택 함수 추가
+  // 파일 아이콘 선택 함수 수정
   const getFileIcon = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
     switch (extension) {
@@ -178,9 +180,34 @@ const StudentCoursesPage: FC = () => {
         return <FileText className="w-5 h-5 text-orange-600" />;
       case 'mp4':
       case 'mov':
+      case 'avi':
+      case 'wmv':
         return <Video className="w-5 h-5 text-purple-600" />;
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return <FileText className="w-5 h-5 text-pink-600" />;
       default:
         return <FileText className="w-5 h-5 text-gray-600" />;
+    }
+  };
+
+  // 파일 타입 표시 이름 가져오기
+  const getFileTypeName = (type: string) => {
+    switch (type) {
+      case 'document':
+        return '강의 자료';
+      case 'video':
+        return '강의 영상';
+      case 'image':
+        return '이미지';
+      case 'spreadsheet':
+        return '엑셀 자료';
+      case 'unknown':
+        return '기타 자료';
+      default:
+        return type;
     }
   };
 
@@ -191,14 +218,15 @@ const StudentCoursesPage: FC = () => {
     return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
   };
 
-  // 주차별 자료 렌더링
+  // 주차별 자료 렌더링 함수 수정
   const renderWeekMaterials = (materials: WeekMaterials) => {
-    const renderMaterialList = (items: Material[] | undefined, title: string) => {
+    // 모든 파일 타입을 포함하도록 수정
+    const renderMaterialList = (items: Material[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
       
       return (
         <div className="mb-6 last:mb-0">
-          <h4 className="text-sm font-medium text-slate-500 mb-2">{title}</h4>
+          <h4 className="text-sm font-medium text-slate-500 mb-2">{getFileTypeName(type)}</h4>
           <div className="space-y-2">
             {items.map((item, index) => (
               <a
@@ -227,10 +255,11 @@ const StudentCoursesPage: FC = () => {
 
     return (
       <div className="space-y-4">
-        {renderMaterialList(materials.document, '강의 자료')}
-        {renderMaterialList(materials.spreadsheet, '엑셀 자료')}
-        {renderMaterialList(materials.video, '강의 영상')}
-        {renderMaterialList(materials.quiz, '퀴즈')}
+        {renderMaterialList(materials.document, 'document')}
+        {renderMaterialList(materials.spreadsheet, 'spreadsheet')}
+        {renderMaterialList(materials.video, 'video')}
+        {renderMaterialList(materials.image, 'image')}
+        {renderMaterialList(materials.unknown, 'unknown')}
       </div>
     );
   };

@@ -25,6 +25,7 @@ const AdminCourses: FC = () => {
   const [toastMessage, setToastMessage] = useState({ title: '', description: '', type: 'success' });
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // 모든 강의 목록 불러오기
   const fetchCourses = async () => {
@@ -71,6 +72,7 @@ const AdminCourses: FC = () => {
 
   const handleDeleteClick = (course: Course) => {
     setCourseToDelete(course);
+    setIsDeleteDialogOpen(true);
   };
 
   const showToast = (title: string, description: string, type: 'success' | 'error' = 'success') => {
@@ -82,27 +84,26 @@ const AdminCourses: FC = () => {
     if (!courseToDelete) return;
 
     try {
+      setIsLoading(true);
       await deleteCourse(courseToDelete.id);
-      // 먼저 토스트 메시지 표시
+      
+      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseToDelete.id));
+      
       showToast(
         "강의 삭제 완료",
         `"${courseToDelete.title}" 강의가 성공적으로 삭제되었습니다.`
       );
-      // 강의 목록에서 삭제된 강의 제거
-      setCourses(prevCourses => prevCourses.filter(course => course.id !== courseToDelete.id));
-      // 대화상자 닫기
-      setCourseToDelete(null);
-      // 1초 후에 전체 목록 새로고침
-      setTimeout(() => {
-        fetchCourses();
-      }, 1000);
     } catch (error) {
+      console.error('Error deleting course:', error);
       showToast(
         "강의 삭제 실패",
         "강의 삭제 중 오류가 발생했습니다.",
         'error'
       );
+    } finally {
+      setIsLoading(false);
       setCourseToDelete(null);
+      setIsDeleteDialogOpen(false);
     }
   };
 
@@ -198,7 +199,10 @@ const AdminCourses: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate(`/admin/courses/${course.id}/edit`)}
+                          onClick={(e) => {
+                            e.stopPropagation();  // 이벤트 전파 중단
+                            navigate(`/admin/courses/${course.id}/edit`);
+                          }}
                           className="text-gray-700 border-gray-300"
                         >
                           <Edit2 className="w-4 h-4 mr-1" />
@@ -207,7 +211,10 @@ const AdminCourses: FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteClick(course)}
+                          onClick={(e) => {
+                            e.stopPropagation();  // 이벤트 전파 중단
+                            handleDeleteClick(course);
+                          }}
                           className="text-red-600 border-red-200 hover:bg-red-50"
                         >
                           <Trash2 className="w-4 h-4 mr-1" />
@@ -224,7 +231,10 @@ const AdminCourses: FC = () => {
       </div>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog.Root open={!!courseToDelete} onOpenChange={() => setCourseToDelete(null)}>
+      <AlertDialog.Root 
+        open={isDeleteDialogOpen} 
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialog.Portal>
           <AlertDialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
           <AlertDialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-6 rounded-lg shadow-xl w-[95vw] max-w-md">
@@ -238,7 +248,14 @@ const AdminCourses: FC = () => {
             </AlertDialog.Description>
             <div className="flex justify-end gap-3">
               <AlertDialog.Cancel asChild>
-                <Button variant="outline" className="border-gray-300">
+                <Button 
+                  variant="outline" 
+                  className="border-gray-300"
+                  onClick={() => {
+                    setCourseToDelete(null);
+                    setIsDeleteDialogOpen(false);
+                  }}
+                >
                   취소
                 </Button>
               </AlertDialog.Cancel>
@@ -246,9 +263,10 @@ const AdminCourses: FC = () => {
                 <Button
                   variant="destructive"
                   onClick={handleDeleteConfirm}
+                  disabled={isLoading}
                   className="bg-red-600 hover:bg-red-700 text-white"
                 >
-                  삭제
+                  {isLoading ? '삭제 중...' : '삭제'}
                 </Button>
               </AlertDialog.Action>
             </div>
