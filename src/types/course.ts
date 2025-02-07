@@ -8,7 +8,28 @@ export const CATEGORY_MAPPING = {
   'CodeingTest': '코딩테스트'
 } as const;
 
-export type MainCategory = 'CLOUD' | 'SECURITY' | 'NETWORK' | 'DEVELOPMENT';
+export type MainCategoryId = keyof typeof CATEGORY_MAPPING;
+
+export enum CourseLevel {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED'
+}
+
+export enum CourseStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  PRIVATE = 'PRIVATE'
+}
+
+export interface MainCategory {
+  id: MainCategoryId;
+  name: string;
+  sub_categories: {
+    id: string;
+    name: string;
+  }[];
+}
 
 export interface Course {
   id: string;
@@ -18,7 +39,7 @@ export interface Course {
   instructor_name: string;
   instructor_image?: string;
   instructor_bio?: string;
-  main_category_id: string;
+  main_category_id: MainCategoryId;
   main_category_name: string;
   sub_category_id: string;
   sub_category_name: string;
@@ -29,6 +50,8 @@ export interface Course {
   status: CourseStatus;
   created_at: string;
   updated_at: string;
+  weeks?: Week[];
+  enrolled_count?: number;
 }
 
 export interface CourseFile {
@@ -53,10 +76,6 @@ export interface WeeklyContent {
 export interface CourseDetail extends Course {
   weekly_contents: WeeklyContent[];
 }
-
-export type CourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-
-export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface Category {
   id: string;
@@ -101,4 +120,18 @@ interface Lesson {
 interface FAQ {
   question: string;
   answer: string;
+}
+
+export interface WeekMaterial {
+  fileName: string;
+  downloadUrl: string;
+  lastModified: string;
+  size: number;
+}
+
+export interface Week {
+  weekNumber: number;
+  materials: {
+    [key: string]: WeekMaterial[];
+  };
 }

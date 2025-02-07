@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { CATEGORY_MAPPING, MainCategory } from '@/types/course';
+import { CATEGORY_MAPPING, MainCategory, MainCategoryId } from '@/types/course';
+import * as SelectPrimitive from "@radix-ui/react-select";
 import {
-  Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
@@ -30,13 +30,18 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
         <label className="block text-sm font-medium text-gray-700 mb-1">
           대분류
         </label>
-        <Select 
-          value={selectedMain || 'all'} 
+        <SelectPrimitive.Root 
+          value={selectedMain?.id || 'all'} 
           onValueChange={(value: string) => {
             if (value === 'all') {
               onMainChange(null);
             } else {
-              onMainChange(value as MainCategory);
+              const categoryId = value as MainCategoryId;
+              onMainChange({
+                id: categoryId,
+                name: CATEGORY_MAPPING[categoryId],
+                sub_categories: []
+              });
             }
           }}
         >
@@ -51,7 +56,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
               </SelectItem>
             ))}
           </SelectContent>
-        </Select>
+        </SelectPrimitive.Root>
       </div>
       
       <div>

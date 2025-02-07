@@ -1,14 +1,15 @@
 import { FC, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
-import { Plus, Search, Trash2, Edit2 } from 'lucide-react';
+import { Plus, Search, Trash2, Edit2, BookOpen, Users, Calendar, AlertCircle } from 'lucide-react';
 import { CategorySelector } from '@/components/courses/CategorySelector';
-import { MainCategory, Course } from '@/types/course';
+import { MainCategory, Course, MainCategoryId } from '@/types/course';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Card } from '@/components/common/ui/card';
 import { Input } from '@/components/common/ui/input';
 import { useGetPublicCoursesQuery, useDeleteCourseMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
+import { Badge } from '@/components/common/ui/badge';
 
 const AdminCourses: FC = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const AdminCourses: FC = () => {
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
 
   const filteredCourses = courses.filter(course => {
-    const matchesMainCategory = !selectedMainCategory || course.main_category_id === selectedMainCategory;
+    const matchesMainCategory = !selectedMainCategory || course.main_category_id === selectedMainCategory.id;
     const matchesSubCategory = !selectedSubCategory || course.sub_category_id.toLowerCase().includes(selectedSubCategory.toLowerCase());
     const matchesSearch = course.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          course.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -49,72 +50,139 @@ const AdminCourses: FC = () => {
   };
 
   return (
-    <div className="p-8 bg-white min-h-screen">
+    <div className="p-8 bg-gradient-to-b from-gray-50 to-white min-h-screen">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">강의 관리</h1>
-            <p className="text-gray-500">강의를 생성하고 관리할 수 있습니다.</p>
+        {/* 헤더 섹션 */}
+        <div className="bg-white rounded-xl shadow-sm p-8 mb-8">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">강의 관리</h1>
+              <p className="text-gray-500">총 {filteredCourses.length}개의 강의가 등록되어 있습니다.</p>
+            </div>
+            <Button
+              onClick={() => navigate('/admin/courses/create')}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all duration-200 hover:shadow"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              새 강의 만들기
+            </Button>
           </div>
-          <Button
-            onClick={() => navigate('/admin/courses/create')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            새 강의 만들기
-          </Button>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="md:col-span-1">
+              <CategorySelector
+                selectedMain={selectedMainCategory}
+                selectedSub={selectedSubCategory}
+                onMainChange={setSelectedMainCategory}
+                onSubChange={setSelectedSubCategory}
+                className="bg-white rounded-lg shadow-sm"
+              />
+            </div>
+            <div className="md:col-span-3">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Input
+                  type="text"
+                  placeholder="강의 검색..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 w-full h-12 text-base"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="flex gap-4 mb-6">
-          <div className="w-64">
-            <CategorySelector
-              selectedMain={selectedMainCategory}
-              selectedSub={selectedSubCategory}
-              onMainChange={setSelectedMainCategory}
-              onSubChange={setSelectedSubCategory}
-            />
-          </div>
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              type="text"
-              placeholder="강의 검색..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 w-full"
-            />
-          </div>
-        </div>
-
+        {/* 강의 목록 */}
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
           </div>
         ) : error ? (
-          <div className="text-center py-12 text-red-600">
-            강의 목록을 불러오는데 실패했습니다.
+          <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <AlertCircle className="w-8 h-8 text-red-600" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">오류가 발생했습니다</h3>
+            <p className="text-gray-500">강의 목록을 불러오는데 실패했습니다.</p>
           </div>
         ) : filteredCourses.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            등록된 강의가 없습니다.
+          <div className="text-center py-12 bg-white rounded-xl shadow-sm">
+            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <BookOpen className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">등록된 강의가 없습니다</h3>
+            <p className="text-gray-500 mb-4">새로운 강의를 만들어 시작해보세요</p>
+            <Button
+              onClick={() => navigate('/admin/courses/create')}
+              className="bg-indigo-600 hover:bg-indigo-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              새 강의 만들기
+            </Button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-4">
             {filteredCourses.map((course) => (
               <Card
                 key={course.id}
-                className="p-6 hover:shadow-md transition-shadow cursor-pointer"
+                className="p-6 hover:shadow-md transition-shadow cursor-pointer bg-white border-0 shadow-sm"
                 onClick={() => navigate(`/admin/courses/${course.id}`)}
               >
-                <div className="flex items-center justify-between">
+                <div className="flex items-start gap-6">
+                  {/* 썸네일 */}
+                  <div className="w-48 h-32 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0">
+                    {course.thumbnail_url ? (
+                      <img
+                        src={course.thumbnail_url}
+                        alt={course.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <BookOpen className="w-8 h-8 text-gray-400" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 강의 정보 */}
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">
+                        {course.main_category_name}
+                      </Badge>
+                      <Badge variant="outline" className="text-gray-600 border-gray-200 bg-gray-50">
+                        {course.sub_category_name}
+                      </Badge>
+                      <Badge variant="outline" className={
+                        course.status === 'PUBLISHED' 
+                          ? 'text-green-600 border-green-200 bg-green-50'
+                          : course.status === 'DRAFT'
+                          ? 'text-orange-600 border-orange-200 bg-orange-50'
+                          : 'text-gray-600 border-gray-200 bg-gray-50'
+                      }>
+                        {course.status === 'PUBLISHED' ? '공개' : course.status === 'DRAFT' ? '임시저장' : '비공개'}
+                      </Badge>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
                       {course.title}
                     </h3>
-                    <p className="text-sm text-gray-500 line-clamp-1">
+                    <p className="text-gray-500 text-sm line-clamp-2 mb-4">
                       {course.description}
                     </p>
+                    <div className="flex items-center gap-6 text-sm text-gray-500">
+                      <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4" />
+                        <span>수강생 {course.enrolled_count || 0}명</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4" />
+                        <span>개설일: {new Date(course.created_at).toLocaleDateString()}</span>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* 작업 버튼 */}
                   <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
@@ -131,7 +199,7 @@ const AdminCourses: FC = () => {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
                       onClick={(e) => {
                         e.stopPropagation();
                         navigate(`/admin/courses/${course.id}/edit`);
@@ -146,14 +214,15 @@ const AdminCourses: FC = () => {
           </div>
         )}
 
+        {/* 삭제 확인 다이얼로그 */}
         <AlertDialog.Root open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
           <AlertDialog.Portal>
-            <AlertDialog.Overlay className="fixed inset-0 bg-black/50" />
-            <AlertDialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-lg p-6 w-full max-w-md">
+            <AlertDialog.Overlay className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
+            <AlertDialog.Content className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
               <AlertDialog.Title className="text-lg font-semibold text-gray-900 mb-2">
                 강의 삭제
               </AlertDialog.Title>
-              <AlertDialog.Description className="text-gray-500 mb-4">
+              <AlertDialog.Description className="text-gray-500 mb-6">
                 정말로 이 강의를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
               </AlertDialog.Description>
               <div className="flex justify-end gap-3">
@@ -161,6 +230,7 @@ const AdminCourses: FC = () => {
                   variant="outline"
                   onClick={() => setDeleteDialogOpen(false)}
                   disabled={isDeleting}
+                  className="hover:bg-gray-50"
                 >
                   취소
                 </Button>
@@ -168,6 +238,7 @@ const AdminCourses: FC = () => {
                   variant="destructive"
                   onClick={handleDeleteConfirm}
                   disabled={isDeleting}
+                  className="bg-red-600 hover:bg-red-700"
                 >
                   {isDeleting ? '삭제 중...' : '삭제'}
                 </Button>

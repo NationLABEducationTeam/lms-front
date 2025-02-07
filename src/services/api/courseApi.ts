@@ -1,8 +1,23 @@
+// Lambda URLs
+const LIST_STUDENT_COURSES_URL = 'https://ixnk2hrpzmae6rn7xa6dgox57a0fofid.lambda-url.ap-northeast-2.on.aws/';
+const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-northeast-2.on.aws/';
+const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
+
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { Course, CourseLevel, MainCategory, CourseStatus } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
+import { S3Structure } from '@/types/s3';
 import axios from 'axios';
+
+interface ListResponse {
+  folders: S3Structure[];
+  files: S3Structure[];
+}
+
+interface CoursesResponse {
+  courses: Course[];
+}
 
 interface ApiResponse<T> {
   success: boolean;
@@ -13,7 +28,7 @@ interface ApiResponse<T> {
 export interface CreateCourseRequest {
   title: string;
   description: string;
-  main_category_id: MainCategory;
+  main_category_id: string;
   sub_category_id: string;
   thumbnail?: File | null;
   level: CourseLevel;
@@ -49,22 +64,18 @@ interface CourseWithWeeks extends Course {
 
 export const courseApi = createApi({
   reducerPath: 'courseApi',
-  baseQuery: fetchBaseQuery({ 
+  baseQuery: fetchBaseQuery({
     baseUrl: getApiUrl(''),
     prepareHeaders: async (headers) => {
-      try {
-        const { tokens } = await fetchAuthSession();
-        const token = tokens?.accessToken?.toString();
-        if (token) {
-          headers.set('Authorization', `Bearer ${token}`);
-        }
-      } catch (error) {
-        console.error('Error getting auth token:', error);
+      const { tokens } = await fetchAuthSession();
+      const idToken = tokens?.idToken?.toString();
+      if (idToken) {
+        headers.set('Authorization', `Bearer ${idToken}`);
       }
       return headers;
     },
   }),
-  tagTypes: ['Course'],
+  tagTypes: ['Course', 'Week'],
   endpoints: (builder) => ({
     // 공개 강의 목록 조회
     getPublicCourses: builder.query<Course[], void>({
@@ -229,6 +240,50 @@ export const courseApi = createApi({
       }),
       transformResponse: (response: ApiResponse<{ urls: { fileName: string; url: string; key: string }[] }>) => response.data,
     }),
+
+    // 수강 중인 강의 목록 조회
+    getEnrolledCourses: builder.query<CoursesResponse, void>({
+      query: () => ({
+        url: LIST_STUDENT_COURSES_URL,
+        method: 'GET',
+      }),
+      providesTags: ['Course'],
+    }),
+
+    // 공개 강의 목록 조회
+    listPublicCourses: builder.query<CoursesResponse, void>({
+      query: () => ({
+        url: '/courses/public',
+        method: 'GET',
+      }),
+      providesTags: ['Course'],
+    }),
+
+    // 강의 상세 정보 조회 (학생용)
+    getCourseDetail: builder.query<Course, string>({
+      query: (courseId) => ({
+        url: `/courses/${courseId}`,
+        method: 'GET',
+      }),
+      providesTags: ['Course'],
+    }),
+
+    // 카테고리 목록 조회
+    listCategories: builder.query<MainCategory[], void>({
+      query: () => ({
+        url: '/courses/categories',
+        method: 'GET',
+      }),
+    }),
+
+    // 파일 다운로드 URL 조회
+    getDownloadUrl: builder.mutation<string, { key: string }>({
+      query: (body) => ({
+        url: GET_DOWNLOAD_URL,
+        method: 'POST',
+        body,
+      }),
+    }),
   }),
 });
 
@@ -240,4 +295,9 @@ export const {
   useDeleteCourseMutation,
   useGetUploadUrlsMutation,
   useCreateWeekMutation,
+  useGetEnrolledCoursesQuery,
+  useListPublicCoursesQuery,
+  useGetCourseDetailQuery,
+  useListCategoriesQuery,
+  useGetDownloadUrlMutation,
 } = courseApi; 

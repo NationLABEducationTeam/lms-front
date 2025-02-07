@@ -11,7 +11,7 @@ import AdminDashboard from './pages/admin/dashboard';
 import AdminNotices from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
 import AdminNoticeDetail from './pages/admin/notices/detail';
-import AdminCourses from './pages/admin/courses';
+import AdminCourses from '@/pages/admin/courses';
 import AdminCourseCreate from './pages/admin/courses/create';
 import AdminStudents from './pages/admin/students';
 import AdminSystem from './pages/admin/system';
@@ -35,6 +35,9 @@ import './App.css';
 import StudentCoursesPage from '@/pages/student/courses';
 import CorporatePage from '@/pages/corporate';
 import CourseLessons from './pages/admin/courses/lessons/[id]';
+import CourseDetail from '@/pages/admin/courses/[id]';
+import CreateCourse from '@/pages/admin/courses/create';
+import EditCourse from '@/pages/admin/courses/[id]/edit';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -59,8 +62,9 @@ const App = () => {
               <Route path="/admin/notices/create" element={<AdminNoticeCreate />} />
               <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
               <Route path="/admin/courses" element={<AdminCourses />} />
-              <Route path="/admin/courses/create" element={<AdminCourseCreate />} />
-              <Route path="/admin/courses/:id" element={<CourseLessons />} />
+              <Route path="/admin/courses/create" element={<CreateCourse />} />
+              <Route path="/admin/courses/:id" element={<CourseDetail />} />
+              <Route path="/admin/courses/:id/edit" element={<EditCourse />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/system" element={<AdminSystem />} />
               <Route path="/admin/statistics" element={<AdminStatistics />} />
