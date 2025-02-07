@@ -13,7 +13,6 @@ import type { KeenSliderInstance } from 'keen-slider';
 import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
-import AttendanceStreak from '@/components/dashboard/AttendanceStreak';
 import { Target } from 'lucide-react';
 import { Badge } from '@/components/common/ui/badge';
 
@@ -351,6 +350,23 @@ const StudentLanding: FC = () => {
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
   const [serverMessage, setServerMessage] = useState<string>('');
 
+  // 강의 목록으로 스크롤하는 함수 추가
+  const scrollToCourses = () => {
+    const coursesSection = document.getElementById('courses-section');
+    if (coursesSection) {
+      const navHeight = 96; // 네비게이션 바 높이 (88px + 8px)
+      const windowHeight = window.innerHeight;
+      const elementRect = coursesSection.getBoundingClientRect();
+      const absoluteElementTop = elementRect.top + window.pageYOffset;
+      const middle = absoluteElementTop - (windowHeight / 2) + (elementRect.height / 2);
+      
+      window.scrollTo({
+        top: middle - navHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   useEffect(() => {
     const fetchServerMessage = async () => {
       try {
@@ -458,7 +474,6 @@ const StudentLanding: FC = () => {
                   </span>
                 )}
               </h1>
-              {user && <AttendanceStreak days={3} />}
               <div className="mt-8 space-y-4">
                 <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium">
                   {['AWS 클라우드', '컴퓨터 비전/AI', '데이터 엔지니어링'].map((tech) => (
@@ -478,21 +493,41 @@ const StudentLanding: FC = () => {
               </div>
               <div className="mt-10 flex gap-4">
                 {user ? (
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
-                    onClick={() => navigate('/dashboard')}
-                  >
-                    대시보드로 이동
-                  </Button>
+                  <>
+                    <Button
+                      size="lg"
+                      className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
+                      onClick={() => navigate('/dashboard')}
+                    >
+                      대시보드로 이동
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 py-6 text-lg rounded-xl transition-all duration-300"
+                      onClick={scrollToCourses}
+                    >
+                      강의 둘러보기
+                    </Button>
+                  </>
                 ) : (
-                  <Button
-                    size="lg"
-                    className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
-                    onClick={() => navigate('/auth')}
-                  >
-                    시작하기
-                  </Button>
+                  <>
+                    <Button
+                      size="lg"
+                      className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
+                      onClick={() => navigate('/auth')}
+                    >
+                      시작하기
+                    </Button>
+                    <Button
+                      size="lg"
+                      variant="outline"
+                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 py-6 text-lg rounded-xl transition-all duration-300"
+                      onClick={scrollToCourses}
+                    >
+                      강의 둘러보기
+                    </Button>
+                  </>
                 )}
               </div>
             </motion.div>
@@ -641,7 +676,7 @@ const StudentLanding: FC = () => {
       </div>
 
       {/* Course Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+      <div id="courses-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-16">
           <div className="relative py-16 px-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl overflow-hidden group">
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
