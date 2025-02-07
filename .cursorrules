@@ -92,6 +92,12 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Read the file before you try to edit it.
 - Due to Cursor's limit, when you use `git` and `gh` and need to submit a multiline commit message, first write the message in a file, and then use `git commit -F <filename>` or similar command to commit. And then remove the file. Include "[Cursor] " in the commit message and PR title.
 - Always check the implementation of utility functions (like `getApiUrl`) before use to avoid duplication of functionality (e.g. API URL prefixes)
+- When migrating existing API calls to Redux/RTK Query, maintain the same request structure:
+  - Keep the same URL endpoints
+  - Keep the same header structure (especially for auth)
+  - Keep the same request body parameter names
+  - Keep the same response handling logic
+  This ensures compatibility with the backend and prevents unnecessary errors.
 
 ## Cursor learned
 

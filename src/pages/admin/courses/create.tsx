@@ -5,60 +5,43 @@ import { Input } from '@/components/common/ui/input';
 import { Button } from '@/components/common/ui/button';
 import { Textarea } from '@/components/common/ui/textarea';
 import { FileUpload } from '@/components/common/upload/FileUpload';
-import { createCourse } from '@/services/api/courses';
 import { MainCategory, CourseLevel } from '@/types/course';
-import { useAuth } from '@/hooks/useAuth';
+import { useCreateCourseMutation } from '@/services/api/courseApi';
+import { toast } from 'sonner';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/common/ui/select";
 import { Card } from "@/components/common/ui/card";
-import { ArrowLeft, HelpCircle, Upload } from 'lucide-react';
+import { ArrowLeft, Upload } from 'lucide-react';
 
 interface CourseFormData {
   title: string;
   description: string;
-  mainCategory: MainCategory;
-  subCategory: string;
-  thumbnail?: File;
+  main_category_id: MainCategory | null;
+  sub_category_id: string;
+  thumbnail: File | null;
   level: CourseLevel;
   price: number;
 }
 
 const AdminCourseCreate: FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [formData, setFormData] = useState<CourseFormData>({
     title: '',
     description: '',
-    mainCategory: 'CLOUD',
-    subCategory: 'default',
+    main_category_id: null,
+    sub_category_id: '',
+    thumbnail: null,
     level: 'BEGINNER',
-    price: 0
+    price: 0,
   });
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [mainCategory, setMainCategory] = useState<MainCategory>('CLOUD');
-  const [subCategory, setSubCategory] = useState<string>('default');
 
-  const handleMainCategoryChange = (category: MainCategory) => {
-    setMainCategory(category);
-    setFormData(prev => ({
-      ...prev,
-      mainCategory: category
-    }));
-  };
-
-  const handleSubCategoryChange = (category: string) => {
-    setSubCategory(category);
-    setFormData(prev => ({
-      ...prev,
-      subCategory: category
-    }));
-  };
+  const [createCourse, { isLoading }] = useCreateCourseMutation();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -74,45 +57,50 @@ const AdminCourseCreate: FC = () => {
         ...prev,
         thumbnail: files[0]
       }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        thumbnail: null
+      }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    // 소분류 검증
-    if (!formData.subCategory.trim()) {
+    // 필수 필드 검증
+    if (!formData.main_category_id) {
+      setError('대분류를 선택해주세요.');
+      return;
+    }
+
+    if (!formData.sub_category_id.trim()) {
       setError('소분류를 입력해주세요.');
-      setLoading(false);
       return;
     }
 
     try {
-      // 강의 생성 API 호출
       await createCourse({
         title: formData.title,
         description: formData.description,
-        mainCategory: formData.mainCategory,
-        subCategory: formData.subCategory,
-        instructor: user?.email || '',
+        main_category_id: formData.main_category_id,
+        sub_category_id: formData.sub_category_id,
         thumbnail: formData.thumbnail,
         level: formData.level,
         price: formData.price
-      });
+      }).unwrap();
 
+      toast.success('강의가 성공적으로 생성되었습니다.');
       navigate('/admin/courses');
     } catch (error) {
       console.error('Error creating course:', error);
-      setError('강의 생성 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
+      toast.error('강의 생성에 실패했습니다.');
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc]">
+    <div className="min-h-screen bg-white">
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="flex items-center space-x-4 mb-8">
           <Button
@@ -133,7 +121,7 @@ const AdminCourseCreate: FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Form Section */}
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden bg-white border-0 shadow-sm">
+            <Card className="overflow-hidden">
               <form onSubmit={handleSubmit} className="divide-y divide-gray-100">
                 {/* Basic Information */}
                 <div className="p-6">
@@ -149,7 +137,7 @@ const AdminCourseCreate: FC = () => {
                         value={formData.title}
                         onChange={handleInputChange}
                         placeholder="강의 제목을 입력하세요"
-                        className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="w-full"
                         required
                       />
                     </div>
@@ -159,10 +147,10 @@ const AdminCourseCreate: FC = () => {
                         카테고리
                       </label>
                       <CategorySelector
-                        selectedMain={mainCategory}
-                        selectedSub={subCategory}
-                        onMainChange={handleMainCategoryChange}
-                        onSubChange={handleSubCategoryChange}
+                        selectedMain={formData.main_category_id}
+                        selectedSub={formData.sub_category_id}
+                        onMainChange={(category) => setFormData(prev => ({ ...prev, main_category_id: category }))}
+                        onSubChange={(value) => setFormData(prev => ({ ...prev, sub_category_id: value }))}
                       />
                     </div>
 
@@ -176,7 +164,7 @@ const AdminCourseCreate: FC = () => {
                         value={formData.description}
                         onChange={handleInputChange}
                         placeholder="강의에 대한 상세한 설명을 입력하세요"
-                        className="w-full min-h-[200px] border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                        className="w-full min-h-[200px]"
                         required
                       />
                     </div>
@@ -192,13 +180,12 @@ const AdminCourseCreate: FC = () => {
                         난이도
                       </label>
                       <Select
-                        name="level"
                         value={formData.level}
                         onValueChange={(value: CourseLevel) => 
                           setFormData(prev => ({ ...prev, level: value }))
                         }
                       >
-                        <SelectTrigger className="w-full border-gray-200 bg-white">
+                        <SelectTrigger className="w-full">
                           <SelectValue placeholder="난이도를 선택하세요" />
                         </SelectTrigger>
                         <SelectContent>
@@ -221,7 +208,7 @@ const AdminCourseCreate: FC = () => {
                           value={formData.price}
                           onChange={handleInputChange}
                           placeholder="가격을 입력하세요"
-                          className="w-full pl-8 border-gray-200 focus:border-blue-500 focus:ring-blue-500/20"
+                          className="w-full pl-8"
                           min="0"
                         />
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">₩</span>
@@ -248,16 +235,15 @@ const AdminCourseCreate: FC = () => {
                     type="button"
                     variant="outline"
                     onClick={() => navigate('/admin/courses')}
-                    className="border-gray-300 text-gray-700 hover:bg-gray-50"
                   >
                     취소
                   </Button>
                   <Button
                     type="submit"
-                    disabled={loading}
+                    disabled={isLoading}
                     className="bg-blue-600 text-white hover:bg-blue-700"
                   >
-                    {loading ? '생성 중...' : '강의 생성'}
+                    {isLoading ? '생성 중...' : '강의 생성'}
                   </Button>
                 </div>
               </form>
@@ -265,51 +251,37 @@ const AdminCourseCreate: FC = () => {
           </div>
 
           {/* Thumbnail Section */}
-          <div className="lg:col-span-1">
-            <Card className="bg-white border-0 shadow-sm">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-lg font-semibold text-gray-900">썸네일 이미지</h2>
-                  <div className="relative group">
-                    <HelpCircle 
-                      className="w-5 h-5 text-gray-400 cursor-help" 
-                      aria-label="썸네일 이미지 권장 크기"
-                    />
-                    <div className="absolute right-0 top-full mt-2 p-2 bg-gray-800 text-white text-sm rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                      권장 크기: 1290 x 960 px
-                    </div>
-                  </div>
-                </div>
+          <div>
+            <Card className="p-6">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">썸네일</h2>
+              <div className="space-y-4">
+                <FileUpload
+                  onUpload={handleThumbnailUpload}
+                  accept="image/*"
+                  maxFiles={1}
+                  className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors"
+                />
                 
-                <div className="space-y-4">
-                  <FileUpload
-                    onUpload={handleThumbnailUpload}
-                    accept="image/*"
-                    maxFiles={1}
-                    className="border-2 border-dashed border-gray-200 rounded-lg p-4 hover:border-blue-400 transition-colors"
-                  />
-                  
-                  {formData.thumbnail && (
-                    <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
-                      <img
-                        src={URL.createObjectURL(formData.thumbnail)}
-                        alt="Thumbnail preview"
-                        className="w-full h-full object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setFormData(prev => ({ ...prev, thumbnail: undefined }))}
-                        className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  )}
-                  
-                  <p className="text-sm text-gray-500 mt-2">
-                    고품질의 썸네일 이미지를 업로드하세요. 권장 크기는 1290 x 960 픽셀입니다.
-                  </p>
-                </div>
+                {formData.thumbnail && (
+                  <div className="relative aspect-video rounded-lg overflow-hidden bg-gray-100">
+                    <img
+                      src={URL.createObjectURL(formData.thumbnail)}
+                      alt="Thumbnail preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, thumbnail: null }))}
+                      className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                
+                <p className="text-sm text-gray-500 mt-2">
+                  고품질의 썸네일 이미지를 업로드하세요. 권장 크기는 1290 x 960 픽셀입니다.
+                </p>
               </div>
             </Card>
           </div>

@@ -10,9 +10,9 @@ import {
 import { Input } from '@/components/common/ui/input';
 
 interface CategorySelectorProps {
-  selectedMain: MainCategory | '';
+  selectedMain: MainCategory | null;
   selectedSub: string;
-  onMainChange: (category: MainCategory) => void;
+  onMainChange: (category: MainCategory | null) => void;
   onSubChange: (category: string) => void;
   className?: string;
 }
@@ -22,39 +22,50 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   selectedSub,
   onMainChange,
   onSubChange,
+  className,
 }) => {
   return (
-    <div className="flex gap-4">
-      <Select 
-        value={selectedMain} 
-        onValueChange={(value: MainCategory) => {
-          onMainChange(value);
-          onSubChange(''); // 대분류 변경 시 소분류 초기화
-        }}
-      >
-        <SelectTrigger className="w-48 bg-white/70 border-slate-200 hover:border-blue-200 focus:border-blue-500 ring-offset-white focus:ring-blue-500/20 transition-all">
-          <SelectValue placeholder="대분류 선택" />
-        </SelectTrigger>
-        <SelectContent className="bg-white border border-slate-200">
-          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
-            <SelectItem 
-              key={key} 
-              value={key}
-              className="hover:bg-blue-50 focus:bg-blue-50 cursor-pointer data-[state=checked]:bg-blue-50 data-[state=checked]:text-blue-700"
-            >
-              {value}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Input
-        value={selectedSub}
-        onChange={(e) => onSubChange(e.target.value)}
-        placeholder="소분류를 입력하세요"
-        className="w-48 bg-white/70 border-slate-200 hover:border-blue-200 focus:border-blue-500 focus:ring-blue-500/20 placeholder:text-slate-400 transition-all"
-        disabled={!selectedMain}
-      />
+    <div className={`space-y-4 ${className}`}>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          대분류
+        </label>
+        <Select 
+          value={selectedMain || 'all'} 
+          onValueChange={(value: string) => {
+            if (value === 'all') {
+              onMainChange(null);
+            } else {
+              onMainChange(value as MainCategory);
+            }
+          }}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="대분류 선택" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체</SelectItem>
+            {Object.entries(CATEGORY_MAPPING).map(([key, value]) => (
+              <SelectItem key={key} value={key}>
+                {value}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          소분류
+        </label>
+        <Input
+          type="text"
+          value={selectedSub}
+          onChange={(e) => onSubChange(e.target.value)}
+          placeholder="소분류 입력"
+          className="w-full"
+        />
+      </div>
     </div>
   );
 }; 

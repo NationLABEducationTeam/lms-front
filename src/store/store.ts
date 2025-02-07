@@ -4,6 +4,7 @@ import authReducer from './features/auth/authSlice';
 import { DBUser } from '@/types/user';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
+import { courseApi } from '@/services/api/courseApi';
 
 interface CoursesState {
   categories: S3Structure[];
@@ -20,13 +21,17 @@ export interface RootState {
     loading: boolean;
     error: Error | null;
   };
+  [courseApi.reducerPath]: ReturnType<typeof courseApi.reducer>;
 }
 
 export const store = configureStore({
   reducer: {
     courses: coursesReducer,
     auth: authReducer,
+    [courseApi.reducerPath]: courseApi.reducer,
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware().concat(courseApi.middleware),
 });
 
 export type AppDispatch = typeof store.dispatch; 
