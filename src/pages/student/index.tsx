@@ -306,6 +306,14 @@ const CourseCard = ({ course }: { course: Course }) => {
               {course.sub_category_name}
             </Badge>
           )}
+          <Badge className={cn(
+            "rounded-lg border-none",
+            course.classmode === 'ONLINE'
+              ? "bg-green-50 hover:bg-green-100 text-green-700"
+              : "bg-orange-50 hover:bg-orange-100 text-orange-700"
+          )}>
+            {course.classmode === 'ONLINE' ? '실시간 온라인' : 'VOD'}
+          </Badge>
         </div>
         <CardTitle className="text-lg font-semibold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">
           {course.title}

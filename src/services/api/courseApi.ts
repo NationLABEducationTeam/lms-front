@@ -4,7 +4,7 @@ const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Course, CourseLevel, MainCategory, CourseStatus } from '@/types/course';
+import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { S3Structure } from '@/types/s3';
@@ -33,6 +33,7 @@ export interface CreateCourseRequest {
   thumbnail?: File | null;
   level: CourseLevel;
   price: number;
+  classmode: 'ONLINE' | 'VOD';
 }
 
 export interface UpdateCourseRequest {
@@ -133,7 +134,7 @@ export const courseApi = createApi({
 
           // API 호출
           const response = await axios.post(
-            getApiUrl('/admin/courses'),
+            getApiUrl('/courses'),
             {
               title: body.title,
               description: body.description,
@@ -143,6 +144,7 @@ export const courseApi = createApi({
               thumbnail_url: thumbnailBase64,
               price: body.price,
               level: body.level,
+              classmode: body.classmode,
             },
             {
               headers: {
@@ -270,10 +272,14 @@ export const courseApi = createApi({
 
     // 카테고리 목록 조회
     listCategories: builder.query<MainCategory[], void>({
-      query: () => ({
-        url: '/courses/categories',
-        method: 'GET',
-      }),
+      queryFn: () => {
+        const categories: MainCategory[] = Object.entries(CATEGORY_MAPPING).map(([id, name]) => ({
+          id: id as MainCategoryId,
+          name,
+          sub_categories: []  // 서브 카테고리는 빈 배열로 초기화
+        }));
+        return { data: categories };
+      }
     }),
 
     // 파일 다운로드 URL 조회

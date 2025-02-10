@@ -31,6 +31,8 @@ export interface MainCategory {
   }[];
 }
 
+export type CourseType = 'ONLINE' | 'VOD';
+
 export interface Course {
   id: string;
   title: string;
@@ -48,6 +50,8 @@ export interface Course {
   price: number;
   level: CourseLevel;
   status: CourseStatus;
+  type: CourseType;
+  classmode: 'ONLINE' | 'VOD';
   created_at: string;
   updated_at: string;
   weeks?: Week[];

@@ -92,6 +92,12 @@ const CourseDetailPage: FC = () => {
                 <p className="font-medium">{course.instructor_name}</p>
               </div>
               <div>
+                <p className="text-gray-600">강의 유형</p>
+                <p className="font-medium">
+                  {course.classmode === 'ONLINE' ? '실시간 온라인' : 'VOD'}
+                </p>
+              </div>
+              <div>
                 <p className="text-gray-600">가격</p>
                 <p className="font-medium">{course.price ? `${course.price.toLocaleString()}원` : '무료'}</p>
               </div>
