@@ -13,7 +13,7 @@ import type { KeenSliderInstance } from 'keen-slider';
 import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
-import { Target } from 'lucide-react';
+import { Target, User, Users, ChevronRight, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/common/ui/badge';
 
 const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, className }) => {
@@ -282,70 +282,113 @@ const ImageCarousel: FC = () => {
 
 const CourseCard = ({ course }: { course: Course }) => {
   const navigate = useNavigate();
+  const categoryColors = {
+    'CLOUD': 'from-sky-400/20 to-blue-500/20',
+    'AI_ML': 'from-purple-400/20 to-indigo-500/20',
+    'WEB': 'from-pink-400/20 to-rose-500/20',
+    'AUTOMATION': 'from-emerald-400/20 to-green-500/20',
+    'DEVOPS': 'from-amber-400/20 to-yellow-500/20',
+    'DataEngineering': 'from-cyan-400/20 to-teal-500/20',
+    'CodeingTest': 'from-violet-400/20 to-purple-500/20'
+  };
+
+  const categoryBadgeColors = {
+    'CLOUD': 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-blue-500/25',
+    'AI_ML': 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-indigo-500/25',
+    'WEB': 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-rose-500/25',
+    'AUTOMATION': 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-green-500/25',
+    'DEVOPS': 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-yellow-500/25',
+    'DataEngineering': 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-teal-500/25',
+    'CodeingTest': 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-purple-500/25'
+  };
+
+  const levelBadgeColors = {
+    'BEGINNER': 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-green-500/25',
+    'INTERMEDIATE': 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-amber-500/25',
+    'ADVANCED': 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-rose-500/25'
+  };
+
+  const levelText = {
+    'BEGINNER': '초급',
+    'INTERMEDIATE': '중급',
+    'ADVANCED': '고급'
+  };
 
   return (
-    <Card 
-      className="w-full h-full flex flex-col cursor-pointer hover:shadow-lg transition-all duration-300 rounded-xl overflow-hidden bg-gradient-to-br from-white to-slate-50/80"
+    <div
       onClick={() => navigate(`/courses/${course.id}`)}
+      className="group relative h-[460px] w-full cursor-pointer perspective-1000"
     >
-      <div className="relative">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-        <img
-          src={course.thumbnail_url || '/placeholder-course.jpg'}
-          alt={course.title}
-          className="w-full h-48 object-cover"
-        />
+      {/* 3D 회전 효과를 위한 컨테이너 */}
+      <div className="relative w-full h-full transition-transform duration-500 transform-style-3d group-hover:rotate-y-3">
+        {/* 카드 전면 */}
+        <div className="absolute inset-0 w-full h-full rounded-2xl bg-white shadow-lg backface-hidden">
+          {/* 썸네일 컨테이너 */}
+          <div className="relative h-[200px] w-full overflow-hidden rounded-t-2xl">
+            {/* 카테고리별 그라데이션 오버레이 */}
+            <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[course.main_category_id]} opacity-80`}></div>
+            
+            {course.thumbnail_url ? (
+              <img
+                src={course.thumbnail_url}
+                alt={course.title}
+                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-slate-100">
+                <BookOpen className="h-16 w-16 text-slate-400" />
+              </div>
+            )}
+
+            {/* 뱃지 컨테이너 */}
+            <div className="absolute top-4 left-4 flex gap-2">
+              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${categoryBadgeColors[course.main_category_id]}`}>
+                {course.main_category_name}
+              </span>
+              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${levelBadgeColors[course.level]}`}>
+                {levelText[course.level]}
+              </span>
+            </div>
+          </div>
+
+          {/* 컨텐츠 섹션 */}
+          <div className="p-6 flex flex-col h-[calc(100%-200px)]">
+            {/* 제목 */}
+            <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
+              {course.title}
+            </h3>
+
+            {/* 설명 */}
+            <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+              {course.description}
+            </p>
+
+            {/* 강사 정보 */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
+                <User className="w-4 h-4 text-slate-600" />
+              </div>
+              <span className="text-sm text-slate-700">{course.instructor_name}</span>
+            </div>
+
+            {/* 가격 섹션 */}
+            <div className="mt-auto pt-4 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  {course.price.toLocaleString()}원
+                </div>
+                <div className="flex items-center gap-2 text-slate-500">
+                  <ChevronRight className="w-5 h-5" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-      <CardHeader className="pb-2">
-        <div className="flex flex-wrap gap-2 mb-3">
-          <Badge className="bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg border-none">
-            {course.main_category_name}
-          </Badge>
-          {course.sub_category_name && (
-            <Badge className="bg-purple-50 hover:bg-purple-100 text-purple-700 rounded-lg border-none">
-              {course.sub_category_name}
-            </Badge>
-          )}
-          <Badge className={cn(
-            "rounded-lg border-none",
-            course.classmode === 'ONLINE'
-              ? "bg-green-50 hover:bg-green-100 text-green-700"
-              : "bg-orange-50 hover:bg-orange-100 text-orange-700"
-          )}>
-            {course.classmode === 'ONLINE' ? '실시간 온라인' : 'VOD'}
-          </Badge>
-        </div>
-        <CardTitle className="text-lg font-semibold bg-gradient-to-br from-gray-900 to-gray-600 bg-clip-text text-transparent">
-          {course.title}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2 leading-relaxed">
-          {course.description}
-        </p>
-        <div className="mt-auto space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
-              {course.instructor_name}
-            </span>
-            <Badge className={cn(
-              "rounded-lg border-none",
-              course.level === 'BEGINNER' ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700' :
-              course.level === 'INTERMEDIATE' ? 'bg-amber-50 hover:bg-amber-100 text-amber-700' :
-              'bg-rose-50 hover:bg-rose-100 text-rose-700'
-            )}>
-              {course.level === 'BEGINNER' ? '입문' : 
-               course.level === 'INTERMEDIATE' ? '중급' : '고급'}
-            </Badge>
-          </div>
-          <div className="text-right">
-            <span className="font-semibold text-lg bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-              {course.price.toLocaleString()}원
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+
+      {/* 호버 시 나타나는 그라데이션 테두리 효과 */}
+      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 -z-10"></div>
+    </div>
   );
 };
 
@@ -433,7 +476,7 @@ const StudentLanding: FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Server message display */}
       {serverMessage && (
-        <div className="bg-blue-50 border-b border-blue-100">
+        <div className="bg-blue-50/80 backdrop-blur-sm border-b border-blue-100">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <p className="text-sm text-blue-700">{serverMessage}</p>
           </div>
@@ -441,23 +484,19 @@ const StudentLanding: FC = () => {
       )}
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
-        {/* Stock Video Background */}
+      <div className="relative overflow-hidden min-h-[90vh] flex items-center">
+        {/* Background Image */}
         <div className="absolute inset-0 z-0">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
+          <img
+            src="/mainlandingpage.jpg"
+            alt="Main Landing Page"
             className="absolute inset-0 w-full h-full object-cover"
-          >
-            <source src="/stockvideo.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/30"></div>
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent"></div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 sm:pt-24 sm:pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12 py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
             {/* Left Content */}
             <motion.div
               initial={fadeInUp.initial}
@@ -465,16 +504,19 @@ const StudentLanding: FC = () => {
               transition={fadeInUp.transition}
               className="text-left"
             >
-              <h1 className="text-4xl sm:text-5xl font-bold text-white mb-6">
+              <div className="inline-block mb-6 px-6 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
+                <span className="text-base font-medium text-white/90">✨ 새로운 시작을 함께하세요</span>
+              </div>
+              <h1 className="text-6xl sm:text-7xl font-bold text-white mb-10 tracking-tight leading-tight">
                 {user ? (
-                  <span className="flex flex-col gap-3">
+                  <span className="flex flex-col gap-6">
                     <span className="text-white/90">Welcome back,</span>
                     <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                       {user.name}
                     </span>
                   </span>
                 ) : (
-                  <span className="flex flex-col gap-3">
+                  <span className="flex flex-col gap-6">
                     <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                       Nation's LAB
                     </span>
@@ -482,350 +524,320 @@ const StudentLanding: FC = () => {
                   </span>
                 )}
               </h1>
-              <div className="mt-8 space-y-4">
-                <div className="flex flex-wrap gap-4 text-lg sm:text-xl font-medium">
-                  {['AWS 클라우드', '컴퓨터 비전/AI', '데이터 엔지니어링'].map((tech) => (
-                    <span
-                      key={tech}
-                      className="flex items-center px-4 py-2 rounded-lg bg-white/15 backdrop-blur-sm border border-white/20 text-white hover:bg-white/20 transition-colors"
-                    >
-                      <span className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-300 to-blue-300 mr-2 shadow-glow"></span>
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-                <p className="max-w-2xl text-white text-lg mt-6">
-                  단순한 이론 교육이 아닌, <span className="text-cyan-300 font-semibold">실무 프로젝트 기반</span>의 
-                  전문가 양성 프로그램으로 당신의 커리어를 한 단계 도약시키세요
-                </p>
-              </div>
-              <div className="mt-10 flex gap-4">
-                {user ? (
-                  <>
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
-                      onClick={() => navigate('/dashboard')}
-                    >
-                      대시보드로 이동
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 py-6 text-lg rounded-xl transition-all duration-300"
-                      onClick={scrollToCourses}
-                    >
-                      강의 둘러보기
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Button
-                      size="lg"
-                      className="bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white px-8 py-6 text-lg rounded-xl shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/30 transition-all duration-300"
-                      onClick={() => navigate('/auth')}
-                    >
-                      시작하기
-                    </Button>
-                    <Button
-                      size="lg"
-                      variant="outline"
-                      className="bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20 px-8 py-6 text-lg rounded-xl transition-all duration-300"
-                      onClick={scrollToCourses}
-                    >
-                      강의 둘러보기
-                    </Button>
-                  </>
+              <p className="text-xl text-white/80 mb-10 leading-relaxed max-w-2xl">
+                최신 기술 트렌드와 실무 중심의 교육으로 여러분의 성장을 돕습니다.
+                지금 바로 시작하세요.
+              </p>
+              <div className="flex flex-wrap gap-6">
+                <Button
+                  onClick={scrollToCourses}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-xl"
+                >
+                  강의 둘러보기
+                </Button>
+                {!user && (
+                  <Button
+                    onClick={() => navigate('/auth')}
+                    variant="outline"
+                    className="bg-white/10 hover:bg-white/20 text-white border-white/20 px-10 py-4 rounded-lg backdrop-blur-sm transition-all duration-200 text-xl"
+                  >
+                    시작하기
+                  </Button>
                 )}
+              </div>
+            </motion.div>
+
+            {/* Right Content - Stats */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="grid grid-cols-2 gap-8"
+            >
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <h3 className="text-5xl font-bold text-white mb-3">20+</h3>
+                <p className="text-lg text-white/80">전문 강사진</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <h3 className="text-5xl font-bold text-white mb-3">50+</h3>
+                <p className="text-lg text-white/80">강의 콘텐츠</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <h3 className="text-5xl font-bold text-white mb-3">1000+</h3>
+                <p className="text-lg text-white/80">수강생</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
+                <h3 className="text-5xl font-bold text-white mb-3">98%</h3>
+                <p className="text-lg text-white/80">만족도</p>
               </div>
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Instagram Landing SVG Section */}
-      <div className="bg-gradient-to-b from-slate-900 to-slate-800 py-24">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <div className="order-2 lg:order-1">
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="text-white space-y-6"
-              >
-                <h2 className="text-3xl font-bold">
-                  <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
-                    실무 중심의 교육
-                  </span>
-                </h2>
-                <p className="text-gray-300 text-lg leading-relaxed">
-                  현업 전문가들과 함께 실제 프로젝트를 수행하며 실무 경험을 쌓아보세요.
-                  이론에서 그치지 않는 실질적인 성장을 경험할 수 있습니다.
-                </p>
-              </motion.div>
-            </div>
-            <div className="order-1 lg:order-2">
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="relative"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-400/10 rounded-3xl blur-3xl"></div>
-                <img
-                  src="/instagramlanding.svg"
-                  alt="Instagram Landing Illustration"
-                  className="relative z-10 w-full h-auto max-w-[500px] mx-auto"
-                />
-              </motion.div>
-            </div>
+      {/* Carousel Section */}
+      <div className="bg-white py-32 overflow-hidden">
+        <div className="max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">학습 성과</h2>
+            <p className="text-xl text-gray-600">Nation's LAB과 함께한 수강생들의 이야기</p>
           </div>
+          <ImageCarousel />
         </div>
       </div>
 
-      {/* Image Carousel Section */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <ImageCarousel />
-      </div>
-
-      {/* Feature Cards Section */}
-      <div className="w-full bg-gradient-to-b from-slate-900 to-slate-800 py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="relative">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-            <div className="relative grid grid-cols-1 md:grid-cols-3 gap-8">
-              {/* Curriculum Card */}
-              <motion.div
-                initial={fadeInUp.initial}
-                animate={fadeInUp.animate}
-                transition={{ ...fadeInUp.transition, delay: 0.1 }}
-                className="group"
-              >
-                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-all duration-700"></div>
-                  <div className="relative">
-                    <div className="h-12 w-12 mb-6 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-3">체계적인 커리큘럼</h3>
-                    <div className="space-y-2">
-                      <code className="block text-sm text-purple-300 font-mono">def learn_step_by_step():</code>
-                      <p className="text-slate-300 leading-relaxed">
-                        전문가가 설계한 커리큘럼으로<br />
-                        단계별 학습을 경험하세요
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Feedback Card */}
-              <motion.div
-                initial={fadeInUp.initial}
-                animate={fadeInUp.animate}
-                transition={{ ...fadeInUp.transition, delay: 0.2 }}
-                className="group"
-              >
-                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-blue-500/10 rounded-full blur-3xl group-hover:bg-blue-500/20 transition-all duration-700"></div>
-                  <div className="relative">
-                    <div className="h-12 w-12 mb-6 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-3">실시간 피드백</h3>
-                    <div className="space-y-2">
-                      <code className="block text-sm text-blue-300 font-mono">async function review() &#123;</code>
-                      <p className="text-slate-300 leading-relaxed">
-                        강사와 동료들의 피드백으로<br />
-                        더 빠른 성장을 이루세요
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Progress Card */}
-              <motion.div
-                initial={fadeInUp.initial}
-                animate={fadeInUp.animate}
-                transition={{ ...fadeInUp.transition, delay: 0.3 }}
-                className="group"
-              >
-                <div className="relative p-8 rounded-2xl bg-slate-800/50 border border-slate-700 backdrop-blur-sm overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/10 to-teal-500/10 opacity-0 group-hover:opacity-100 transition-all duration-700"></div>
-                  <div className="absolute -right-20 -top-20 w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-700"></div>
-                  <div className="relative">
-                    <div className="h-12 w-12 mb-6 rounded-xl bg-cyan-500/10 flex items-center justify-center">
-                      <svg className="h-6 w-6 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-xl font-bold text-white mb-3">학습 관리</h3>
-                    <div className="space-y-2">
-                      <code className="block text-sm text-cyan-300 font-mono">const progress = new<br />Dashboard();</code>
-                      <p className="text-slate-300 leading-relaxed">
-                        대시보드를 통해 나의 학습 현황을<br />
-                        한눈에 파악하세요
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          </div>
+      {/* 학습 특징 섹션 */}
+      <section className="relative py-32 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 overflow-hidden">
+        {/* 배경 패턴 */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-5"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
         </div>
-      </div>
 
-      {/* Course Section */}
-      <div id="courses-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <div className="relative py-16 px-8 bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl overflow-hidden group">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:14px_24px]"></div>
-            <div className="absolute inset-0 bg-gradient-to-t from-blue-500/10 via-transparent to-cyan-400/10"></div>
-            
-            <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-blue-500/20 via-cyan-400/20 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
-            <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-blue-600/20 via-cyan-400/20 to-transparent rounded-full blur-3xl transform -translate-x-1/3 translate-y-1/2 group-hover:translate-y-0 transition-transform duration-700"></div>
-            
-            <div className="relative max-w-5xl mx-auto">
-              <div className="flex items-center space-x-4 mb-8 pl-4">
-                <div className="w-1.5 h-12 bg-gradient-to-b from-blue-400 to-cyan-300 rounded-full"></div>
-                <h2 className="text-5xl font-bold text-white tracking-tight">
-                  Shaping the Future with AI
-                </h2>
-              </div>
+        {/* 메인 콘텐츠 */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4 px-4 py-1.5 bg-white/10 rounded-full backdrop-blur-sm">
+              <span className="text-sm font-medium text-white/90">Learning Experience</span>
+            </div>
+            <h2 className="text-4xl font-bold text-white mb-4">체계적인 학습 경험</h2>
+            <p className="text-lg text-white/80">Nation's LAB만의 차별화된 교육 시스템을 경험하세요</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* 단계별 학습 */}
+            <div className="group relative">
+              {/* 배경 블러 효과 */}
+              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
+              {/* 그라데이션 테두리 */}
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               
-              <div className="space-y-8 pl-4">
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                    <code className="font-mono text-lg text-white">{`class Future { start() {`}</code>
-                  </div>
+              <div className="relative p-8 rounded-2xl border border-white/10">
+                <div className="bg-gradient-to-br from-blue-500 to-indigo-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+                  <code className="text-lg font-mono text-white">def</code>
                 </div>
+                <h3 className="text-2xl font-bold text-white mb-4">단계별 학습</h3>
+                <div className="font-mono text-sm text-blue-300 mb-4 opacity-80">def learn_step_by_step():</div>
+                <p className="text-white/70 leading-relaxed">
+                  전문가가 설계한 커리큘럼으로<br />
+                  단계별 학습을 경험하세요
+                </p>
+              </div>
+            </div>
 
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                    <p className="text-xl text-white leading-relaxed">
-                      AI 전문 기업의 풍부한 경험과 기술을 바탕으로 설계된 교육을 통해<br />
-                      개인과 조직이 AI와 Cloud 기술을 통해 미래를 대비하고<br />
-                      지속 가능한 성장을 이룰 수 있도록 돕습니다
-                    </p>
-                  </div>
+            {/* 실시간 피드백 */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              
+              <div className="relative p-8 rounded-2xl border border-white/10">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+                  <code className="text-lg font-mono text-white">async</code>
                 </div>
+                <h3 className="text-2xl font-bold text-white mb-4">실시간 피드백</h3>
+                <div className="font-mono text-sm text-purple-300 mb-4 opacity-80">async function review() {}</div>
+                <p className="text-white/70 leading-relaxed">
+                  강사와 동료들의 피드백으로<br />
+                  더 빠른 성장을 이루세요
+                </p>
+              </div>
+            </div>
 
-                <div className="relative group/code w-fit">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-400/20 rounded-lg blur"></div>
-                  <div className="relative px-6 py-3 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
-                    <code className="font-mono text-lg text-white">{`}}`}</code>
-                  </div>
+            {/* 학습 관리 */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              
+              <div className="relative p-8 rounded-2xl border border-white/10">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                  <code className="text-lg font-mono text-white">const</code>
                 </div>
+                <h3 className="text-2xl font-bold text-white mb-4">학습 관리</h3>
+                <div className="font-mono text-sm text-emerald-300 mb-4 opacity-80">const progress = new<br />Dashboard();</div>
+                <p className="text-white/70 leading-relaxed">
+                  대시보드를 통해 나의 학습 현황을<br />
+                  한눈에 파악하세요
+                </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Category Filter Section */}
-        <div className="flex gap-3 mb-12 overflow-x-auto pb-4 px-1 -mx-1">
-          <Button
-            variant="outline"
-            className={cn(
-              "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
-              "hover:scale-102 hover:shadow-lg",
-              "bg-gradient-to-b from-white to-gray-50",
-              selectedMainCategory === 'all' 
-                ? "ring-2 ring-blue-500 ring-offset-2 shadow-lg shadow-blue-500/20" 
-                : "border border-gray-200 hover:border-blue-200"
-            )}
-            onClick={() => setSelectedMainCategory('all')}
-          >
-            <div className="h-10 w-10 mb-3 rounded-xl bg-gradient-to-br from-blue-50 to-cyan-50 flex items-center justify-center">
-              <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-              </svg>
+        {/* 장식용 그라데이션 원 */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full filter blur-3xl"></div>
+      </section>
+
+      {/* Course Cards Section */}
+      <section id="courses-section" className="relative py-32 bg-gradient-to-b from-white to-slate-50/80">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-5"></div>
+
+        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
+          {/* Section Header */}
+          <div className="text-center mb-20">
+            <div className="inline-block mb-4 px-4 py-1.5 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full">
+              <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                Featured Courses
+              </span>
             </div>
-            <span className="font-medium text-sm text-gray-900">전체 과정</span>
-            <span className="text-[11px] text-gray-500 mt-1">All Courses</span>
-          </Button>
-
-          {/* Existing category buttons */}
-          {Object.entries(CATEGORY_MAPPING).map(([key, value]) => {
-            const categoryColors = {
-              'CLOUD': { icon: 'text-sky-500', bg: 'from-sky-50 to-blue-50', ring: 'ring-sky-500 shadow-sky-500/20' },
-              'AI_ML': { icon: 'text-blue-500', bg: 'from-blue-50 to-cyan-50', ring: 'ring-blue-500 shadow-blue-500/20' },
-              'WEB': { icon: 'text-indigo-500', bg: 'from-indigo-50 to-blue-50', ring: 'ring-indigo-500 shadow-indigo-500/20' },
-              'AUTOMATION': { icon: 'text-orange-500', bg: 'from-orange-50 to-amber-50', ring: 'ring-orange-500 shadow-orange-500/20' },
-              'DEVOPS': { icon: 'text-emerald-500', bg: 'from-emerald-50 to-green-50', ring: 'ring-emerald-500 shadow-emerald-500/20' },
-              'DataEngineering': { icon: 'text-cyan-500', bg: 'from-cyan-50 to-sky-50', ring: 'ring-cyan-500 shadow-cyan-500/20' },
-              'CodeingTest': { icon: 'text-violet-500', bg: 'from-violet-50 to-purple-50', ring: 'ring-violet-500 shadow-violet-500/20' }
-            };
-            
-            const colors = categoryColors[key as keyof typeof categoryColors];
-
-            return (
-              <Button
-                key={key}
-                variant="outline"
-                className={cn(
-                  "relative flex flex-col items-center p-4 h-auto min-w-[130px] rounded-2xl transition-all duration-300",
-                  "hover:scale-102 hover:shadow-lg",
-                  "bg-gradient-to-b from-white to-gray-50",
-                  selectedMainCategory === key 
-                    ? `ring-2 ${colors.ring} ring-offset-2 shadow-lg` 
-                    : "border border-gray-200 hover:border-blue-200"
-                )}
-                onClick={() => setSelectedMainCategory(key)}
-              >
-                <div className={cn("h-10 w-10 mb-3 rounded-xl bg-gradient-to-br flex items-center justify-center", colors.bg)}>
-                  <CategoryIcon category={key} className={colors.icon} />
-                </div>
-                <span className="font-medium text-sm text-gray-900">{value}</span>
-                <span className="text-[11px] text-gray-500 mt-1">
-                  {(() => {
-                    switch(key) {
-                      case 'CLOUD': return 'Cloud Computing';
-                      case 'AI_ML': return 'AI & Machine Learning';
-                      case 'WEB': return 'Web Development';
-                      case 'AUTOMATION': return 'Automation';
-                      case 'DEVOPS': return 'DevOps';
-                      case 'DataEngineering': return 'Data Engineering';
-                      case 'CodeingTest': return 'Coding Test';
-                      default: return '';
-                    }
-                  })()}
-                </span>
-              </Button>
-            );
-          })}
-        </div>
-
-        {/* Course List */}
-        {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <h2 className="text-4xl font-bold text-gray-900 mb-4">추천 강의</h2>
+            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              최신 트렌드를 반영한 다양한 강의를 만나보세요
+            </p>
           </div>
-        ) : error ? (
-          <div className="text-center text-red-500 py-8">{error}</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {filteredCourses.map((course) => (
+
+          {/* Category Filter */}
+          <div className="relative mb-16 bg-white/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-100">
+            <div className="flex items-center justify-between mb-4 px-4">
+              <h3 className="text-lg font-semibold text-gray-900">카테고리</h3>
+              <Button
+                onClick={() => setSelectedMainCategory('all')}
+                variant="ghost"
+                className="text-sm text-gray-500 hover:text-blue-600"
+              >
+                필터 초기화
+              </Button>
+            </div>
+            
+            <div className="relative">
+              {/* Gradient Overlays */}
+              <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
+              <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
+              
+              {/* Scrollable Container */}
+              <div className="overflow-x-auto hide-scrollbar">
+                <div className="flex gap-3 px-4 py-2 min-w-max">
+                  <Button
+                    onClick={() => setSelectedMainCategory('all')}
+                    variant={selectedMainCategory === 'all' ? "default" : "outline"}
+                    className={cn(
+                      "rounded-full px-6 py-2 transition-all duration-300 min-w-[120px]",
+                      selectedMainCategory === 'all'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 border-0'
+                        : 'hover:border-blue-200 hover:bg-blue-50'
+                    )}
+                  >
+                    전체 강의
+                  </Button>
+                  {Object.entries(CATEGORY_MAPPING).map(([id, name]) => (
+                    <Button
+                      key={id}
+                      onClick={() => setSelectedMainCategory(id)}
+                      variant={selectedMainCategory === id ? "default" : "outline"}
+                      className={cn(
+                        "rounded-full px-6 py-2 transition-all duration-300 min-w-[120px] flex items-center justify-center gap-2",
+                        selectedMainCategory === id
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 border-0'
+                          : 'hover:border-blue-200 hover:bg-blue-50'
+                      )}
+                    >
+                      <CategoryIcon category={id} className="shrink-0" />
+                      <span className="truncate">{name}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Course Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {filteredCourses.map((course, index) => (
               <motion.div
                 key={course.id}
-                initial={fadeInUp.initial}
-                animate={fadeInUp.animate}
-                transition={fadeInUp.transition}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="group"
               >
                 <CourseCard course={course} />
               </motion.div>
             ))}
           </div>
-        )}
+        </div>
+      </section>
+
+      {/* Partner Logos Section */}
+      <div className="relative py-20 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800 overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }} />
+        </div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-white mb-4">함께하는 파트너사</h2>
+            <p className="text-lg text-blue-100">국내 최고의 기업들과 함께 성장하고 있습니다</p>
+          </div>
+
+          <div className="relative">
+            <div className="relative overflow-hidden">
+              <div className="flex gap-12">
+                <div className="animate-scroll-left flex gap-12">
+                  {['/partner/aws.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
+                    <div key={`dup1-${index}`} className="relative group">
+                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                        <img
+                          src={logo}
+                          alt="Partner Logo"
+                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="animate-scroll-left flex gap-12" aria-hidden="true">
+                  {['/partner/aws.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
+                    <div key={`dup2-${index}`} className="relative group">
+                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                        <img
+                          src={logo}
+                          alt="Partner Logo"
+                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="relative mt-12 overflow-hidden">
+              <div className="flex gap-12">
+                <div className="animate-scroll-right flex gap-12">
+                  {['/partner/ewha.png', '/partner/cj.png', '/partner/hansol.png', '/partner/Smes.png', '/partner/경기테크노파크.png', '/partner/police-4.png', '/partner/sinwoo.png'].map((logo, index) => (
+                    <div key={`dup1-${index}`} className="relative group">
+                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                        <img
+                          src={logo}
+                          alt="Partner Logo"
+                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="animate-scroll-right flex gap-12" aria-hidden="true">
+                  {['/partner/ewha.png', '/partner/cj.png', '/partner/hansol.png', '/partner/Smes.png', '/partner/경기테크노파크.png', '/partner/police-4.png', '/partner/sinwoo.png'].map((logo, index) => (
+                    <div key={`dup2-${index}`} className="relative group">
+                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                        <img
+                          src={logo}
+                          alt="Partner Logo"
+                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
