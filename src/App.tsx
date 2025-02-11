@@ -39,6 +39,7 @@ import CourseDetail from '@/pages/admin/courses/[id]';
 import CreateCourse from '@/pages/admin/courses/create';
 import EditCourse from '@/pages/admin/courses/[id]/edit';
 import QuizPage from './pages/student/courses/quiz';
+import QuizResults from './pages/admin/courses/quiz/results';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -69,6 +70,7 @@ const App = () => {
               <Route path="/admin/courses/create" element={<CreateCourse />} />
               <Route path="/admin/courses/:id" element={<CourseDetail />} />
               <Route path="/admin/courses/:id/edit" element={<EditCourse />} />
+              <Route path="/admin/courses/:courseId/quiz/:quizId/results" element={<QuizResults />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/system" element={<AdminSystem />} />
               <Route path="/admin/statistics" element={<AdminStatistics />} />

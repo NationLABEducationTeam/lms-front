@@ -4,7 +4,7 @@ import { Button } from '@/components/common/ui/button';
 import { Card } from '@/components/common/ui/card';
 import { Quiz, QuizAttempt } from '@/types/course';
 import { toast } from 'sonner';
-import { Timer, AlertCircle, CheckCircle2, XCircle, ArrowLeft, ArrowRight } from 'lucide-react';
+import { Timer, AlertCircle, CheckCircle2, XCircle, ArrowLeft, ArrowRight, BarChart2 } from 'lucide-react';
 import { Progress } from '@/components/common/ui/progress';
 import {
   AlertDialog,
