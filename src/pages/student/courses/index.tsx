@@ -1,36 +1,20 @@
 import { FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEnrolledCourses } from '@/services/api/courses';
-import { Course as BaseCourse } from '@/types/course';
+import type { 
+  Course as BaseCourse, 
+  WeekMaterial, 
+  Week 
+} from '@/types/course';
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
-  PenLine, MessageSquare, Award, BarChart, ChevronDown
+  PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
+  Film, Image as ImageIcon, FileIcon, File
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import * as Accordion from '@radix-ui/react-accordion';
-
-// 주차별 자료 타입 정의
-interface Material {
-  fileName: string;
-  downloadUrl: string;
-  lastModified: string;
-  size: number;
-}
-
-interface WeekMaterials {
-  document?: Material[];
-  video?: Material[];
-  quiz?: Material[];
-  spreadsheet?: Material[];  // 엑셀 파일을 위한 필드 추가
-  image?: Material[];
-  unknown?: Material[];
-}
-
-interface Week {
-  weekName: string;
-  weekNumber: number;
-  materials: WeekMaterials;
-}
+import { Button } from '@/components/common/ui/button';
+import { toast } from 'sonner';
 
 interface Course extends BaseCourse {
   weeks: Week[];
@@ -41,9 +25,41 @@ interface Course extends BaseCourse {
 }
 
 const transformApiResponse = (apiCourse: any): Course => {
+  // 주차별 자료 변환
+  const transformedWeeks = apiCourse.weeks?.map((week: any) => {
+    // 파일들을 카테고리별로 분류
+    const categorizedMaterials: { [key: string]: WeekMaterial[] } = {
+      quiz: [],
+      document: [],
+      video: [],
+      image: [],
+      spreadsheet: [],
+      unknown: []
+    };
+
+    // 파일들을 카테고리별로 분류
+    Object.entries(week.materials || {}).forEach(([category, files]: [string, any]) => {
+      files.forEach((file: any) => {
+        // json 카테고리의 파일을 quiz 카테고리로 변환
+        const targetCategory = category === 'json' ? 'quiz' : category;
+        if (targetCategory in categorizedMaterials) {
+          categorizedMaterials[targetCategory].push(file);
+        } else {
+          console.warn(`Unknown category: ${category}, file: ${file.fileName}`);
+          categorizedMaterials.unknown.push(file);
+        }
+      });
+    });
+
+    return {
+      ...week,
+      materials: categorizedMaterials
+    };
+  }) || [];
+
   return {
     ...apiCourse,
-    weeks: apiCourse.weeks || []
+    weeks: transformedWeeks
   };
 };
 
@@ -115,6 +131,51 @@ const StudentCoursesPage: FC = () => {
     }
   };
 
+  const handleFileClick = async (file: WeekMaterial, weekNumber: number | null) => {
+    if (!selectedCourse || !weekNumber) return;
+
+    // 퀴즈 파일인 경우
+    if (file.fileName.endsWith('.json')) {
+      try {
+        // JSON 파일 내용 가져오기
+        const response = await fetch(file.downloadUrl);
+        if (!response.ok) throw new Error('Failed to fetch quiz data');
+        const quizData = await response.json();
+        
+        // state를 통해 퀴즈 데이터 전달
+        navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/quiz`, {
+          state: { quizData }
+        });
+        return;
+      } catch (error) {
+        console.error('Error loading quiz:', error);
+        toast.error('퀴즈 데이터를 불러오는데 실패했습니다.');
+        return;
+      }
+    }
+
+    // 일반 파일 다운로드
+    try {
+      const response = await fetch(file.downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.fileName;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success('파일 다운로드가 시작되었습니다.');
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -163,89 +224,103 @@ const StudentCoursesPage: FC = () => {
   // 실시간 수업 입장 가능 여부 체크 (현재 시간 기준 15분 전부터 입장 가능)
   const isLiveClassAvailable = selectedCourse ? new Date(selectedCourse.created_at).getTime() - Date.now() <= 15 * 60 * 1000 : false;
 
-  // 파일 아이콘 선택 함수 수정
+  // 파일 타입별 아이콘 매핑
   const getFileIcon = (fileName: string) => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    switch (extension) {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    switch (ext) {
+      case 'json':
+        return <BrainCircuit className="w-5 h-5 text-purple-600" />;
       case 'pdf':
-        return <FileText className="w-5 h-5 text-red-600" />;
-      case 'xlsx':
-      case 'xls':
-        return <FileText className="w-5 h-5 text-green-600" />;
-      case 'doc':
-      case 'docx':
-        return <FileText className="w-5 h-5 text-blue-600" />;
-      case 'ppt':
-      case 'pptx':
-        return <FileText className="w-5 h-5 text-orange-600" />;
+        return <FileText className="w-5 h-5 text-red-500" />;
       case 'mp4':
       case 'mov':
       case 'avi':
-      case 'wmv':
-        return <Video className="w-5 h-5 text-purple-600" />;
+        return <Film className="w-5 h-5 text-purple-500" />;
       case 'jpg':
       case 'jpeg':
       case 'png':
       case 'gif':
-        return <FileText className="w-5 h-5 text-pink-600" />;
+        return <ImageIcon className="w-5 h-5 text-blue-500" />;
+      case 'doc':
+      case 'docx':
+        return <FileIcon className="w-5 h-5 text-blue-700" />;
+      case 'xls':
+      case 'xlsx':
+        return <FileIcon className="w-5 h-5 text-green-600" />;
       default:
-        return <FileText className="w-5 h-5 text-gray-600" />;
+        return <File className="w-5 h-5 text-gray-500" />;
     }
   };
 
   // 파일 타입 표시 이름 가져오기
   const getFileTypeName = (type: string) => {
     switch (type) {
+      case 'quiz':
+        return '퀴즈';
       case 'document':
         return '강의 자료';
       case 'video':
-        return '강의 영상';
+        return '동영상';
       case 'image':
         return '이미지';
       case 'spreadsheet':
-        return '엑셀 자료';
-      case 'unknown':
-        return '기타 자료';
+        return '스프레드시트';
       default:
-        return type;
+        return '기타';
     }
   };
 
-  // 파일 크기 포맷팅 함수
+  // 파일 크기 포맷팅
   const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   // 주차별 자료 렌더링 함수 수정
-  const renderWeekMaterials = (materials: WeekMaterials) => {
-    // 모든 파일 타입을 포함하도록 수정
-    const renderMaterialList = (items: Material[] | undefined, type: string) => {
+  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
+    const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
       
       return (
         <div className="mb-6 last:mb-0">
-          <h4 className="text-sm font-medium text-slate-500 mb-2">{getFileTypeName(type)}</h4>
+          <h4 className={`text-sm font-medium mb-2 ${
+            type === 'quiz' ? 'text-purple-700' : 'text-slate-500'
+          }`}>
+            {getFileTypeName(type)}
+          </h4>
           <div className="space-y-2">
             {items.map((item, index) => (
               <a
                 key={index}
-                href={item.downloadUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200 hover:border-blue-300 transition-colors"
+                onClick={() => handleFileClick(item, selectedWeek)}
+                className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 border ${
+                  type === 'quiz'
+                    ? 'bg-white hover:bg-purple-50 border-purple-200'
+                    : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
+                }`}
               >
-                <div className="flex items-center">
+                <div className="flex items-center gap-3">
                   {getFileIcon(item.fileName)}
-                  <div className="ml-3">
-                    <div className="font-medium text-slate-900">{item.fileName}</div>
-                    <div className="text-sm text-slate-500">
-                      {new Date(item.lastModified).toLocaleDateString()} • {formatFileSize(item.size)}
-                    </div>
+                  <div>
+                    <span className={`text-sm ${type === 'quiz' ? 'text-purple-900' : 'text-gray-900'}`}>
+                      {item.fileName}
+                    </span>
+                    <p className={`text-xs ${type === 'quiz' ? 'text-purple-500' : 'text-gray-500'}`}>
+                      {formatFileSize(item.size)}
+                    </p>
                   </div>
                 </div>
-                <Download className="w-5 h-5 text-slate-400" />
+                {type === 'quiz' ? (
+                  <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700">
+                    <BrainCircuit className="w-4 h-4 mr-2" />
+                    퀴즈 풀기
+                  </Button>
+                ) : (
+                  <Download className="w-5 h-5 text-slate-400" />
+                )}
               </a>
             ))}
           </div>
@@ -255,10 +330,11 @@ const StudentCoursesPage: FC = () => {
 
     return (
       <div className="space-y-4">
+        {renderMaterialList(materials.quiz, 'quiz')}
         {renderMaterialList(materials.document, 'document')}
-        {renderMaterialList(materials.spreadsheet, 'spreadsheet')}
         {renderMaterialList(materials.video, 'video')}
         {renderMaterialList(materials.image, 'image')}
+        {renderMaterialList(materials.spreadsheet, 'spreadsheet')}
         {renderMaterialList(materials.unknown, 'unknown')}
       </div>
     );
@@ -317,18 +393,17 @@ const StudentCoursesPage: FC = () => {
               </div>
             </div>
 
-            <button 
-              className={`inline-flex items-center px-5 py-2.5 rounded-lg transition-all duration-200 ${
-                isLiveClassAvailable
-                  ? 'bg-blue-600 text-white shadow-md shadow-blue-100 hover:bg-blue-700'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-              }`}
-              disabled={!isLiveClassAvailable}
-              title={!isLiveClassAvailable ? "수업 시작 15분 전부터 입장 가능합니다" : undefined}
-            >
-              <PlayCircle className="w-5 h-5 mr-2" />
-              {isLiveClassAvailable ? '실시간 수업 입장' : '수업 준비중'}
-            </button>
+            {selectedCourse?.classmode === 'ONLINE' && selectedCourse?.zoom_link && (
+              <a 
+                href={selectedCourse.zoom_link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-5 py-2.5 rounded-lg bg-blue-600 text-white shadow-md shadow-blue-100 hover:bg-blue-700 transition-all duration-200"
+              >
+                <PlayCircle className="w-5 h-5 mr-2" />
+                실시간 수업 입장
+              </a>
+            )}
           </div>
         </div>
 

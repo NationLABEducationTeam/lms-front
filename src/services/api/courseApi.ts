@@ -4,7 +4,7 @@ const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId } from '@/types/course';
+import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId, WeekMaterial } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { S3Structure } from '@/types/s3';
@@ -48,6 +48,7 @@ export interface UpdateCourseRequest {
 }
 
 interface Week {
+  weekName: string;
   weekNumber: number;
   materials: {
     [key: string]: {
@@ -61,6 +62,8 @@ interface Week {
 
 interface CourseWithWeeks extends Course {
   weeks: Week[];
+  zoom_link?: string;
+  classmode: 'ONLINE' | 'VOD';
 }
 
 export const courseApi = createApi({
@@ -68,14 +71,23 @@ export const courseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: getApiUrl(''),
     prepareHeaders: async (headers) => {
-      const { tokens } = await fetchAuthSession();
-      const idToken = tokens?.idToken?.toString();
-      if (idToken) {
-        headers.set('Authorization', `Bearer ${idToken}`);
+      try {
+        const { tokens } = await fetchAuthSession();
+        const idToken = tokens?.idToken?.toString();
+        if (idToken) {
+          headers.set('Authorization', `Bearer ${idToken}`);
+        }
+        return headers;
+      } catch (error) {
+        console.error('Error preparing headers:', error);
+        return headers;
       }
-      return headers;
     },
+    timeout: 10000, // 10초 타임아웃
   }),
+  keepUnusedDataFor: 30, // 글로벌 캐시 시간 설정
+  refetchOnMountOrArgChange: true, // 컴포넌트 마운트시 항상 리페치
+  refetchOnFocus: false, // 포커스시 리페치 비활성화
   tagTypes: ['Course', 'Week'],
   endpoints: (builder) => ({
     // 공개 강의 목록 조회
@@ -93,8 +105,76 @@ export const courseApi = createApi({
 
     // 관리자용 강의 상세 조회
     getCourseById: builder.query<CourseWithWeeks, string>({
-      query: (id) => `/admin/courses/${id}`,
-      transformResponse: (response: ApiResponse<CourseWithWeeks>) => response.data,
+      query: (id) => ({
+        url: `/admin/courses/${id}`,
+        method: 'GET',
+        responseHandler: async (response) => {
+          if (!response.ok) {
+            const error = await response.json();
+            return Promise.reject(error);
+          }
+          const data = await response.json();
+          console.log('Server response for getCourseById:', data);
+          return data;
+        },
+      }),
+      transformResponse: (response: ApiResponse<{ course: Course; weeks: Week[] }>) => {
+        console.log('Transforming response:', response);
+        if (!response.success) {
+          throw new Error(response.message || '강의 정보를 불러오는데 실패했습니다.');
+        }
+
+        // 주차별 파일을 타입별로 분류
+        const transformedWeeks = response.data.weeks.map(week => {
+          const categorizedMaterials: { [key: string]: WeekMaterial[] } = {
+            quiz: [],
+            document: [],
+            video: [],
+            image: [],
+            spreadsheet: [],
+            unknown: []
+          };
+
+          // 파일들을 카테고리별로 분류
+          Object.entries(week.materials || {}).forEach(([category, files]) => {
+            files.forEach(file => {
+              // json 카테고리의 파일을 quiz 카테고리로 변환
+              const targetCategory = category === 'json' ? 'quiz' : category;
+              if (targetCategory in categorizedMaterials) {
+                categorizedMaterials[targetCategory].push(file);
+              } else {
+                console.warn(`Unknown category: ${category}, file: ${file.fileName}`);
+                categorizedMaterials.unknown.push(file);
+              }
+            });
+          });
+
+          return {
+            ...week,
+            materials: categorizedMaterials
+          };
+        });
+
+        const result = {
+          ...response.data.course,
+          weeks: transformedWeeks
+        };
+        console.log('Transformed result:', result);
+        return result;
+      },
+      transformErrorResponse: (response: { status: number; data: any }) => {
+        return {
+          status: response.status,
+          message: response.data?.message || '강의 정보를 불러오는데 실패했습니다.'
+        };
+      },
+      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+        } catch (error) {
+          console.debug('Query error handled:', error);
+        }
+      },
       providesTags: (result, error, id) => [{ type: 'Course', id }],
     }),
 
@@ -202,29 +282,22 @@ export const courseApi = createApi({
       { courseId: string; weekNumber: number; folderPath: string },
       { courseId: string; weekNumber: number }
     >({
-      query: ({ courseId, weekNumber }) => {
-        console.log('Creating week with:', { courseId, weekNumber });
-        return {
-          url: `/admin/courses/${courseId}`,
-          method: 'POST',
-          body: { weekNumber },
-        };
-      },
+      query: ({ courseId, weekNumber }) => ({
+        url: `/admin/courses/${courseId}`,
+        method: 'POST',
+        body: { weekNumber },
+      }),
       transformResponse: (response: ApiResponse<{ courseId: string; weekNumber: number; folderPath: string }>) => {
-        console.log('Create week API response:', response);
         if (!response.success) {
           throw new Error(response.message || '새 주차 생성에 실패했습니다.');
         }
         return response.data;
       },
-      onQueryStarted: async (arg, { dispatch, queryFulfilled }) => {
-        console.log('Starting createWeek mutation:', arg);
+      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
-          const { data } = await queryFulfilled;
-          console.log('createWeek mutation successful:', data);
+          await queryFulfilled;
         } catch (error) {
-          console.error('createWeek mutation failed:', error);
-          throw error;
+          // 에러 발생 시 조용히 처리
         }
       },
       invalidatesTags: (result, error, { courseId }) => [{ type: 'Course', id: courseId }],
@@ -290,6 +363,24 @@ export const courseApi = createApi({
         body,
       }),
     }),
+
+    // 강의 상태 토글
+    toggleCourseStatus: builder.mutation<Course, string>({
+      query: (courseId) => ({
+        url: `/admin/courses/${courseId}/toggle-status`,
+        method: 'PUT',
+      }),
+      transformResponse: (response: ApiResponse<{ course: Course }>) => {
+        if (!response.success) {
+          throw new Error(response.message || '강의 상태 변경에 실패했습니다.');
+        }
+        return response.data.course;
+      },
+      invalidatesTags: (result, error, courseId) => [
+        { type: 'Course', id: courseId },
+        { type: 'Course', id: 'LIST' }
+      ],
+    }),
   }),
 });
 
@@ -306,4 +397,5 @@ export const {
   useGetCourseDetailQuery,
   useListCategoriesQuery,
   useGetDownloadUrlMutation,
+  useToggleCourseStatusMutation,
 } = courseApi; 

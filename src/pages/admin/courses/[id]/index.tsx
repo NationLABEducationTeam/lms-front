@@ -14,17 +14,28 @@ import {
   FileIcon,
   File,
   Link,
-  Paperclip
+  Paperclip,
+  Search,
+  Trash2,
+  Edit2,
+  BookOpen,
+  Users,
+  Calendar,
+  AlertCircle,
+  BrainCircuit
 } from 'lucide-react';
 import { Card } from '@/components/common/ui/card';
-import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation } from '@/services/api/courseApi';
+import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
-import { Week } from '@/types/course';
 import { Progress } from '@/components/common/ui/progress';
+import type { WeekMaterial } from '@/types/course';
+import { Course } from '@/types/course';
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
   switch (ext) {
+    case 'json':
+      return <BrainCircuit className="w-5 h-5 text-purple-600" />;
     case 'pdf':
       return <FileText className="w-5 h-5 text-red-500" />;
     case 'mp4':
@@ -52,6 +63,35 @@ const getFileIcon = (fileName: string) => {
   }
 };
 
+// 파일 타입 표시 이름 가져오기
+const getFileTypeName = (type: string) => {
+  switch (type) {
+    case 'quiz':
+      return '퀴즈';
+    case 'document':
+      return '강의 자료';
+    case 'video':
+      return '동영상';
+    case 'image':
+      return '이미지';
+    case 'spreadsheet':
+      return '스프레드시트';
+    default:
+      return '기타';
+  }
+};
+
+// 파일 분류 함수
+const categorizeFile = (fileName: string) => {
+  const ext = fileName.split('.').pop()?.toLowerCase();
+  if (ext === 'json') return 'quiz';
+  if (['pdf', 'doc', 'docx'].includes(ext || '')) return 'document';
+  if (['mp4', 'mov', 'avi'].includes(ext || '')) return 'video';
+  if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) return 'image';
+  if (['xls', 'xlsx'].includes(ext || '')) return 'spreadsheet';
+  return 'unknown';
+};
+
 // 파일 크기 포맷팅
 const formatFileSize = (bytes: number) => {
   if (bytes === 0) return '0 Bytes';
@@ -74,6 +114,7 @@ const CourseDetail: FC = () => {
   const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id!);
   const [createWeek] = useCreateWeekMutation();
   const [getUploadUrls] = useGetUploadUrlsMutation();
+  const [getDownloadUrl] = useGetDownloadUrlMutation();
 
   // 해시 변경 감지하여 주차 선택
   useEffect(() => {
@@ -91,13 +132,17 @@ const CourseDetail: FC = () => {
     
     const nextWeekNumber = (course.weeks?.length || 0) + 1;
     try {
-      await createWeek({ courseId: id!, weekNumber: nextWeekNumber }).unwrap();
-      toast.success(`${nextWeekNumber}주차가 생성되었습니다.`);
-      // 새로 생성된 주차로 이동
-      navigate(`#${nextWeekNumber}`);
-      setSelectedWeek(nextWeekNumber);
-    } catch (error) {
-      toast.error('주차 생성에 실패했습니다.');
+      const result = await createWeek({ courseId: id!, weekNumber: nextWeekNumber }).unwrap();
+      if (result) {
+        toast.success(`${nextWeekNumber}주차가 생성되었습니다.`);
+        // 새로 생성된 주차로 이동
+        navigate(`#${nextWeekNumber}`);
+        setSelectedWeek(nextWeekNumber);
+        // 데이터 새로고침
+        refetch();
+      }
+    } catch (error: any) {
+      toast.error(error.message || '주차 생성에 실패했습니다.');
     }
   };
 
@@ -142,8 +187,11 @@ const CourseDetail: FC = () => {
       const fileInfos = files.map(file => ({
         name: file.name,
         type: file.type,
-        size: file.size
+        size: file.size,
+        category: categorizeFile(file.name)
       }));
+
+      console.log('Uploading files:', fileInfos);
 
       const { urls } = await getUploadUrls({
         courseId: id!,
@@ -151,11 +199,18 @@ const CourseDetail: FC = () => {
         files: fileInfos
       }).unwrap();
 
+      console.log('Got upload URLs:', urls);
+
       // Upload files to S3 with progress tracking
       await Promise.all(
-        urls.map(async ({ url, fileName }, index) => {
+        urls.map(async ({ url, fileName }, _index) => {
           const file = files.find(f => f.name === fileName);
-          if (!file) return;
+          if (!file) {
+            console.warn('File not found:', fileName);
+            return;
+          }
+
+          console.log('Uploading file:', fileName);
 
           const xhr = new XMLHttpRequest();
           xhr.upload.addEventListener('progress', (event) => {
@@ -171,8 +226,14 @@ const CourseDetail: FC = () => {
           return new Promise((resolve, reject) => {
             xhr.open('PUT', url);
             xhr.setRequestHeader('Content-Type', file.type);
-            xhr.onload = () => resolve(xhr.response);
-            xhr.onerror = () => reject(xhr.statusText);
+            xhr.onload = () => {
+              console.log('Upload completed for:', fileName);
+              resolve(xhr.response);
+            };
+            xhr.onerror = () => {
+              console.error('Upload failed for:', fileName);
+              reject(xhr.statusText);
+            };
             xhr.send(file);
           });
         })
@@ -180,6 +241,9 @@ const CourseDetail: FC = () => {
 
       // 업로드 성공 후 처리
       toast.success('파일 업로드가 완료되었습니다.');
+      if (files.some(file => file.name.endsWith('.json'))) {
+        toast.info('퀴즈 파일이 업로드되었습니다. 학생들은 퀴즈 페이지에서 이를 볼 수 있습니다.');
+      }
       setSelectedFiles(prev => {
         const newState = { ...prev };
         delete newState[weekNumber];
@@ -189,10 +253,35 @@ const CourseDetail: FC = () => {
       setShowUploadArea(null);
       
       // 데이터 새로고침
+      console.log('Refreshing course data...');
       await refetch();
+      console.log('Course data refreshed');
     } catch (error) {
       console.error('Upload error:', error);
       toast.error('파일 업로드에 실패했습니다.');
+    }
+  };
+
+  const handleDownload = async (downloadUrl: string) => {
+    try {
+      // 파일 다운로드 처리
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      // URL에서 파일 이름 추출
+      const fileName = downloadUrl.split('/').pop() || 'download';
+      a.download = decodeURIComponent(fileName);
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
     }
   };
 
@@ -208,6 +297,77 @@ const CourseDetail: FC = () => {
 
   const handleUploadClick = (weekNumber: number) => {
     setShowUploadArea(showUploadArea === weekNumber ? null : weekNumber);
+  };
+
+  // 파일 목록 렌더링 수정
+  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
+    console.log('Rendering materials:', materials);
+
+    const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
+      if (!items || items.length === 0) return null;
+      
+      console.log(`Rendering ${type} materials:`, items);
+      
+      return (
+        <div className={`mb-6 last:mb-0 ${type === 'quiz' ? 'bg-purple-50 p-4 rounded-lg border border-purple-100' : ''}`}>
+          <h4 className={`text-sm font-medium mb-2 ${type === 'quiz' ? 'text-purple-700' : 'text-slate-500'}`}>
+            {getFileTypeName(type)}
+            {type === 'quiz' && (
+              <span className="ml-2 text-xs text-purple-600">
+                (학생들에게 퀴즈 페이지로 표시됩니다)
+              </span>
+            )}
+          </h4>
+          <div className="space-y-2">
+            {items.map((item, _index) => (
+              <div
+                key={_index}
+                className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 border ${
+                  type === 'quiz'
+                    ? 'bg-white hover:bg-purple-50 border-purple-200'
+                    : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  {getFileIcon(item.fileName)}
+                  <div>
+                    <span className={`text-sm ${type === 'quiz' ? 'text-purple-900' : 'text-gray-900'}`}>
+                      {item.fileName}
+                    </span>
+                    <p className={`text-xs ${type === 'quiz' ? 'text-purple-500' : 'text-gray-500'}`}>
+                      {formatFileSize(item.size)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className={`${
+                    type === 'quiz'
+                      ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
+                      : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
+                  }`}
+                  onClick={() => handleDownload(item.downloadUrl)}
+                >
+                  <Download className="w-4 h-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    };
+
+    return (
+      <div className="space-y-4">
+        {renderMaterialList(materials.quiz, 'quiz')}
+        {renderMaterialList(materials.document, 'document')}
+        {renderMaterialList(materials.video, 'video')}
+        {renderMaterialList(materials.image, 'image')}
+        {renderMaterialList(materials.spreadsheet, 'spreadsheet')}
+        {renderMaterialList(materials.unknown, 'unknown')}
+      </div>
+    );
   };
 
   if (isLoading) {
@@ -243,7 +403,66 @@ const CourseDetail: FC = () => {
             <h1 className="text-2xl font-bold text-gray-900 mb-1">{course.title}</h1>
             <p className="text-gray-500 text-sm">{course.description}</p>
           </div>
+          <Button
+            onClick={() => navigate(`/admin/courses/${id}/edit`)}
+            className="bg-blue-600 text-white hover:bg-blue-700"
+          >
+            강의 수정
+          </Button>
         </div>
+
+        {/* Zoom 링크 섹션 */}
+        {course.classmode === 'ONLINE' && (
+          <div className="mb-8 bg-white p-6 rounded-xl shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Link className="w-4 h-4 text-blue-600" />
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900">Zoom 링크</h2>
+              </div>
+              <Button
+                onClick={() => navigate(`/admin/courses/${id}/edit`)}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                variant="ghost"
+                size="sm"
+              >
+                <Link className="w-4 h-4 mr-2" />
+                {course.zoom_link ? '수정하기' : '링크 설정하기'}
+              </Button>
+            </div>
+            {course.zoom_link ? (
+              <div className="flex items-center gap-4">
+                <a 
+                  href={course.zoom_link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex-1 text-blue-600 hover:text-blue-700 hover:underline text-lg bg-blue-50 p-3 rounded-lg"
+                >
+                  {course.zoom_link}
+                </a>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => {
+                    navigator.clipboard.writeText(course.zoom_link || '');
+                    toast.success('Zoom 링크가 클립보드에 복사되었습니다.');
+                  }}
+                >
+                  <Paperclip className="w-4 h-4 mr-2" />
+                  복사하기
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 p-4 bg-red-50 rounded-lg border border-red-100">
+                <p className="text-red-600">
+                  아직 Zoom 링크가 설정되지 않았습니다. 위 버튼을 클릭하여 링크를 설정해주세요.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* 주차 관리 헤더 */}
         <div className="mb-6 flex justify-between items-center bg-white p-5 rounded-xl shadow-sm">
@@ -262,7 +481,7 @@ const CourseDetail: FC = () => {
           </Button>
         </div>
 
-        {course.weeks?.length === 0 ? (
+        {!course.weeks || !Array.isArray(course.weeks) || course.weeks.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm">
             <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-indigo-600" />
@@ -399,39 +618,7 @@ const CourseDetail: FC = () => {
                       </div>
                     )}
 
-                    {Object.entries(week.materials || {}).map(([category, files]) => (
-                      <div key={category} className="mt-6 bg-white p-4 rounded-xl">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                            <FileText className="w-4 h-4 text-green-600" />
-                          </div>
-                          <h4 className="font-medium text-gray-900">{category}</h4>
-                        </div>
-                        <div className="space-y-2">
-                          {files.map((file) => (
-                            <div
-                              key={file.fileName}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-100"
-                            >
-                              <div className="flex items-center gap-3">
-                                {getFileIcon(file.fileName)}
-                                <div>
-                                  <span className="text-sm text-gray-900">{file.fileName}</span>
-                                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                                </div>
-                              </div>
-                              <Button 
-                                variant="ghost" 
-                                size="sm"
-                                className="text-gray-600 hover:text-indigo-600 hover:bg-indigo-50"
-                              >
-                                <Download className="w-4 h-4" />
-                              </Button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
+                    {renderWeekMaterials(week.materials || {})}
                   </div>
                 )}
               </Card>

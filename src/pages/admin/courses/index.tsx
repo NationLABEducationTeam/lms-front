@@ -3,13 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
 import { Plus, Search, Trash2, Edit2, BookOpen, Users, Calendar, AlertCircle } from 'lucide-react';
 import { CategorySelector } from '@/components/courses/CategorySelector';
-import { MainCategory, Course, MainCategoryId } from '@/types/course';
+import { MainCategory, Course, MainCategoryId, CourseStatus } from '@/types/course';
 import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Card } from '@/components/common/ui/card';
 import { Input } from '@/components/common/ui/input';
-import { useGetPublicCoursesQuery, useDeleteCourseMutation } from '@/services/api/courseApi';
+import { useGetPublicCoursesQuery, useDeleteCourseMutation, useToggleCourseStatusMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
 import { Badge } from '@/components/common/ui/badge';
+import { Switch } from '@/components/common/ui/switch';
 
 const AdminCourses: FC = () => {
   const navigate = useNavigate();
@@ -21,6 +22,16 @@ const AdminCourses: FC = () => {
 
   const { data: courses = [], isLoading, error } = useGetPublicCoursesQuery();
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
+  const [toggleStatus] = useToggleCourseStatusMutation();
+
+  const handleStatusToggle = async (courseId: string, currentStatus: CourseStatus) => {
+    try {
+      await toggleStatus(courseId).unwrap();
+      toast.success(`강의가 ${currentStatus === CourseStatus.PUBLISHED ? '비공개' : '공개'}로 변경되었습니다.`);
+    } catch (error) {
+      toast.error('상태 변경에 실패했습니다.');
+    }
+  };
 
   const filteredCourses = courses.filter(course => {
     const matchesMainCategory = !selectedMainCategory || course.main_category_id === selectedMainCategory.id;
@@ -127,7 +138,6 @@ const AdminCourses: FC = () => {
               <Card
                 key={course.id}
                 className="p-6 hover:shadow-md transition-shadow cursor-pointer bg-white border-0 shadow-sm"
-                onClick={() => navigate(`/admin/courses/${course.id}`)}
               >
                 <div className="flex items-start gap-6">
                   {/* 썸네일 */}
@@ -147,66 +157,65 @@ const AdminCourses: FC = () => {
 
                   {/* 강의 정보 */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge variant="outline" className="text-indigo-600 border-indigo-200 bg-indigo-50">
-                        {course.main_category_name}
-                      </Badge>
-                      <Badge variant="outline" className="text-gray-600 border-gray-200 bg-gray-50">
-                        {course.sub_category_name}
-                      </Badge>
-                      <Badge variant="outline" className={
-                        course.status === 'PUBLISHED' 
-                          ? 'text-green-600 border-green-200 bg-green-50'
-                          : course.status === 'DRAFT'
-                          ? 'text-orange-600 border-orange-200 bg-orange-50'
-                          : 'text-gray-600 border-gray-200 bg-gray-50'
-                      }>
-                        {course.status === 'PUBLISHED' ? '공개' : course.status === 'DRAFT' ? '임시저장' : '비공개'}
-                      </Badge>
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 
+                          className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+                          onClick={() => navigate(`/admin/courses/${course.id}`)}
+                        >
+                          {course.title}
+                        </h3>
+                        <p className="text-sm text-gray-500 mt-1">{course.description}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-500">
+                            {course.status === CourseStatus.PUBLISHED ? '공개' : '비공개'}
+                          </span>
+                          <Switch
+                            checked={course.status === CourseStatus.PUBLISHED}
+                            onCheckedChange={() => handleStatusToggle(course.id, course.status)}
+                            className="data-[state=checked]:bg-blue-600"
+                          />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/admin/courses/${course.id}/edit`);
+                            }}
+                            className="text-gray-600 hover:text-blue-600"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedCourseId(course.id);
+                              setDeleteDialogOpen(true);
+                            }}
+                            className="text-gray-600 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {course.title}
-                    </h3>
-                    <p className="text-gray-500 text-sm line-clamp-2 mb-4">
-                      {course.description}
-                    </p>
-                    <div className="flex items-center gap-6 text-sm text-gray-500">
-                      <div className="flex items-center gap-2">
+                    
+                    <div className="flex items-center gap-6 mt-4">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Users className="w-4 h-4" />
-                        <span>수강생 {course.enrolled_count || 0}명</span>
+                        <span>{course.enrolled_count || 0}명 수강 중</span>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="w-4 h-4" />
-                        <span>개설일: {new Date(course.created_at).toLocaleDateString()}</span>
+                        <span>{new Date(course.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 작업 버튼 */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(course.id);
-                      }}
-                      disabled={isDeleting}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/admin/courses/${course.id}/edit`);
-                      }}
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </Button>
                   </div>
                 </div>
               </Card>

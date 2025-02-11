@@ -133,6 +133,41 @@ export interface WeekMaterial {
   size: number;
 }
 
+export interface Quiz {
+  quizTitle: string;
+  description: string;
+  questions: QuizQuestion[];
+  metadata: {
+    totalQuestions: number;
+    timeLimit: number;
+    passingScore: number;
+    version: string;
+  };
+}
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  type: 'single' | 'multiple';
+  choices: string[];
+  correctAnswer: number | number[];
+  explanation: string;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  userId: string;
+  startTime: string;
+  endTime?: string;
+  score?: number;
+  answers: {
+    questionId: number;
+    answer: number | number[];
+  }[];
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT';
+}
+
 export interface Week {
   weekNumber: number;
   materials: {

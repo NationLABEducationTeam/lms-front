@@ -38,6 +38,7 @@ import CourseLessons from './pages/admin/courses/lessons/[id]';
 import CourseDetail from '@/pages/admin/courses/[id]';
 import CreateCourse from '@/pages/admin/courses/create';
 import EditCourse from '@/pages/admin/courses/[id]/edit';
+import QuizPage from './pages/student/courses/quiz';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -45,7 +46,10 @@ const App = () => {
 
   return (
     <HelmetProvider>
-      <BrowserRouter future={{ v7_startTransition: true }}>
+      <BrowserRouter future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}>
         <Routes>
           {/* Auth Routes - No Layout */}
           <Route path="/auth" element={<AuthForm />} />
@@ -85,6 +89,7 @@ const App = () => {
             <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
               <Route path="/dashboard" element={<StudentDashboard />} />
               <Route path="/mycourse" element={<StudentCoursesPage />} />
+              <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
               <Route path="/notices" element={<NoticeList />} />
               <Route path="/notices/:id" element={<NoticeDetail />} />
               <Route path="/community" element={<CommunityList />} />

@@ -105,40 +105,34 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
 - When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
+- WeekMaterial 인터페이스는 src/types/course.ts에 정의되어 있으며, 다른 파일에서 사용할 때는 명시적으로 import 해야 함
 
 # Scratchpad
 
-## Current Task: 강의 상세 페이지 및 주차별 수업 관리 기능 구현
+## Current Task: 코드베이스 분석 및 문제 해결
 
-### Task Analysis
-- 현재 상태: 
-  - /admin/courses 페이지에서 강의 목록, 수정, 삭제 기능 존재
-  - 주차별 수업 관리 페이지나 관련 코드는 현재 없음
-  - 강의 상세 페이지로의 이동 기능 없음
+### 현재 상태
+1. 파일 구조:
+   - src/pages/admin/courses/[id]/index.tsx: 강의 상세 페이지 (주차별 자료 관리)
+   - src/pages/student/courses/index.tsx: 학생용 강의 목록/상세 페이지
+   - src/types/course.ts: 타입 정의
+   - src/services/api/courseApi.ts: API 호출 로직
 
-- 목표:
-  - 각 강의 클릭 시 주차별 수업 관리 페이지로 이동
-  - 기존 /admin/courses 페이지의 UI는 유지
-  - 주차별 수업 생성 및 관리 기능 구현
+2. 기능:
+   - 강의 CRUD
+   - 주차별 자료 관리
+   - 파일 업로드/다운로드
+   - 퀴즈 기능
 
-### Required Changes
-1. 강의 목록 페이지 수정
-   - 각 강의 항목을 클릭 가능하게 만들기
-   - 주차별 수업 관리 페이지로 리다이렉션 추가
+### 발견된 문제
+1. WeekMaterial 타입 import 누락:
+   - src/pages/admin/courses/[id]/index.tsx
+   - src/services/api/courseApi.ts
+   에서 WeekMaterial 타입을 import하지 않아 타입 에러 발생
 
-2. 주차별 수업 관리 페이지 구현
-   - 새로운 라우트 및 컴포넌트 생성
-   - CRUD 기능 구현
-   - UI 디자인 및 구현
-
-### Progress
-[ ] 강의 목록 페이지에 클릭 이벤트 추가
-[ ] 주차별 수업 관리 페이지 라우트 생성
-[ ] 주차별 수업 관리 컴포넌트 구현
-[ ] API 엔드포인트 구현
-[ ] 테스트 및 검증
-
-### Notes
-- 기존 강의 관리 페이지의 디자인 시스템 재사용
-- 강의 수정 페이지의 구조를 참고하여 구현
-- 사용자 경험을 고려한 직관적인 UI 설계 필요
+### 해결 계획
+[X] 코드베이스 전체 분석
+[ ] WeekMaterial 타입 import 추가
+[ ] 파일 분류 로직 검증
+[ ] 디버그 로그 추가
+[ ] 코드 정리 및 최적화
