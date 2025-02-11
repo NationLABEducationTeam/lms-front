@@ -8,7 +8,30 @@ export const CATEGORY_MAPPING = {
   'CodeingTest': '코딩테스트'
 } as const;
 
-export type MainCategory = 'CLOUD' | 'SECURITY' | 'NETWORK' | 'DEVELOPMENT';
+export type MainCategoryId = keyof typeof CATEGORY_MAPPING;
+
+export enum CourseLevel {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  ADVANCED = 'ADVANCED'
+}
+
+export enum CourseStatus {
+  DRAFT = 'DRAFT',
+  PUBLISHED = 'PUBLISHED',
+  PRIVATE = 'PRIVATE'
+}
+
+export interface MainCategory {
+  id: MainCategoryId;
+  name: string;
+  sub_categories: {
+    id: string;
+    name: string;
+  }[];
+}
+
+export type CourseType = 'ONLINE' | 'VOD';
 
 export interface Course {
   id: string;
@@ -18,7 +41,7 @@ export interface Course {
   instructor_name: string;
   instructor_image?: string;
   instructor_bio?: string;
-  main_category_id: string;
+  main_category_id: MainCategoryId;
   main_category_name: string;
   sub_category_id: string;
   sub_category_name: string;
@@ -27,8 +50,12 @@ export interface Course {
   price: number;
   level: CourseLevel;
   status: CourseStatus;
+  type: CourseType;
+  classmode: 'ONLINE' | 'VOD';
   created_at: string;
   updated_at: string;
+  weeks?: Week[];
+  enrolled_count?: number;
 }
 
 export interface CourseFile {
@@ -53,10 +80,6 @@ export interface WeeklyContent {
 export interface CourseDetail extends Course {
   weekly_contents: WeeklyContent[];
 }
-
-export type CourseLevel = 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
-
-export type CourseStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 
 export interface Category {
   id: string;
@@ -101,4 +124,53 @@ interface Lesson {
 interface FAQ {
   question: string;
   answer: string;
+}
+
+export interface WeekMaterial {
+  fileName: string;
+  downloadUrl: string;
+  lastModified: string;
+  size: number;
+}
+
+export interface Quiz {
+  quizTitle: string;
+  description: string;
+  questions: QuizQuestion[];
+  metadata: {
+    totalQuestions: number;
+    timeLimit: number;
+    passingScore: number;
+    version: string;
+  };
+}
+
+export interface QuizQuestion {
+  id: number;
+  question: string;
+  type: 'single' | 'multiple';
+  choices: string[];
+  correctAnswer: number | number[];
+  explanation: string;
+}
+
+export interface QuizAttempt {
+  id: string;
+  quizId: string;
+  userId: string;
+  startTime: string;
+  endTime?: string;
+  score?: number;
+  answers: {
+    questionId: number;
+    answer: number | number[];
+  }[];
+  status: 'IN_PROGRESS' | 'COMPLETED' | 'TIMED_OUT';
+}
+
+export interface Week {
+  weekNumber: number;
+  materials: {
+    [key: string]: WeekMaterial[];
+  };
 }

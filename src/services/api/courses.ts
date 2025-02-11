@@ -464,6 +464,7 @@ export const listPublicCourses = async (): Promise<Course[]> => {
       price: parseFloat(course.price),
       level: course.level,
       status: course.status,
+      classmode: course.classmode,
       created_at: course.created_at,
       updated_at: course.updated_at
     }));

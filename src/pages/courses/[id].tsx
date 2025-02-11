@@ -81,20 +81,31 @@ const CourseDetailPage: FC = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-gray-600">카테고리</p>
-                <p className="font-medium">{course.main_category_id}</p>
-              </div>
-              <div>
-                <p className="text-gray-600">난이도</p>
-                <p className="font-medium">{course.level}</p>
+                <p className="font-medium">{course.main_category_name}</p>
               </div>
               <div>
                 <p className="text-gray-600">강사</p>
                 <p className="font-medium">{course.instructor_name}</p>
               </div>
               <div>
-                <p className="text-gray-600">가격</p>
-                <p className="font-medium">{course.price ? `${course.price.toLocaleString()}원` : '무료'}</p>
+                <p className="text-gray-600">강의 유형</p>
+                <p className="font-medium">
+                  {course.classmode === 'ONLINE' ? '실시간 온라인' : 'VOD'}
+                </p>
               </div>
+              {course.classmode === 'ONLINE' && course.zoom_link && (
+                <div>
+                  <p className="text-gray-600">Zoom 링크</p>
+                  <a
+                    href={course.zoom_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    {course.zoom_link}
+                  </a>
+                </div>
+              )}
             </div>
           </div>
         </div>
