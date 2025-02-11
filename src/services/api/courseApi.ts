@@ -168,14 +168,14 @@ export const courseApi = createApi({
           message: response.data?.message || '강의 정보를 불러오는데 실패했습니다.'
         };
       },
-      async onQueryStarted(_arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { queryFulfilled }) {
         try {
           await queryFulfilled;
         } catch (error) {
           console.debug('Query error handled:', error);
         }
       },
-      providesTags: (result, error, id) => [{ type: 'Course', id }],
+      providesTags: (_result, _error, id) => [{ type: 'Course', id }],
     }),
 
     // 강의 생성
@@ -259,7 +259,7 @@ export const courseApi = createApi({
         body,
       }),
       transformResponse: (response: ApiResponse<CourseWithWeeks>) => response.data,
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (_result, _error, { id }) => [
         { type: 'Course', id },
         { type: 'Course', id: 'LIST' },
       ],
@@ -271,7 +271,7 @@ export const courseApi = createApi({
         url: `/admin/courses/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_result, _error, id) => [
         { type: 'Course', id },
         { type: 'Course', id: 'LIST' },
       ],
@@ -293,14 +293,14 @@ export const courseApi = createApi({
         }
         return response.data;
       },
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
+      async onQueryStarted(_arg, { queryFulfilled }) {
         try {
           await queryFulfilled;
         } catch (error) {
           // 에러 발생 시 조용히 처리
         }
       },
-      invalidatesTags: (result, error, { courseId }) => [{ type: 'Course', id: courseId }],
+      invalidatesTags: (_result, _error, { courseId }) => [{ type: 'Course', id: courseId }],
     }),
 
     // 파일 업로드를 위한 URL 조회
@@ -376,7 +376,7 @@ export const courseApi = createApi({
         }
         return response.data.course;
       },
-      invalidatesTags: (result, error, courseId) => [
+      invalidatesTags: (_result, _error, courseId) => [
         { type: 'Course', id: courseId },
         { type: 'Course', id: 'LIST' }
       ],
