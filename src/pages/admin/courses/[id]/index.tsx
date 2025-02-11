@@ -22,7 +22,8 @@ import {
   Users,
   Calendar,
   AlertCircle,
-  BrainCircuit
+  BrainCircuit,
+  BarChart2
 } from 'lucide-react';
 import { Card } from '@/components/common/ui/card';
 import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation } from '@/services/api/courseApi';
@@ -319,9 +320,9 @@ const CourseDetail: FC = () => {
             )}
           </h4>
           <div className="space-y-2">
-            {items.map((item, _index) => (
+            {items.map((item, index) => (
               <div
-                key={_index}
+                key={index}
                 className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 border ${
                   type === 'quiz'
                     ? 'bg-white hover:bg-purple-50 border-purple-200'
@@ -339,18 +340,26 @@ const CourseDetail: FC = () => {
                     </p>
                   </div>
                 </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  className={`${
-                    type === 'quiz'
-                      ? 'text-purple-600 hover:text-purple-700 hover:bg-purple-100'
-                      : 'text-gray-600 hover:text-indigo-600 hover:bg-indigo-50'
-                  }`}
-                  onClick={() => handleDownload(item.downloadUrl)}
-                >
-                  <Download className="w-4 h-4" />
-                </Button>
+                <div className="flex items-center gap-2">
+                  {type === 'quiz' && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const quizId = item.fileName.split('.')[0];
+                        navigate(`/admin/courses/${id}/quiz/${quizId}/results`);
+                      }}
+                      className="text-purple-600 hover:text-purple-700"
+                    >
+                      <BarChart2 className="w-4 h-4 mr-2" />
+                      결과 보기
+                    </Button>
+                  )}
+                  <Download 
+                    className="w-5 h-5 text-slate-400 cursor-pointer" 
+                    onClick={() => handleDownload(item.downloadUrl)}
+                  />
+                </div>
               </div>
             ))}
           </div>
