@@ -78,7 +78,7 @@ const VideoPlayer: FC<VideoPlayerProps> = ({ src, title }) => {
     hls.attachMedia(video);
 
     // 매니페스트 파싱 완료 이벤트
-    hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+    hls.on(Hls.Events.MANIFEST_PARSED, (_, data) => {
       const levels = data.levels.map((level, index) => ({
         height: level.height,
         bitrate: level.bitrate,
@@ -93,7 +93,7 @@ const VideoPlayer: FC<VideoPlayerProps> = ({ src, title }) => {
     });
 
     // 에러 핸들링
-    hls.on(Hls.Events.ERROR, (event, data) => {
+    hls.on(Hls.Events.ERROR, (_, data) => {
       if (data.fatal) {
         switch (data.type) {
           case Hls.ErrorTypes.NETWORK_ERROR:
