@@ -9,12 +9,13 @@ import type {
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
-  Film, Image as ImageIcon, FileIcon, File
+  Film, Image as ImageIcon, FileIcon, File, Play
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import * as Accordion from '@radix-ui/react-accordion';
 import { Button } from '@/components/common/ui/button';
 import { toast } from 'sonner';
+import VideoModal from '@/components/video/VideoModal';
 
 interface Course extends BaseCourse {
   weeks: Week[];
@@ -72,6 +73,8 @@ const StudentCoursesPage: FC = () => {
   const [activeTab, setActiveTab] = useState<'curriculum' | 'notices' | 'assignments' | 'qna' | 'notes' | 'posts' | 'progress'>('curriculum');
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [openWeeks, setOpenWeeks] = useState<string[]>([]);
+  const [videoModalOpen, setVideoModalOpen] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<{ url: string; title: string } | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -132,17 +135,25 @@ const StudentCoursesPage: FC = () => {
   };
 
   const handleFileClick = async (file: WeekMaterial, weekNumber: number | null) => {
-    if (!selectedCourse || !weekNumber) return;
+    if (!selectedCourse) return;
+
+    // HLS 비디오 파일인 경우
+    if (file.fileName.endsWith('.m3u8')) {
+      setSelectedVideo({
+        url: file.downloadUrl,
+        title: file.fileName
+      });
+      setVideoModalOpen(true);
+      return;
+    }
 
     // 퀴즈 파일인 경우
     if (file.fileName.endsWith('.json')) {
       try {
-        // JSON 파일 내용 가져오기
         const response = await fetch(file.downloadUrl);
         if (!response.ok) throw new Error('Failed to fetch quiz data');
         const quizData = await response.json();
         
-        // state를 통해 퀴즈 데이터 전달
         navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/quiz`, {
           state: { quizData }
         });
@@ -228,6 +239,8 @@ const StudentCoursesPage: FC = () => {
   const getFileIcon = (fileName: string) => {
     const ext = fileName.split('.').pop()?.toLowerCase();
     switch (ext) {
+      case 'm3u8':
+        return <Play className="w-5 h-5 text-purple-500" />;
       case 'json':
         return <BrainCircuit className="w-5 h-5 text-purple-600" />;
       case 'pdf':
@@ -283,59 +296,56 @@ const StudentCoursesPage: FC = () => {
   const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
     const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
-      
+
+      // HLS 스트리밍 파일 필터링
+      const filteredItems = items.filter(item => {
+        const fileName = item.fileName.toLowerCase();
+        
+        // .ts 파일 제외
+        if (fileName.endsWith('.ts')) return false;
+        
+        // 화질별 m3u8 파일 제외 (예: xxx_720p.m3u8, xxx_1080p.m3u8)
+        if (fileName.endsWith('.m3u8') && 
+            (fileName.includes('720x480') || 
+             fileName.includes('1280x720') || 
+             fileName.includes('1920x1080'))) {
+          return false;
+        }
+        
+        // 메인 m3u8 파일만 포함
+        return true;
+      });
+
+      if (filteredItems.length === 0) return null;
+
       return (
-        <div className="mb-6 last:mb-0">
-          <h4 className={`text-sm font-medium mb-2 ${
-            type === 'quiz' ? 'text-purple-700' : 'text-slate-500'
-          }`}>
-            {getFileTypeName(type)}
-          </h4>
-          <div className="space-y-2">
-            {items.map((item, index) => (
-              <a
-                key={index}
-                onClick={() => handleFileClick(item, selectedWeek)}
-                className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 border ${
-                  type === 'quiz'
-                    ? 'bg-white hover:bg-purple-50 border-purple-200'
-                    : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
-                }`}
-              >
-                <div className="flex items-center gap-3">
+        <div key={type} className="space-y-2">
+          <h4 className="text-sm font-medium text-gray-500">{getFileTypeName(type)}</h4>
+          <ul className="space-y-1">
+            {filteredItems.map((item, index) => (
+              <li key={index}>
+                <button
+                  onClick={() => handleFileClick(item, null)}
+                  className="w-full flex items-center p-2 hover:bg-gray-50 rounded-lg group"
+                >
                   {getFileIcon(item.fileName)}
-                  <div>
-                    <span className={`text-sm ${type === 'quiz' ? 'text-purple-900' : 'text-gray-900'}`}>
-                      {item.fileName}
-                    </span>
-                    <p className={`text-xs ${type === 'quiz' ? 'text-purple-500' : 'text-gray-500'}`}>
-                      {formatFileSize(item.size)}
-                    </p>
-                  </div>
-                </div>
-                {type === 'quiz' ? (
-                  <Button variant="ghost" size="sm" className="text-purple-600 hover:text-purple-700">
-                    <BrainCircuit className="w-4 h-4 mr-2" />
-                    퀴즈 풀기
-                  </Button>
-                ) : (
-                  <Download className="w-5 h-5 text-slate-400" />
-                )}
-              </a>
+                  <span className="ml-3 flex-1 text-left text-sm text-gray-700">
+                    {item.fileName}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {formatFileSize(item.size)}
+                  </span>
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       );
     };
 
     return (
       <div className="space-y-4">
-        {renderMaterialList(materials.quiz, 'quiz')}
-        {renderMaterialList(materials.document, 'document')}
-        {renderMaterialList(materials.video, 'video')}
-        {renderMaterialList(materials.image, 'image')}
-        {renderMaterialList(materials.spreadsheet, 'spreadsheet')}
-        {renderMaterialList(materials.unknown, 'unknown')}
+        {Object.entries(materials).map(([type, items]) => renderMaterialList(items, type))}
       </div>
     );
   };
@@ -551,6 +561,19 @@ const StudentCoursesPage: FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* 비디오 모달 추가 */}
+      {selectedVideo && (
+        <VideoModal
+          isOpen={videoModalOpen}
+          onClose={() => {
+            setVideoModalOpen(false);
+            setSelectedVideo(null);
+          }}
+          videoUrl={selectedVideo.url}
+          title={selectedVideo.title}
+        />
+      )}
     </div>
   );
 };

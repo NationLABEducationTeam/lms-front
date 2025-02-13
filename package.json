@@ -48,6 +48,7 @@
     "@tiptap/extension-underline": "^2.11.5",
     "@tiptap/react": "^2.11.5",
     "@tiptap/starter-kit": "^2.11.5",
+    "@videojs/http-streaming": "^3.17.0",
     "antd": "^5.23.3",
     "aws-amplify": "^6.0.17",
     "axios": "^1.6.7",
@@ -56,6 +57,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.3.1",
     "framer-motion": "^11.0.8",
+    "hls.js": "^1.5.20",
     "keen-slider": "^6.8.6",
     "lucide-react": "^0.344.0",
     "next-themes": "^0.2.1",
@@ -70,6 +72,9 @@
     "sonner": "^1.4.3",
     "tailwind-merge": "^2.2.1",
     "tailwindcss-animate": "^1.0.7",
+    "video.js": "^8.21.0",
+    "videojs-contrib-quality-levels": "^4.1.0",
+    "videojs-http-source-selector": "^1.1.6",
     "zod": "^3.22.4"
   },
   "devDependencies": {
