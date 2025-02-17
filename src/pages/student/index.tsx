@@ -400,6 +400,17 @@ const StudentLanding: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
   const [serverMessage, setServerMessage] = useState<string>('');
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // 마우스 위치 추적 함수
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const hero = e.currentTarget as HTMLElement;
+    const rect = hero.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
 
   // 강의 목록으로 스크롤하는 함수 추가
   const scrollToCourses = () => {
@@ -473,10 +484,10 @@ const StudentLanding: FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
       {/* Server message display */}
       {serverMessage && (
-        <div className="bg-blue-50/80 backdrop-blur-sm border-b border-blue-100">
+        <div className="bg-blue-50 border-b border-blue-100">
           <div className="max-w-7xl mx-auto px-4 py-3">
             <p className="text-sm text-blue-700">{serverMessage}</p>
           </div>
@@ -484,15 +495,26 @@ const StudentLanding: FC = () => {
       )}
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden min-h-[90vh] flex items-center">
-        {/* Background Image */}
+      <div 
+        className="relative overflow-hidden min-h-[90vh] flex items-center bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100"
+        onMouseMove={handleMouseMove}
+      >
+        {/* 마우스 포인터 효과 */}
+        <div
+          className="pointer-events-none absolute -inset-px transition-opacity duration-300"
+          style={{
+            background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(56, 189, 248, 0.25), rgba(37, 99, 235, 0.25) 20%, transparent 40%)`,
+            mixBlendMode: "multiply"
+          }}
+        />
+        
+        {/* Background Pattern & Gradient */}
         <div className="absolute inset-0 z-0">
-          <img
-            src="/mainlandingpage.jpg"
-            alt="Main Landing Page"
-            className="absolute inset-0 w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-transparent"></div>
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.03]"></div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-500/5 to-slate-500/10"></div>
+          {/* Decorative circles */}
+          <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-200/20 rounded-full filter blur-3xl"></div>
+          <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-indigo-200/20 rounded-full filter blur-3xl"></div>
         </div>
 
         <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12 py-24">
@@ -504,34 +526,43 @@ const StudentLanding: FC = () => {
               transition={fadeInUp.transition}
               className="text-left"
             >
-              <div className="inline-block mb-6 px-6 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-                <span className="text-base font-medium text-white/90">✨ 새로운 시작을 함께하세요</span>
+              <div className="inline-block mb-6 px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-300">
+                <span className="text-base font-semibold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent">✨ 새로운 시작을 함께하세요</span>
               </div>
-              <h1 className="text-6xl sm:text-7xl font-bold text-white mb-10 tracking-tight leading-tight">
+              <h1 className="text-6xl sm:text-7xl font-bold text-slate-800 mb-10 tracking-tight leading-tight">
                 {user ? (
                   <span className="flex flex-col gap-6">
-                    <span className="text-white/90">Welcome back,</span>
-                    <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                    <span className="text-slate-700">Welcome back,</span>
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                       {user.name}
                     </span>
                   </span>
                 ) : (
                   <span className="flex flex-col gap-6">
-                    <span className="bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                       Nation's LAB
                     </span>
-                    <span className="text-white/90">과 함께하는 성장</span>
+                    <span className="text-slate-700">과 함께하는 성장</span>
                   </span>
                 )}
               </h1>
-              <p className="text-xl text-white/80 mb-10 leading-relaxed max-w-2xl">
+              <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-2xl">
                 최신 기술 트렌드와 실무 중심의 교육으로 여러분의 성장을 돕습니다.
                 지금 바로 시작하세요.
               </p>
               <div className="flex flex-wrap gap-6">
                 <Button
                   onClick={scrollToCourses}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-10 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-xl"
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-10 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-xl relative overflow-hidden group"
+                  onMouseMove={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const y = e.clientY - rect.top;
+                    e.currentTarget.style.background = `radial-gradient(100px circle at ${x}px ${y}px, rgb(15, 23, 42), rgb(30, 41, 59))`;
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgb(15, 23, 42)';
+                  }}
                 >
                   강의 둘러보기
                 </Button>
@@ -539,7 +570,16 @@ const StudentLanding: FC = () => {
                   <Button
                     onClick={() => navigate('/auth')}
                     variant="outline"
-                    className="bg-white/10 hover:bg-white/20 text-white border-white/20 px-10 py-4 rounded-lg backdrop-blur-sm transition-all duration-200 text-xl"
+                    className="bg-white/50 hover:bg-white/80 text-slate-900 border-slate-200 px-10 py-4 rounded-lg backdrop-blur-sm transition-all duration-200 text-xl relative overflow-hidden group"
+                    onMouseMove={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const x = e.clientX - rect.left;
+                      const y = e.clientY - rect.top;
+                      e.currentTarget.style.background = `radial-gradient(100px circle at ${x}px ${y}px, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5))`;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
+                    }}
                   >
                     시작하기
                   </Button>
@@ -554,124 +594,128 @@ const StudentLanding: FC = () => {
               transition={{ delay: 0.3 }}
               className="grid grid-cols-2 gap-8"
             >
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h3 className="text-5xl font-bold text-white mb-3">20+</h3>
-                <p className="text-lg text-white/80">전문 강사진</p>
+              {/* Stats Cards */}
+              <div 
+                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(59, 130, 246, 0.2), transparent 50%)`;
+                    gradient.style.opacity = '1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.opacity = '0';
+                  }
+                }}
+              >
+                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-blue-200 shadow-sm group-hover:border-blue-300 transition-all duration-300">
+                  <h3 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">20+</h3>
+                  <p className="text-lg text-slate-600">전문 강사진</p>
+                </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h3 className="text-5xl font-bold text-white mb-3">50+</h3>
-                <p className="text-lg text-white/80">강의 콘텐츠</p>
+              <div 
+                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(168, 85, 247, 0.2), transparent 50%)`;
+                    gradient.style.opacity = '1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.opacity = '0';
+                  }
+                }}
+              >
+                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-pink-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-purple-200 shadow-sm group-hover:border-purple-300 transition-all duration-300">
+                  <h3 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">50+</h3>
+                  <p className="text-lg text-slate-600">강의 콘텐츠</p>
+                </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h3 className="text-5xl font-bold text-white mb-3">1000+</h3>
-                <p className="text-lg text-white/80">수강생</p>
+              <div 
+                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(16, 185, 129, 0.2), transparent 50%)`;
+                    gradient.style.opacity = '1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.opacity = '0';
+                  }
+                }}
+              >
+                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 to-teal-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-emerald-200 shadow-sm group-hover:border-emerald-300 transition-all duration-300">
+                  <h3 className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">1000+</h3>
+                  <p className="text-lg text-slate-600">수강생</p>
+                </div>
               </div>
-              <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 border border-white/20">
-                <h3 className="text-5xl font-bold text-white mb-3">98%</h3>
-                <p className="text-lg text-white/80">만족도</p>
+              <div 
+                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
+                onMouseMove={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = e.clientX - rect.left;
+                  const y = e.clientY - rect.top;
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(245, 158, 11, 0.2), transparent 50%)`;
+                    gradient.style.opacity = '1';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  const card = e.currentTarget;
+                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
+                  if (gradient) {
+                    gradient.style.opacity = '0';
+                  }
+                }}
+              >
+                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-orange-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
+                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-amber-200 shadow-sm group-hover:border-amber-300 transition-all duration-300">
+                  <h3 className="text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">98%</h3>
+                  <p className="text-lg text-slate-600">만족도</p>
+                </div>
               </div>
             </motion.div>
           </div>
         </div>
       </div>
 
-      {/* Carousel Section */}
-      <div className="bg-white py-32 overflow-hidden">
-        <div className="max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">학습 성과</h2>
-            <p className="text-xl text-gray-600">Nation's LAB과 함께한 수강생들의 이야기</p>
-          </div>
-          <ImageCarousel />
-        </div>
-      </div>
-
-      {/* 학습 특징 섹션 */}
-      <section className="relative py-32 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 overflow-hidden">
-        {/* 배경 패턴 */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-5"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/50 to-transparent"></div>
-        </div>
-
-        {/* 메인 콘텐츠 */}
-        <div className="relative z-10 max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <div className="inline-block mb-4 px-4 py-1.5 bg-white/10 rounded-full backdrop-blur-sm">
-              <span className="text-sm font-medium text-white/90">Learning Experience</span>
-            </div>
-            <h2 className="text-4xl font-bold text-white mb-4">체계적인 학습 경험</h2>
-            <p className="text-lg text-white/80">Nation's LAB만의 차별화된 교육 시스템을 경험하세요</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* 단계별 학습 */}
-            <div className="group relative">
-              {/* 배경 블러 효과 */}
-              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
-              {/* 그라데이션 테두리 */}
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              <div className="relative p-8 rounded-2xl border border-white/10">
-                <div className="bg-gradient-to-br from-blue-500 to-indigo-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
-                  <code className="text-lg font-mono text-white">def</code>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">단계별 학습</h3>
-                <div className="font-mono text-sm text-blue-300 mb-4 opacity-80">def learn_step_by_step():</div>
-                <p className="text-white/70 leading-relaxed">
-                  전문가가 설계한 커리큘럼으로<br />
-                  단계별 학습을 경험하세요
-                </p>
-              </div>
-            </div>
-
-            {/* 실시간 피드백 */}
-            <div className="group relative">
-              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              <div className="relative p-8 rounded-2xl border border-white/10">
-                <div className="bg-gradient-to-br from-purple-500 to-pink-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
-                  <code className="text-lg font-mono text-white">async</code>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">실시간 피드백</h3>
-                <div className="font-mono text-sm text-purple-300 mb-4 opacity-80">async function review() {}</div>
-                <p className="text-white/70 leading-relaxed">
-                  강사와 동료들의 피드백으로<br />
-                  더 빠른 성장을 이루세요
-                </p>
-              </div>
-            </div>
-
-            {/* 학습 관리 */}
-            <div className="group relative">
-              <div className="absolute inset-0 bg-white/5 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:bg-white/10"></div>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              
-              <div className="relative p-8 rounded-2xl border border-white/10">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
-                  <code className="text-lg font-mono text-white">const</code>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4">학습 관리</h3>
-                <div className="font-mono text-sm text-emerald-300 mb-4 opacity-80">const progress = new<br />Dashboard();</div>
-                <p className="text-white/70 leading-relaxed">
-                  대시보드를 통해 나의 학습 현황을<br />
-                  한눈에 파악하세요
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 장식용 그라데이션 원 */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full filter blur-3xl"></div>
-      </section>
-
       {/* Course Cards Section */}
-      <section id="courses-section" className="relative py-32 bg-gradient-to-b from-white to-slate-50/80">
+      <section id="courses-section" className="relative py-32 bg-gradient-to-b from-sky-50 via-blue-50 to-indigo-50">
         {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-5"></div>
+        <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.02]"></div>
 
         <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
           {/* Section Header */}
@@ -681,8 +725,8 @@ const StudentLanding: FC = () => {
                 Featured Courses
               </span>
             </div>
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">추천 강의</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <h2 className="text-4xl font-bold text-slate-900 mb-4">추천 강의</h2>
+            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
               최신 트렌드를 반영한 다양한 강의를 만나보세요
             </p>
           </div>
@@ -759,10 +803,94 @@ const StudentLanding: FC = () => {
         </div>
       </section>
 
+      {/* Carousel Section */}
+      <div className="bg-slate-50 py-32 overflow-hidden">
+        <div className="max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">학습 성과</h2>
+            <p className="text-xl text-gray-600">Nation's LAB과 함께한 수강생들의 이야기</p>
+          </div>
+          <ImageCarousel />
+        </div>
+      </div>
+
+      {/* 학습 특징 섹션 */}
+      <section className="relative py-32 bg-gradient-to-b from-slate-100 to-white overflow-hidden">
+        {/* 배경 패턴 */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.03]"></div>
+        </div>
+
+        {/* 메인 콘텐츠 */}
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="text-center mb-16">
+            <div className="inline-block mb-4 px-4 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full">
+              <span className="text-sm font-medium text-slate-700">Learning Experience</span>
+            </div>
+            <h2 className="text-4xl font-bold text-slate-800 mb-4">체계적인 학습 경험</h2>
+            <p className="text-lg text-slate-600">Nation's LAB만의 차별화된 교육 시스템을 경험하세요</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* 단계별 학습 */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-blue-100 group-hover:to-indigo-100"></div>
+              <div className="relative p-8 rounded-2xl border border-blue-200">
+                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+                  <code className="text-lg font-mono text-white">def</code>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">단계별 학습</h3>
+                <div className="font-mono text-sm text-blue-600 mb-4 opacity-80">def learn_step_by_step():</div>
+                <p className="text-slate-600 leading-relaxed">
+                  전문가가 설계한 커리큘럼으로<br />
+                  단계별 학습을 경험하세요
+                </p>
+              </div>
+            </div>
+
+            {/* 실시간 피드백 */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-purple-100 group-hover:to-pink-100"></div>
+              <div className="relative p-8 rounded-2xl border border-purple-200">
+                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+                  <code className="text-lg font-mono text-white">async</code>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">실시간 피드백</h3>
+                <div className="font-mono text-sm text-purple-600 mb-4 opacity-80">async function review() {}</div>
+                <p className="text-slate-600 leading-relaxed">
+                  강사와 동료들의 피드백으로<br />
+                  더 빠른 성장을 이루세요
+                </p>
+              </div>
+            </div>
+
+            {/* 학습 관리 */}
+            <div className="group relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-emerald-100 group-hover:to-teal-100"></div>
+              <div className="relative p-8 rounded-2xl border border-emerald-200">
+                <div className="bg-gradient-to-br from-emerald-600 to-teal-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+                  <code className="text-lg font-mono text-white">const</code>
+                </div>
+                <h3 className="text-2xl font-bold text-slate-800 mb-4">학습 관리</h3>
+                <div className="font-mono text-sm text-emerald-600 mb-4 opacity-80">const progress = new<br />Dashboard();</div>
+                <p className="text-slate-600 leading-relaxed">
+                  대시보드를 통해 나의 학습 현황을<br />
+                  한눈에 파악하세요
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 장식용 그라데이션 원 */}
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full filter blur-3xl"></div>
+        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full filter blur-3xl"></div>
+      </section>
+
       {/* Partner Logos Section */}
-      <div className="relative py-20 bg-gradient-to-b from-indigo-900 via-blue-900 to-blue-800 overflow-hidden">
+      <div className="relative py-20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
+        <div className="absolute inset-0 opacity-[0.03]">
           <div className="absolute inset-0" style={{
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
           }} />

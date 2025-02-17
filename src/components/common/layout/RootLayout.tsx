@@ -61,12 +61,7 @@ const RootLayout: FC = () => {
       {/* 상단 네비게이션 */}
       <nav 
         className={cn(
-          "fixed top-0 left-0 w-full transition-all duration-300",
-          isMainPage 
-            ? isAtTop 
-              ? "bg-transparent z-50" 
-              : "bg-white/95 shadow-sm backdrop-blur z-50"
-            : "bg-white shadow-sm z-50"
+          "fixed top-0 left-0 w-full bg-white/95 shadow-sm backdrop-blur z-50 transition-all duration-300"
         )}
       >
         {/* 미니 헤더 */}
@@ -78,7 +73,7 @@ const RootLayout: FC = () => {
                 className={cn(
                   "text-sm flex items-center gap-1.5 transition-colors",
                   isMainPage && isAtTop 
-                    ? "text-white hover:text-white/90" 
+                    ? "text-slate-700 hover:text-slate-900" 
                     : "text-gray-700 hover:text-gray-900"
                 )}
               >
@@ -87,7 +82,7 @@ const RootLayout: FC = () => {
               </button>
               <div className={cn(
                 "h-3 w-px",
-                isMainPage && isAtTop ? "bg-white/20" : "bg-gray-300"
+                isMainPage && isAtTop ? "bg-slate-300" : "bg-gray-300"
               )} />
               <a 
                 href="https://blog.nationslab.com" 
@@ -96,7 +91,7 @@ const RootLayout: FC = () => {
                 className={cn(
                   "text-sm flex items-center gap-1.5 transition-colors",
                   isMainPage && isAtTop 
-                    ? "text-white hover:text-white/90" 
+                    ? "text-slate-700 hover:text-slate-900" 
                     : "text-gray-700 hover:text-gray-900"
                 )}
               >
@@ -119,10 +114,7 @@ const RootLayout: FC = () => {
                 <img 
                   src="/long-logo.png"
                   alt="Nations LAB LMS" 
-                  className={cn(
-                    "h-10 w-auto transition-all duration-300",
-                    isMainPage && isAtTop && "brightness-0 invert"
-                  )}
+                  className="h-10 w-auto transition-all duration-300"
                 />
               </div>
 
@@ -138,9 +130,7 @@ const RootLayout: FC = () => {
                     onClick={() => user ? navigate(path) : navigate('/auth')}
                     className={cn(
                       "font-medium transition-colors",
-                      isMainPage && isAtTop 
-                        ? "text-white hover:text-white/90" 
-                        : "text-gray-700 hover:text-gray-900"
+                      "text-gray-700 hover:text-gray-900"
                     )}
                   >
                     {label}
@@ -158,7 +148,7 @@ const RootLayout: FC = () => {
                       className={cn(
                         "transition-colors",
                         isMainPage && isAtTop 
-                          ? "text-white hover:text-white hover:bg-white/10" 
+                          ? "text-slate-700 hover:text-slate-900 hover:bg-white/10" 
                           : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                       )}
                     >
@@ -172,14 +162,14 @@ const RootLayout: FC = () => {
                     className={cn(
                       "w-56 rounded-lg shadow-lg border",
                       isMainPage && isAtTop 
-                        ? "bg-black/80 backdrop-blur border-white/10" 
+                        ? "bg-white border-slate-200" 
                         : "bg-white border-gray-200"
                     )}
                   >
-                    <DropdownMenuLabel className={isMainPage && isAtTop ? "text-white" : "text-gray-900"}>
+                    <DropdownMenuLabel className="text-gray-900">
                       내 계정
                     </DropdownMenuLabel>
-                    <DropdownMenuSeparator className={isMainPage && isAtTop ? "bg-white/20" : "bg-gray-200"} />
+                    <DropdownMenuSeparator className="bg-gray-200" />
                     <DropdownMenuGroup>
                       {[
                         { path: '/my-courses', label: '내 강의 보기', icon: User },
@@ -190,25 +180,17 @@ const RootLayout: FC = () => {
                         <DropdownMenuItem
                           key={path}
                           onClick={() => navigate(path)}
-                          className={cn(
-                            "transition-colors",
-                            isMainPage && isAtTop 
-                              ? "text-white/90 hover:text-white hover:bg-white/10" 
-                              : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
-                          )}
+                          className="text-gray-700 hover:text-gray-900 hover:bg-gray-100"
                         >
                           <Icon className="mr-2 h-4 w-4" />
                           <span>{label}</span>
                         </DropdownMenuItem>
                       ))}
                     </DropdownMenuGroup>
-                    <DropdownMenuSeparator className={isMainPage && isAtTop ? "bg-white/20" : "bg-gray-200"} />
+                    <DropdownMenuSeparator className="bg-gray-200" />
                     <DropdownMenuItem 
                       onClick={handleSignOut}
-                      className={cn(
-                        "text-red-500 transition-colors",
-                        isMainPage && isAtTop ? "hover:bg-white/10" : "hover:bg-gray-100"
-                      )}
+                      className="text-red-500 hover:bg-gray-100"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       <span>로그아웃</span>
@@ -221,7 +203,7 @@ const RootLayout: FC = () => {
                   className={cn(
                     "px-6 transition-colors",
                     isMainPage && isAtTop 
-                      ? "bg-white text-blue-600 hover:bg-white/90" 
+                      ? "bg-slate-700 text-white hover:bg-slate-800" 
                       : "bg-blue-600 text-white hover:bg-blue-700"
                   )}
                   size="lg"

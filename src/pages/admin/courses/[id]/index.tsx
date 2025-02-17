@@ -23,14 +23,17 @@ import {
   Calendar,
   AlertCircle,
   BrainCircuit,
-  BarChart2
+  BarChart2,
+  Lock,
+  Unlock
 } from 'lucide-react';
 import { Card } from '@/components/common/ui/card';
-import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation } from '@/services/api/courseApi';
+import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
 import { Progress } from '@/components/common/ui/progress';
 import type { WeekMaterial } from '@/types/course';
 import { Course } from '@/types/course';
+import { cn } from '@/lib/utils';
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
@@ -116,6 +119,7 @@ const CourseDetail: FC = () => {
   const [createWeek] = useCreateWeekMutation();
   const [getUploadUrls] = useGetUploadUrlsMutation();
   const [getDownloadUrl] = useGetDownloadUrlMutation();
+  const [updateMaterialPermission] = useUpdateMaterialPermissionMutation();
 
   // 해시 변경 감지하여 주차 선택
   useEffect(() => {
@@ -300,6 +304,27 @@ const CourseDetail: FC = () => {
     setShowUploadArea(showUploadArea === weekNumber ? null : weekNumber);
   };
 
+  const handlePermissionToggle = async (weekNumber: number, fileName: string, currentPermission: boolean) => {
+    try {
+      const response = await updateMaterialPermission({
+        courseId: id!,
+        weekNumber,
+        fileName,
+        isDownloadable: !currentPermission
+      }).unwrap();
+      
+      if (response.success) {
+        toast.success('파일 다운로드 권한이 변경되었습니다.');
+        // 상태가 자동으로 업데이트되므로 refetch는 필요 없음
+      } else {
+        toast.error('권한 변경에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Permission update error:', error);
+      toast.error('권한 변경에 실패했습니다.');
+    }
+  };
+
   // 파일 목록 렌더링 수정
   const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
     console.log('Rendering materials:', materials);
@@ -310,59 +335,61 @@ const CourseDetail: FC = () => {
       console.log(`Rendering ${type} materials:`, items);
       
       return (
-        <div className={`mb-6 last:mb-0 ${type === 'quiz' ? 'bg-purple-50 p-4 rounded-lg border border-purple-100' : ''}`}>
-          <h4 className={`text-sm font-medium mb-2 ${type === 'quiz' ? 'text-purple-700' : 'text-slate-500'}`}>
-            {getFileTypeName(type)}
-            {type === 'quiz' && (
-              <span className="ml-2 text-xs text-purple-600">
-                (학생들에게 퀴즈 페이지로 표시됩니다)
-              </span>
-            )}
-          </h4>
-          <div className="space-y-2">
+        <div key={type} className="space-y-2">
+          <h4 className="text-sm font-medium text-gray-500">{getFileTypeName(type)}</h4>
+          <ul className="space-y-1">
             {items.map((item, index) => (
-              <div
-                key={index}
-                className={`flex items-center justify-between p-3 rounded-lg transition-all duration-200 border ${
-                  type === 'quiz'
-                    ? 'bg-white hover:bg-purple-50 border-purple-200'
-                    : 'bg-gray-50 hover:bg-gray-100 border-gray-100'
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  {getFileIcon(item.fileName)}
-                  <div>
-                    <span className={`text-sm ${type === 'quiz' ? 'text-purple-900' : 'text-gray-900'}`}>
-                      {item.fileName}
-                    </span>
-                    <p className={`text-xs ${type === 'quiz' ? 'text-purple-500' : 'text-gray-500'}`}>
+              <li key={index}>
+                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
+                  <div className="flex items-center gap-3">
+                    {getFileIcon(item.fileName)}
+                    <span className="text-sm text-gray-700">{item.fileName}</span>
+                    <span className="text-xs text-gray-500">
                       {formatFileSize(item.size)}
-                    </p>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handlePermissionToggle(selectedWeek!, item.fileName, item.downloadable ?? true)}
+                      className={cn(
+                        "p-2 rounded-lg transition-colors flex items-center gap-2",
+                        item.downloadable 
+                          ? "text-green-600 hover:bg-green-50 hover:text-green-700" 
+                          : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                      )}
+                      title={item.downloadable ? "다운로드 허용됨" : "다운로드 제한됨"}
+                    >
+                      {item.downloadable ? (
+                        <>
+                          <Unlock className="w-4 h-4" />
+                          <span className="text-xs font-medium">허용</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4" />
+                          <span className="text-xs font-medium">제한</span>
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => handleDownload(item.downloadUrl)}
+                      className={cn(
+                        "p-2 rounded-lg transition-colors flex items-center gap-2",
+                        item.downloadable 
+                          ? "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          : "text-gray-400 cursor-not-allowed"
+                      )}
+                      disabled={!item.downloadable}
+                      title={item.downloadable ? "파일 다운로드" : "다운로드가 제한된 파일입니다"}
+                    >
+                      <Download className="w-4 h-4" />
+                      <span className="text-xs font-medium">다운로드</span>
+                    </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {type === 'quiz' && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        const quizId = item.fileName.split('.')[0];
-                        navigate(`/admin/courses/${id}/quiz/${quizId}/results`);
-                      }}
-                      className="text-purple-600 hover:text-purple-700"
-                    >
-                      <BarChart2 className="w-4 h-4 mr-2" />
-                      결과 보기
-                    </Button>
-                  )}
-                  <Download 
-                    className="w-5 h-5 text-slate-400 cursor-pointer" 
-                    onClick={() => handleDownload(item.downloadUrl)}
-                  />
-                </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
       );
     };

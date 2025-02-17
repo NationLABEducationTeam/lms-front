@@ -47,16 +47,21 @@ export interface UpdateCourseRequest {
   zoom_link?: string;
 }
 
+// 백엔드 응답을 위한 인터페이스
+interface BackendMaterial {
+  fileName: string;
+  downloadUrl: string;
+  lastModified: string;
+  size: number;
+  downloadable?: boolean;
+  type?: string;
+}
+
 interface Week {
   weekName: string;
   weekNumber: number;
   materials: {
-    [key: string]: {
-      fileName: string;
-      downloadUrl: string;
-      lastModified: string;
-      size: number;
-    }[];
+    [key: string]: BackendMaterial[];
   };
 }
 
@@ -118,14 +123,17 @@ export const courseApi = createApi({
           return data;
         },
       }),
-      transformResponse: (response: ApiResponse<{ course: Course; weeks: Week[] }>) => {
+      transformResponse: (response: ApiResponse<{ course: Course & { weeks: Week[] } }>) => {
         console.log('Transforming response:', response);
         if (!response.success) {
           throw new Error(response.message || '강의 정보를 불러오는데 실패했습니다.');
         }
 
+        // weeks가 undefined인 경우 빈 배열로 처리
+        const weeks = response.data.course.weeks || [];
+        
         // 주차별 파일을 타입별로 분류
-        const transformedWeeks = response.data.weeks.map(week => {
+        const transformedWeeks = weeks.map(week => {
           const categorizedMaterials: { [key: string]: WeekMaterial[] } = {
             quiz: [],
             document: [],
@@ -137,20 +145,28 @@ export const courseApi = createApi({
 
           // 파일들을 카테고리별로 분류
           Object.entries(week.materials || {}).forEach(([category, files]) => {
-            files.forEach(file => {
-              // json 카테고리의 파일을 quiz 카테고리로 변환
+            files.forEach((file: BackendMaterial) => {
               const targetCategory = category === 'json' ? 'quiz' : category;
+              const materialWithPermission: WeekMaterial = {
+                fileName: file.fileName,
+                downloadUrl: file.downloadUrl,
+                lastModified: file.lastModified,
+                size: file.size,
+                downloadable: file.downloadable ?? true // isDownloadable 대신 downloadable 사용
+              };
+              
               if (targetCategory in categorizedMaterials) {
-                categorizedMaterials[targetCategory].push(file);
+                categorizedMaterials[targetCategory].push(materialWithPermission);
               } else {
                 console.warn(`Unknown category: ${category}, file: ${file.fileName}`);
-                categorizedMaterials.unknown.push(file);
+                categorizedMaterials.unknown.push(materialWithPermission);
               }
             });
           });
 
           return {
             ...week,
+            weekName: `week${week.weekNumber}`,
             materials: categorizedMaterials
           };
         });
@@ -381,6 +397,44 @@ export const courseApi = createApi({
         { type: 'Course', id: 'LIST' }
       ],
     }),
+
+    updateMaterialPermission: builder.mutation<
+      { success: boolean; message: string; data: { isDownloadable: boolean } },
+      { courseId: string; weekNumber: number; fileName: string; isDownloadable: boolean }
+    >({
+      query: ({ courseId, weekNumber, fileName, isDownloadable }) => ({
+        url: `/courses/${courseId}/materials/${weekNumber}/${fileName}/permission`,
+        method: 'PUT',
+        body: { isDownloadable },
+      }),
+      async onQueryStarted({ courseId, weekNumber, fileName, isDownloadable }, { dispatch, queryFulfilled }) {
+        // 낙관적 업데이트
+        const patchResult = dispatch(
+          courseApi.util.updateQueryData('getCourseById', courseId, (draft) => {
+            const week = draft.weeks?.find(w => w.weekNumber === weekNumber);
+            if (week && week.materials) {
+              Object.entries(week.materials).forEach(([_, materials]) => {
+                materials.forEach(material => {
+                  if (material.fileName === fileName) {
+                    material.downloadable = isDownloadable;
+                  }
+                });
+              });
+            }
+          })
+        );
+
+        try {
+          const result = await queryFulfilled;
+          // 서버 응답이 성공적이면 낙관적 업데이트를 유지
+        } catch {
+          // 서버 요청이 실패하면 낙관적 업데이트를 되돌림
+          patchResult.undo();
+          // 캐시를 무효화하여 서버에서 새로운 데이터를 가져오도록 함
+          dispatch(courseApi.util.invalidateTags([{ type: 'Course', id: courseId }]));
+        }
+      },
+    }),
   }),
 });
 
@@ -398,4 +452,5 @@ export const {
   useListCategoriesQuery,
   useGetDownloadUrlMutation,
   useToggleCourseStatusMutation,
+  useUpdateMaterialPermissionMutation,
 } = courseApi; 

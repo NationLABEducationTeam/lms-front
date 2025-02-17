@@ -1,6 +1,6 @@
 import { FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { getEnrolledCourses } from '@/services/api/courses';
+import { getEnrolledCourses, getDownloadUrl } from '@/services/api/courses';
 import type { 
   Course as BaseCourse, 
   WeekMaterial, 
@@ -16,6 +16,7 @@ import * as Accordion from '@radix-ui/react-accordion';
 import { Button } from '@/components/common/ui/button';
 import { toast } from 'sonner';
 import VideoModal from '@/components/video/VideoModal';
+import FileDownloader from '@/components/common/FileDownloader';
 
 interface Course extends BaseCourse {
   weeks: Week[];
@@ -137,21 +138,22 @@ const StudentCoursesPage: FC = () => {
   const handleFileClick = async (file: WeekMaterial, weekNumber: number | null) => {
     if (!selectedCourse) return;
 
+    // 디버깅을 위한 상세 로깅
+    console.log('파일 다운로드 요청:', {
+      파일명: file.fileName,
+      다운로드URL: file.downloadUrl,
+      다운로드권한: file.downloadable,
+      주차: weekNumber
+    });
+
     // HLS 비디오 파일인 경우
     if (file.fileName.endsWith('.m3u8')) {
-      // 파일명에서 확장자 제거
-      const titleWithoutExt = file.fileName.replace('.m3u8', '');
-      // 파일명을 읽기 좋게 변환 (예: raglecture222 -> Lecture 222)
-      const formattedTitle = titleWithoutExt
-        .replace(/([A-Z])/g, ' $1')  // 대문자 앞에 공백 추가
-        .replace(/^./, str => str.toUpperCase());  // 첫 글자 대문자로
-
       navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/video/${encodeURIComponent(file.fileName)}`, {
         state: { 
           videoUrl: file.downloadUrl,
-          title: file.fileName,  // 원본 파일명 (필요한 경우를 위해 유지)
-          lectureTitle: formattedTitle,  // 포맷팅된 제목
-          weekTitle: `${weekNumber}주차 강의`,  // 주차 정보
+          title: file.fileName,
+          lectureTitle: file.fileName.replace('.m3u8', ''),
+          weekTitle: `${weekNumber}주차 강의`,
         }
       });
       return;
@@ -161,7 +163,7 @@ const StudentCoursesPage: FC = () => {
     if (file.fileName.endsWith('.json')) {
       try {
         const response = await fetch(file.downloadUrl);
-        if (!response.ok) throw new Error('Failed to fetch quiz data');
+        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
         const quizData = await response.json();
         
         navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/quiz`, {
@@ -169,31 +171,34 @@ const StudentCoursesPage: FC = () => {
         });
         return;
       } catch (error) {
-        console.error('Error loading quiz:', error);
+        console.error('퀴즈 로딩 오류:', error);
         toast.error('퀴즈 데이터를 불러오는데 실패했습니다.');
         return;
       }
     }
 
-    // 일반 파일 다운로드
+    // 다운로드 권한 체크
+    if (!file.downloadable) {
+      toast.error('다운로드 권한이 없습니다.');
+      return;
+    }
+
     try {
-      const response = await fetch(file.downloadUrl);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
+      // 일반 파일 다운로드
       const a = document.createElement('a');
-      a.href = url;
+      a.href = file.downloadUrl;
       a.download = file.fileName;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       
       toast.success('파일 다운로드가 시작되었습니다.');
     } catch (error) {
-      console.error('Download error:', error);
-      toast.error('파일 다운로드에 실패했습니다.');
+      console.error('다운로드 오류:', error);
+      toast.error('파일 다운로드에 실패했습니다. 브라우저에서 직접 열기를 시도합니다.');
+      window.open(file.downloadUrl, '_blank');
     }
   };
 
@@ -303,7 +308,7 @@ const StudentCoursesPage: FC = () => {
   };
 
   // 주차별 자료 렌더링 함수 수정
-  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
+  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }, weekNumber: number) => {
     const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
 
@@ -314,7 +319,7 @@ const StudentCoursesPage: FC = () => {
         // .ts 파일 제외
         if (fileName.endsWith('.ts')) return false;
         
-        // 화질별 m3u8 파일 제외 (예: xxx_720p.m3u8, xxx_1080p.m3u8)
+        // 화질별 m3u8 파일 제외
         if (fileName.endsWith('.m3u8') && 
             (fileName.includes('720x480') || 
              fileName.includes('1280x720') || 
@@ -322,7 +327,6 @@ const StudentCoursesPage: FC = () => {
           return false;
         }
         
-        // 메인 m3u8 파일만 포함
         return true;
       });
 
@@ -335,7 +339,11 @@ const StudentCoursesPage: FC = () => {
             {filteredItems.map((item, index) => (
               <li key={index}>
                 <button
-                  onClick={() => handleFileClick(item, null)}
+                  onClick={() => {
+                    console.log('File clicked:', item);
+                    console.log('Week number:', weekNumber);
+                    handleFileClick(item, weekNumber);
+                  }}
                   className="w-full flex items-center p-2 hover:bg-gray-50 rounded-lg group"
                 >
                   {getFileIcon(item.fileName)}
@@ -552,7 +560,7 @@ const StudentCoursesPage: FC = () => {
                       </Accordion.Header>
                       <Accordion.Content>
                         <div className="p-6 bg-white border-t border-slate-200">
-                          {renderWeekMaterials(week.materials)}
+                          {renderWeekMaterials(week.materials, week.weekNumber)}
                         </div>
                       </Accordion.Content>
                     </Accordion.Item>

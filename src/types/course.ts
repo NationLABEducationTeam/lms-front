@@ -131,6 +131,7 @@ export interface WeekMaterial {
   downloadUrl: string;
   lastModified: string;
   size: number;
+  downloadable?: boolean;
 }
 
 export interface Quiz {
