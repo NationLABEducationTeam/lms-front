@@ -9,7 +9,7 @@ import type {
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
-  Film, Image as ImageIcon, FileIcon, File, Play
+  Film, Image as ImageIcon, FileIcon, File, Play, Lock
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import * as Accordion from '@radix-ui/react-accordion';
@@ -17,6 +17,7 @@ import { Button } from '@/components/common/ui/button';
 import { toast } from 'sonner';
 import VideoModal from '@/components/video/VideoModal';
 import FileDownloader from '@/components/common/FileDownloader';
+import { cn } from '@/lib/utils';
 
 interface Course extends BaseCourse {
   weeks: Week[];
@@ -339,18 +340,35 @@ const StudentCoursesPage: FC = () => {
             {filteredItems.map((item, index) => (
               <li key={index}>
                 <button
-                  onClick={() => {
-                    console.log('File clicked:', item);
-                    console.log('Week number:', weekNumber);
-                    handleFileClick(item, weekNumber);
-                  }}
-                  className="w-full flex items-center p-2 hover:bg-gray-50 rounded-lg group"
+                  onClick={() => handleFileClick(item, weekNumber)}
+                  className={cn(
+                    "w-full flex items-center p-2 rounded-lg group",
+                    item.downloadable 
+                      ? "hover:bg-gray-50" 
+                      : "opacity-75 cursor-not-allowed bg-gray-50"
+                  )}
                 >
-                  {getFileIcon(item.fileName)}
-                  <span className="ml-3 flex-1 text-left text-sm text-gray-700">
-                    {item.fileName}
-                  </span>
-                  <span className="text-xs text-gray-500">
+                  <div className="flex items-center gap-3 flex-1">
+                    {getFileIcon(item.fileName)}
+                    <div className="flex flex-col">
+                      <span className={cn(
+                        "text-sm",
+                        item.downloadable ? "text-gray-700" : "text-gray-400"
+                      )}>
+                        {item.fileName}
+                      </span>
+                      {!item.downloadable && (
+                        <span className="text-xs text-red-500 flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          다운로드 제한됨
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <span className={cn(
+                    "text-xs",
+                    item.downloadable ? "text-gray-500" : "text-gray-400"
+                  )}>
                     {formatFileSize(item.size)}
                   </span>
                 </button>

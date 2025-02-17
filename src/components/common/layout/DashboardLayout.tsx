@@ -9,10 +9,9 @@ interface DashboardLayoutProps {
 const DashboardLayout: FC<DashboardLayoutProps> = ({ children }) => {
   return (
     <div className="dashboard-layout min-h-screen bg-gray-50">
-      <Header />
-      <main className="pt-24 transition-[padding] duration-300">
+      <div className="flex-1 pt-[96px]">
         {children}
-      </main>
+      </div>
     </div>
   );
 };

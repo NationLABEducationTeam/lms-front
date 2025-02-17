@@ -943,7 +943,7 @@ const StudentLanding: FC = () => {
             <div className="relative mt-12 overflow-hidden">
               <div className="flex gap-12">
                 <div className="animate-scroll-right flex gap-12">
-                  {['/partner/ewha.png', '/partner/cj.png', '/partner/hansol.png', '/partner/Smes.png', '/partner/경기테크노파크.png', '/partner/police-4.png', '/partner/sinwoo.png'].map((logo, index) => (
+                  {['/partner/ewha.png', '/partner/cj.png', '/partner/hansol.png', '/partner/Smes.png', '/partner/kyungkitechno.png', '/partner/police-4.png', '/partner/sinwoo.png'].map((logo, index) => (
                     <div key={`dup1-${index}`} className="relative group">
                       <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
                         <img
