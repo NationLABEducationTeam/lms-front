@@ -139,11 +139,21 @@ const StudentCoursesPage: FC = () => {
 
     // HLS 비디오 파일인 경우
     if (file.fileName.endsWith('.m3u8')) {
-      setSelectedVideo({
-        url: file.downloadUrl,
-        title: file.fileName
+      // 파일명에서 확장자 제거
+      const titleWithoutExt = file.fileName.replace('.m3u8', '');
+      // 파일명을 읽기 좋게 변환 (예: raglecture222 -> Lecture 222)
+      const formattedTitle = titleWithoutExt
+        .replace(/([A-Z])/g, ' $1')  // 대문자 앞에 공백 추가
+        .replace(/^./, str => str.toUpperCase());  // 첫 글자 대문자로
+
+      navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/video/${encodeURIComponent(file.fileName)}`, {
+        state: { 
+          videoUrl: file.downloadUrl,
+          title: file.fileName,  // 원본 파일명 (필요한 경우를 위해 유지)
+          lectureTitle: formattedTitle,  // 포맷팅된 제목
+          weekTitle: `${weekNumber}주차 강의`,  // 주차 정보
+        }
       });
-      setVideoModalOpen(true);
       return;
     }
 

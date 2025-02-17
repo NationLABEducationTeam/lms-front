@@ -23,6 +23,7 @@ const RootLayout: FC = () => {
   const [isAtTop, setIsAtTop] = useState(true);
   const location = useLocation();
   const isMainPage = location.pathname === '/';
+  const isVideoPlayerPage = location.pathname.includes('/video/');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -48,6 +49,10 @@ const RootLayout: FC = () => {
       console.error('로그아웃 오류:', error);
     }
   };
+
+  if (isVideoPlayerPage) {
+    return <Outlet />;
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

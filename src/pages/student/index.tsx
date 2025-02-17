@@ -778,26 +778,32 @@ const StudentLanding: FC = () => {
             <div className="relative overflow-hidden">
               <div className="flex gap-12">
                 <div className="animate-scroll-left flex gap-12">
-                  {['/partner/aws.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
+                  {['/tier_badge_dark.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
                     <div key={`dup1-${index}`} className="relative group">
                       <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
                         <img
                           src={logo}
-                          alt="Partner Logo"
-                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                          alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
+                          className={cn(
+                            "w-auto h-auto object-contain",
+                            index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
+                          )}
                         />
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="animate-scroll-left flex gap-12" aria-hidden="true">
-                  {['/partner/aws.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
+                  {['/tier_badge_dark.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
                     <div key={`dup2-${index}`} className="relative group">
                       <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
                         <img
                           src={logo}
-                          alt="Partner Logo"
-                          className="w-auto h-auto max-w-[120px] max-h-[60px] object-contain"
+                          alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
+                          className={cn(
+                            "w-auto h-auto object-contain",
+                            index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
+                          )}
                         />
                       </div>
                     </div>

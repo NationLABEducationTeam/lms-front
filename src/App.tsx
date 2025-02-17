@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { FC } from 'react';
 import { BrowserRouter, Routes, Route, createRoutesFromElements } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import RootLayout from './components/common/layout/RootLayout';
@@ -40,6 +40,7 @@ import CreateCourse from '@/pages/admin/courses/create';
 import EditCourse from '@/pages/admin/courses/[id]/edit';
 import QuizPage from './pages/student/courses/quiz';
 import QuizResults from './pages/admin/courses/quiz/results';
+import VideoPlayerPage from '@/pages/student/courses/video';
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -92,6 +93,7 @@ const App = () => {
               <Route path="/dashboard" element={<StudentDashboard />} />
               <Route path="/mycourse" element={<StudentCoursesPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
+              <Route path="/mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
               <Route path="/notices" element={<NoticeList />} />
               <Route path="/notices/:id" element={<NoticeDetail />} />
               <Route path="/community" element={<CommunityList />} />
