@@ -145,13 +145,14 @@ export const createCourse = async (params: CreateCourseParams) => {
       getApiUrl(API_ENDPOINTS.COURSES),
       {
         title,
+        eng_title : eng_title,
         description,
         instructor_id: instructorId,
         main_category_id: mainCategory,
         sub_category_id: subCategory,
         thumbnail_url: thumbnailBase64,
         price,
-        level,
+        level
       },
       {
         headers: {
@@ -466,7 +467,8 @@ export const listPublicCourses = async (): Promise<Course[]> => {
       status: course.status,
       classmode: course.classmode,
       created_at: course.created_at,
-      updated_at: course.updated_at
+      updated_at: course.updated_at,
+      eng_title: course.eng_title
     }));
   } catch (error) {
     console.error('Error fetching courses:', error);

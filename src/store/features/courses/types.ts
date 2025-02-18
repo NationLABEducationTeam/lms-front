@@ -20,6 +20,7 @@ export interface Course {
   zoom_link?: string;
   instructor_id?: string;
   thumbnail_url?: string;
+  engtitle: string;
 }
 
 export interface Session {
