@@ -57,9 +57,14 @@ export const createCommunityPost = async (formData: CommunityFormData): Promise<
   }
 };
 
-export const getCommunityPosts = async (): Promise<CommunityPost[]> => {
+export const getCommunityPosts = async (params?: { courseId?: string }): Promise<CommunityPost[]> => {
   try {
-    const response = await fetch(`${VIEW_API_URL}/posts`);
+    const url = new URL(`${VIEW_API_URL}/posts`);
+    if (params?.courseId) {
+      url.searchParams.append('courseId', params.courseId);
+    }
+    
+    const response = await fetch(url.toString());
     
     if (!response.ok) {
       throw new Error('Failed to fetch community posts');

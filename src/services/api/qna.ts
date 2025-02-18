@@ -4,9 +4,15 @@ const VIEW_API_URL = 'https://t5aqskvckoo2foa3enszyuijly0voqbl.lambda-url.ap-nor
 const UPLOAD_API_URL = 'https://dxbs7ctkbwmo2i55jozzmbxomy0mhtwi.lambda-url.ap-northeast-2.on.aws';
 
 
-export const getQnaPosts = async (): Promise<QnaPost[]> => {
+export const getQnaPosts = async (params?: { courseId?: string }): Promise<QnaPost[]> => {
   try {
-    const response = await fetch(`${VIEW_API_URL}/posts`);
+    const url = new URL(`${VIEW_API_URL}/posts`);
+    if (params?.courseId) {
+      url.searchParams.append('courseId', params.courseId);
+    }
+    
+    const response = await fetch(url.toString());
+    
     if (!response.ok) {
       throw new Error('Failed to fetch QnA posts');
     }

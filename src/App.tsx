@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { BrowserRouter, Routes, Route, createRoutesFromElements } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import RootLayout from './components/common/layout/RootLayout';
 import StudentDashboard from './pages/student/dashboard';
@@ -12,7 +12,6 @@ import AdminNotices from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
 import AdminNoticeDetail from './pages/admin/notices/detail';
 import AdminCourses from '@/pages/admin/courses';
-import AdminCourseCreate from './pages/admin/courses/create';
 import AdminStudents from './pages/admin/students';
 import AdminSystem from './pages/admin/system';
 import AdminStatistics from './pages/admin/statistics';
@@ -34,7 +33,6 @@ import { UserRole } from './config/cognito';
 import './App.css';
 import StudentCoursesPage from '@/pages/student/courses';
 import CorporatePage from '@/pages/corporate';
-import CourseLessons from './pages/admin/courses/lessons/[id]';
 import CourseDetail from '@/pages/admin/courses/[id]';
 import CreateCourse from '@/pages/admin/courses/create';
 import EditCourse from '@/pages/admin/courses/[id]/edit';
@@ -93,6 +91,7 @@ const App = () => {
               <Route path="/dashboard" element={<StudentDashboard />} />
               <Route path="/mycourse" element={<StudentCoursesPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
+              <Route path="/mycourse/:courseId/quiz/:weekId/:quizFile" element={<QuizPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
               <Route path="/notices" element={<NoticeList />} />
               <Route path="/notices/:id" element={<NoticeDetail />} />

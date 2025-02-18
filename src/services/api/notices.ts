@@ -60,9 +60,14 @@ export const createNotice = async (formData: NoticeFormData): Promise<string> =>
   }
 };
 
-export const getNotices = async (): Promise<Notice[]> => {
+export const getNotices = async (params?: { courseId?: string }): Promise<Notice[]> => {
   try {
-    const response = await fetch(`${READ_API_URL}/notices`);
+    const url = new URL(`${READ_API_URL}/notices`);
+    if (params?.courseId) {
+      url.searchParams.append('courseId', params.courseId);
+    }
+    
+    const response = await fetch(url.toString());
     
     if (!response.ok) {
       throw new Error('Failed to fetch notices');

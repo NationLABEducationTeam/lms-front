@@ -1,23 +1,56 @@
 import { FC, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEnrolledCourses, getDownloadUrl } from '@/services/api/courses';
+import { CATEGORY_MAPPING } from '@/types/course';
 import type { 
   Course as BaseCourse, 
   WeekMaterial, 
-  Week 
+  Week,
+  MainCategoryId
 } from '@/types/course';
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
-  Film, Image as ImageIcon, FileIcon, File, Play, Lock
+  Film, Image as ImageIcon, FileIcon, File, Play, Lock, AlertCircle,
+  BarChart2, Edit2, Trash2, Search, Upload
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
-import * as Accordion from '@radix-ui/react-accordion';
-import { Button } from '@/components/common/ui/button';
+import { 
+  Layout, 
+  Menu, 
+  Card, 
+  Button, 
+  Tag, 
+  Dropdown, 
+  Space, 
+  Progress, 
+  List, 
+  Avatar, 
+  Typography,
+  Collapse,
+  Empty,
+  Spin,
+  Badge,
+  Tabs,
+  Select,
+  Statistic,
+  Divider
+} from 'antd';
 import { toast } from 'sonner';
 import VideoModal from '@/components/video/VideoModal';
 import FileDownloader from '@/components/common/FileDownloader';
 import { cn } from '@/lib/utils';
+import { getNotices } from '@/services/api/notices';
+import { getCommunityPosts } from '@/services/api/community';
+import { getQnaPosts } from '@/services/api/qna';
+import type { Notice, NoticeMetadata } from '@/types/notice';
+import type { CommunityPost, CommunityMetadata } from '@/types/community';
+import type { QnaPost, QnaMetadata } from '@/types/qna';
+
+const { Header, Sider, Content } = Layout;
+const { Title, Text, Paragraph } = Typography;
+const { Panel } = Collapse;
+const { TabPane } = Tabs;
 
 interface Course extends BaseCourse {
   weeks: Week[];
@@ -77,6 +110,10 @@ const StudentCoursesPage: FC = () => {
   const [openWeeks, setOpenWeeks] = useState<string[]>([]);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ url: string; title: string } | null>(null);
+  const [notices, setNotices] = useState<Notice[]>([]);
+  const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
+  const [qnaPosts, setQnaPosts] = useState<QnaPost[]>([]);
+  const [boardLoading, setBoardLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -136,20 +173,58 @@ const StudentCoursesPage: FC = () => {
     }
   };
 
-  const handleFileClick = async (downloadUrl: string | null, fileName: string, streamingUrl?: string | null) => {
+  const handleFileClick = async (downloadUrl: string | null, fileName: string, streamingUrl?: string | null, weekNumber?: number) => {
+    // 주차 정보가 없는 경우 처리
+    if (!weekNumber) {
+      toast.error('주차 정보를 찾을 수 없습니다.');
+      return;
+    }
+
+    // 퀴즈 파일인 경우
+    if (fileName.endsWith('.json')) {
+      if (!downloadUrl) {
+        toast.error('퀴즈 파일의 다운로드 URL이 유효하지 않습니다.');
+        return;
+      }
+
+      try {
+        // 퀴즈 데이터를 미리 로드
+        const response = await fetch(downloadUrl);
+        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
+        const quizData = await response.json();
+        
+        // 로컬 스토리지에 퀴즈 데이터 저장
+        localStorage.setItem(`quiz_${selectedCourse?.id}_${weekNumber}_${fileName}`, JSON.stringify({
+          quizData,
+          downloadUrl,
+          title: fileName.replace('.json', ''),
+          courseId: selectedCourse?.id,
+          weekId: weekNumber.toString()
+        }));
+
+        // 퀴즈 페이지로 이동 (URL 패턴 수정)
+        navigate(`/mycourse/${selectedCourse?.id}/quiz/${weekNumber}/${encodeURIComponent(fileName)}`);
+        return;
+      } catch (error) {
+        console.error('Error loading quiz:', error);
+        toast.error('퀴즈 데이터를 불러오는데 실패했습니다.');
+        return;
+      }
+    }
+
+    // 비디오 파일인 경우
     if (fileName.endsWith('.m3u8')) {
       const videoUrl = streamingUrl || downloadUrl;
       if (!videoUrl) {
         toast.error('비디오 URL이 유효하지 않습니다.');
         return;
       }
-      // 모달 대신 비디오 페이지로 이동
-      navigate(`/mycourse/${selectedCourse?.id}/week/${openWeeks[0]}/video/${encodeURIComponent(fileName)}`, {
+      navigate(`/mycourse/${selectedCourse?.id}/week/${weekNumber}/video/${encodeURIComponent(fileName)}`, {
         state: {
           videoUrl,
           title: fileName.replace('.m3u8', ''),
           courseId: selectedCourse?.id,
-          weekId: openWeeks[0]
+          weekId: weekNumber.toString()
         }
       });
       return;
@@ -184,6 +259,36 @@ const StudentCoursesPage: FC = () => {
       }
     }
   };
+
+  // 게시판 데이터 로딩
+  useEffect(() => {
+    const fetchBoardData = async () => {
+      if (!selectedCourse) return;
+      
+      setBoardLoading(true);
+      try {
+        const [noticeList, postList, qnaList] = await Promise.all([
+          getNotices({ courseId: selectedCourse.id }),
+          getCommunityPosts({ courseId: selectedCourse.id }),
+          getQnaPosts({ courseId: selectedCourse.id })
+        ]);
+
+        // 모든 게시물 표시
+        setNotices(noticeList);
+        setCommunityPosts(postList);
+        setQnaPosts(qnaList);
+      } catch (error) {
+        console.error('게시판 데이터 로딩 실패:', error);
+        toast.error('게시판 데이터를 불러오는데 실패했습니다.');
+      } finally {
+        setBoardLoading(false);
+      }
+    };
+
+    if (activeTab === 'notices' || activeTab === 'posts' || activeTab === 'qna') {
+      fetchBoardData();
+    }
+  }, [selectedCourse, activeTab]);
 
   if (loading) {
     return (
@@ -295,7 +400,7 @@ const StudentCoursesPage: FC = () => {
   };
 
   // 주차별 자료 렌더링 함수 수정
-  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
+  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }, weekNumber: number) => {
     const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
 
@@ -306,7 +411,7 @@ const StudentCoursesPage: FC = () => {
             {items.map((item, index) => (
               <li key={index}>
                 <button
-                  onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl)}
+                  onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber)}
                   className={cn(
                     "w-full flex items-center p-2 rounded-lg group",
                     item.downloadable 
@@ -353,230 +458,765 @@ const StudentCoursesPage: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-6 py-10">
-        {/* Course Selection Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="relative">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center space-x-3 px-4 py-2 bg-white rounded-xl border border-slate-200 hover:border-blue-300 transition-colors"
-                >
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-lg text-slate-900">
-                      {selectedCourse?.title}
-                    </div>
-                    <div className="text-sm text-slate-500 flex items-center mt-0.5">
-                      <User className="w-4 h-4 mr-1.5" />
-                      <span>{selectedCourse?.instructor_name}</span>
-                      <span className="mx-2">•</span>
-                      <Calendar className="w-4 h-4 mr-1.5" />
-                      <span>{new Date(selectedCourse?.created_at || '').toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isDropdownOpen ? 'transform rotate-180' : ''}`} />
-                </button>
-
-                {isDropdownOpen && (
-                  <div className="absolute left-0 right-0 mt-2 bg-white rounded-xl border border-slate-200 shadow-lg divide-y divide-slate-100">
-                    {courses.map((course) => (
-                      <button
-                        key={course.id}
-                        onClick={() => {
-                          setSelectedCourse(course);
-                          setIsDropdownOpen(false);
-                        }}
-                        className="w-full p-4 text-left hover:bg-slate-50 transition-colors"
-                      >
-                        <div className="font-medium text-slate-900">{course.title}</div>
-                        <div className="text-sm text-slate-500 flex items-center mt-1">
-                          <User className="w-4 h-4 mr-1.5" />
-                          <span>{course.instructor_name}</span>
-                          <span className="mx-2">•</span>
-                          <Calendar className="w-4 h-4 mr-1.5" />
-                          <span>{new Date(course.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </button>
-                    ))}
+    <Layout className="min-h-screen bg-gray-50">
+      <Content className="max-w-7xl mx-auto px-6 py-10">
+        {/* 강의 선택 헤더 */}
+        <Card className="mb-8 shadow-sm hover:shadow-md transition-all">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6">
+            <Space size="large" className="flex-1">
+              <Select
+                style={{ width: 300 }}
+                value={selectedCourse?.id}
+                onChange={(value) => {
+                  const course = courses.find(c => c.id === value);
+                  if (course) setSelectedCourse(course);
+                }}
+                optionLabelProp="label"
+                dropdownRender={(menu) => (
+                  <div>
+                    {menu}
+                    <Divider style={{ margin: '8px 0' }} />
+                    <Space style={{ padding: '0 8px 4px' }}>
+                      <Button type="text" icon={<Search className="w-4 h-4" />}>
+                        다른 강의 찾기
+                      </Button>
+                    </Space>
                   </div>
                 )}
-              </div>
-            </div>
+              >
+                {courses.map((course) => (
+                  <Select.Option 
+                    key={course.id} 
+                    value={course.id}
+                    label={course.title}
+                  >
+                    <Space>
+                      {course.thumbnail_url ? (
+                        <Avatar 
+                          size={40} 
+                          src={course.thumbnail_url} 
+                          shape="square"
+                          className="rounded-lg"
+                        />
+                      ) : (
+                        <Avatar 
+                          size={40} 
+                          icon={<BookOpen className="w-5 h-5" />} 
+                          shape="square"
+                          className="bg-gray-100"
+                        />
+                      )}
+                      <div>
+                        <div className="font-medium text-base">{course.title}</div>
+                        <div className="text-sm text-gray-500 flex items-center gap-2">
+                          <User className="w-3 h-3" />
+                          {course.instructor_name}
+                        </div>
+                      </div>
+                    </Space>
+                  </Select.Option>
+                ))}
+              </Select>
+
+              <Space className="ml-4">
+                <Tag color="blue" className="px-3 py-1 text-sm">
+                  {CATEGORY_MAPPING[selectedCourse?.main_category_id as MainCategoryId]}
+                </Tag>
+                <Tag color={selectedCourse?.classmode === 'ONLINE' ? 'green' : 'orange'} className="px-3 py-1 text-sm">
+                  {selectedCourse?.classmode === 'ONLINE' ? '실시간 강의' : 'VOD 강의'}
+                </Tag>
+                <Tag color="purple" className="px-3 py-1 text-sm">
+                  {selectedCourse?.level === 'BEGINNER' ? '입문' : 
+                   selectedCourse?.level === 'INTERMEDIATE' ? '중급' : '고급'}
+                </Tag>
+              </Space>
+            </Space>
 
             {selectedCourse?.classmode === 'ONLINE' && selectedCourse?.zoom_link && (
-              <a 
+              <Button 
+                type="primary" 
+                size="large"
+                icon={<PlayCircle className="w-5 h-5" />}
                 href={selectedCourse.zoom_link}
                 target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-5 py-2.5 rounded-lg bg-blue-600 text-white shadow-md shadow-blue-100 hover:bg-blue-700 transition-all duration-200"
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg hover:shadow-xl transition-all"
               >
-                <PlayCircle className="w-5 h-5 mr-2" />
                 실시간 수업 입장
-              </a>
+              </Button>
             )}
           </div>
-        </div>
+
+          <Divider className="my-0" />
+
+          <div className="px-6 py-4 bg-gray-50/50">
+            <Space size="large" className="text-gray-600">
+              <Space>
+                <User className="w-4 h-4" />
+                <Text>{selectedCourse?.instructor_name}</Text>
+              </Space>
+              <Space>
+                <Calendar className="w-4 h-4" />
+                <Text>{new Date(selectedCourse?.created_at || '').toLocaleDateString('ko-KR', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}</Text>
+              </Space>
+              <Space>
+                <BookOpen className="w-4 h-4" />
+                <Text>{selectedCourse?.weeks?.length || 0}주차</Text>
+              </Space>
+              <Space>
+                <BarChart className="w-4 h-4" />
+                <Text>전체 진도율: 75%</Text>
+              </Space>
+            </Space>
+          </div>
+        </Card>
 
         <div className="flex gap-8">
-          {/* Left Sidebar - Navigation Menu */}
-          <div className="w-64 flex-shrink-0">
-            <nav className="space-y-1">
-              <button
-                onClick={() => setActiveTab('curriculum')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'curriculum'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <BookOpen className="w-5 h-5" />
-                <span className="font-medium">커리큘럼</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('progress')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'progress'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <BarChart className="w-5 h-5" />
-                <span className="font-medium">학습 현황</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('notes')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'notes'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <PenLine className="w-5 h-5" />
-                <span className="font-medium">강의 노트</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('posts')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'posts'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="font-medium">게시글</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('notices')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'notices'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <Bell className="w-5 h-5" />
-                <span className="font-medium">공지사항</span>
-                <span className="ml-auto flex items-center justify-center w-5 h-5 rounded-full bg-red-50 text-red-600 text-xs font-medium">
-                  N
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('assignments')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'assignments'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <FileText className="w-5 h-5" />
-                <span className="font-medium">과제</span>
-                <span className="ml-auto flex items-center justify-center w-5 h-5 rounded-full bg-amber-50 text-amber-600 text-xs font-medium">
-                  2
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab('qna')}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-                  activeTab === 'qna'
-                    ? 'bg-blue-50 text-blue-600'
-                    : 'text-slate-600 hover:bg-slate-100'
-                }`}
-              >
-                <HelpCircle className="w-5 h-5" />
-                <span className="font-medium">질의응답</span>
-                <span className="ml-auto flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium">
-                  1
-                </span>
-              </button>
-            </nav>
-          </div>
+          {/* 왼쪽 사이드바 */}
+          <Sider width={240} theme="light" className="rounded-xl">
+            <Menu
+              mode="vertical"
+              selectedKeys={[activeTab]}
+              onClick={({ key }) => setActiveTab(key as any)}
+              items={[
+                {
+                  key: 'curriculum',
+                  icon: <BookOpen className="w-5 h-5" />,
+                  label: '커리큘럼'
+                },
+                {
+                  key: 'progress',
+                  icon: <BarChart className="w-5 h-5" />,
+                  label: '학습 현황'
+                },
+                {
+                  key: 'notes',
+                  icon: <PenLine className="w-5 h-5" />,
+                  label: '강의 노트'
+                },
+                {
+                  key: 'posts',
+                  icon: <MessageSquare className="w-5 h-5" />,
+                  label: '게시글'
+                },
+                {
+                  key: 'notices',
+                  icon: <Bell className="w-5 h-5" />,
+                  label: <Badge count="N" offset={[10, 0]}>공지사항</Badge>
+                },
+                {
+                  key: 'assignments',
+                  icon: <FileText className="w-5 h-5" />,
+                  label: <Badge count={2} offset={[10, 0]}>과제</Badge>
+                },
+                {
+                  key: 'qna',
+                  icon: <HelpCircle className="w-5 h-5" />,
+                  label: <Badge count={1} offset={[10, 0]}>질의응답</Badge>
+                }
+              ]}
+            />
+          </Sider>
 
-          {/* Main Content */}
-          <div className="flex-1">
+          {/* 메인 콘텐츠 */}
+          <Content className="flex-1">
             {activeTab === 'curriculum' && (
-              <div className="space-y-6">
-                <Accordion.Root 
-                  type="multiple" 
-                  value={openWeeks}
-                  onValueChange={handleWeekToggle}
-                  className="space-y-4"
-                >
-                  {selectedCourse?.weeks.map((week) => (
-                    <Accordion.Item 
-                      key={week.weekNumber} 
-                      value={week.weekNumber.toString()}
-                      className="rounded-xl border border-slate-200 overflow-hidden"
-                    >
-                      <Accordion.Header>
-                        <Accordion.Trigger className="w-full">
-                          <div className="flex items-center justify-between p-6 bg-white hover:bg-slate-50 transition-colors">
-                            <h3 className="text-lg font-semibold text-slate-900">
-                              {week.weekNumber}주차
-                            </h3>
-                            <ChevronDown 
-                              className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${
-                                openWeeks.includes(week.weekNumber.toString()) ? 'transform rotate-180' : ''
-                              }`}
-                            />
-                          </div>
-                        </Accordion.Trigger>
-                      </Accordion.Header>
-                      <Accordion.Content>
-                        <div className="p-6 bg-white border-t border-slate-200">
-                          {renderWeekMaterials(week.materials)}
+              <Collapse 
+                className="bg-white rounded-xl"
+                expandIconPosition="end"
+                activeKey={openWeeks}
+                onChange={(keys) => handleWeekToggle(keys as string[])}
+              >
+                {selectedCourse?.weeks.map((week) => (
+                  <Panel
+                    key={week.weekNumber.toString()}
+                    header={
+                      <Space>
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <span className="text-lg font-semibold text-blue-600">
+                            {week.weekNumber}
+                          </span>
                         </div>
-                      </Accordion.Content>
-                    </Accordion.Item>
-                  ))}
-                </Accordion.Root>
-                {(!selectedCourse?.weeks || selectedCourse.weeks.length === 0) && (
-                  <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-                    <BookOpen className="w-12 h-12 text-gray-400 mx-auto" />
-                    <h3 className="mt-4 text-lg font-medium text-gray-900">등록된 강의 자료가 없습니다</h3>
-                    <p className="mt-2 text-sm text-gray-500">강의 자료가 곧 업로드될 예정입니다.</p>
-                  </div>
-                )}
-              </div>
+                        <div>
+                          <Title level={5} className="mb-0">
+                            {week.weekNumber}주차
+                          </Title>
+                          <Text type="secondary">
+                            {Object.values(week.materials).flat().length}개의 학습 자료
+                          </Text>
+                        </div>
+                      </Space>
+                    }
+                  >
+                    {renderWeekMaterials(week.materials, week.weekNumber)}
+                  </Panel>
+                ))}
+              </Collapse>
             )}
-            {/* ... other tab contents ... */}
-          </div>
+
+            {activeTab === 'notices' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <Title level={4} className="mb-0">공지사항</Title>
+                </div>
+                {boardLoading ? (
+                  <div className="text-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : notices.length === 0 ? (
+                  <Empty
+                    image={<Bell className="w-12 h-12 text-gray-300" />}
+                    description="등록된 공지사항이 없습니다."
+                  />
+                ) : (
+                  <List
+                    dataSource={notices}
+                    renderItem={(notice) => (
+                      <List.Item
+                        key={notice.metadata.id}
+                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                        onClick={() => navigate(`/notices/${notice.metadata.id}`)}
+                      >
+                        <List.Item.Meta
+                          title={
+                            <Space>
+                              {notice.metadata.isImportant && (
+                                <Tag color="red">중요</Tag>
+                              )}
+                              <Text strong>{notice.content.title}</Text>
+                            </Space>
+                          }
+                          description={
+                            <div>
+                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                {notice.content.summary}
+                              </Paragraph>
+                              <Space className="text-gray-500">
+                                <Text>{notice.metadata.author}</Text>
+                                <Text>
+                                  {new Date(notice.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                </Text>
+                              </Space>
+                            </div>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </Card>
+            )}
+
+            {activeTab === 'progress' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={4} className="mb-0">학습 현황</Title>
+                  <Space>
+                    <Button icon={<Download className="w-4 h-4" />}>
+                      학습 리포트 다운로드
+                    </Button>
+                    <Button type="primary" icon={<BarChart2 className="w-4 h-4" />}>
+                      상세 분석
+                    </Button>
+                  </Space>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
+                    <Statistic
+                      title={<span className="text-blue-600 font-medium">전체 진도율</span>}
+                      value={75}
+                      suffix="%"
+                      prefix={<BarChart2 className="w-4 h-4 text-blue-600" />}
+                      valueStyle={{ color: '#2563eb' }}
+                    />
+                    <Progress percent={75} status="active" strokeColor="#2563eb" />
+                    <Text className="text-sm text-blue-600 mt-2">
+                      최근 학습: 2주차 - AWS EC2 인스턴스 생성
+                    </Text>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
+                    <Statistic
+                      title={<span className="text-green-600 font-medium">과제 완료율</span>}
+                      value={80}
+                      suffix="%"
+                      prefix={<FileText className="w-4 h-4 text-green-600" />}
+                      valueStyle={{ color: '#16a34a' }}
+                    />
+                    <Progress percent={80} status="success" strokeColor="#16a34a" />
+                    <Text className="text-sm text-green-600 mt-2">
+                      8/10 과제 완료
+                    </Text>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50">
+                    <Statistic
+                      title={<span className="text-purple-600 font-medium">퀴즈 평균</span>}
+                      value={92}
+                      suffix="점"
+                      prefix={<BrainCircuit className="w-4 h-4 text-purple-600" />}
+                      valueStyle={{ color: '#9333ea' }}
+                    />
+                    <Progress percent={92} status="active" strokeColor="#9333ea" />
+                    <Text className="text-sm text-purple-600 mt-2">
+                      총 5개 퀴즈 완료
+                    </Text>
+                  </Card>
+                </div>
+
+                <Divider orientation="left">주차별 학습 현황</Divider>
+                <List
+                  dataSource={selectedCourse?.weeks || []}
+                  renderItem={(week) => (
+                    <List.Item>
+                      <List.Item.Meta
+                        avatar={
+                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <span className="text-lg font-semibold text-blue-600">
+                              {week.weekNumber}
+                            </span>
+                          </div>
+                        }
+                        title={`${week.weekNumber}주차`}
+                        description={
+                          <Space direction="vertical" className="w-full">
+                            <Progress percent={85} size="small" />
+                            <Space className="text-xs text-gray-500">
+                              <span>동영상 3/4</span>
+                              <span>퀴즈 2/2</span>
+                              <span>과제 1/1</span>
+                            </Space>
+                          </Space>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              </Card>
+            )}
+
+            {activeTab === 'notes' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={4} className="mb-0">강의 노트</Title>
+                  <Space>
+                    <Button icon={<Download className="w-4 h-4" />}>
+                      전체 노트 다운로드
+                    </Button>
+                    <Button type="primary" icon={<PenLine className="w-4 h-4" />}>
+                      새 노트 작성
+                    </Button>
+                  </Space>
+                </div>
+
+                <Tabs defaultActiveKey="1">
+                  <TabPane tab="주차별 노트" key="1">
+                    {selectedCourse?.weeks.map((week) => (
+                      <div key={week.weekNumber} className="mb-8">
+                        <div className="flex items-center justify-between mb-4">
+                          <Space>
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
+                              <span className="text-lg font-semibold text-blue-600">
+                                {week.weekNumber}
+                              </span>
+                            </div>
+                            <Title level={5} className="mb-0">{week.weekNumber}주차</Title>
+                          </Space>
+                          <Button type="primary" ghost icon={<PenLine className="w-4 h-4" />}>
+                            노트 추가
+                          </Button>
+                        </div>
+                        <List
+                          dataSource={[
+                            {
+                              id: 1,
+                              title: '클라우드 컴퓨팅 기본 개념',
+                              content: '클라우드 컴퓨팅의 기본 개념과 특징에 대한 정리...',
+                              tags: ['중요', 'AWS'],
+                              date: '2024-03-15 15:30'
+                            },
+                            {
+                              id: 2,
+                              title: 'EC2 인스턴스 생성 절차',
+                              content: 'AWS EC2 인스턴스를 생성하는 상세 절차와 주의사항...',
+                              tags: ['실습'],
+                              date: '2024-03-15 16:45'
+                            }
+                          ]}
+                          renderItem={(note) => (
+                            <Card 
+                              key={note.id}
+                              className="mb-4 hover:shadow-md transition-shadow"
+                              actions={[
+                                <Button type="text" icon={<Edit2 className="w-4 h-4" />} key="edit">
+                                  수정
+                                </Button>,
+                                <Button type="text" icon={<Download className="w-4 h-4" />} key="download">
+                                  다운로드
+                                </Button>,
+                                <Button type="text" icon={<Trash2 className="w-4 h-4" />} danger key="delete">
+                                  삭제
+                                </Button>
+                              ]}
+                            >
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <h3 className="text-lg font-medium text-gray-900">{note.title}</h3>
+                                    {note.tags.map((tag) => (
+                                      <Tag key={tag} color={tag === '중요' ? 'red' : 'blue'}>
+                                        {tag}
+                                      </Tag>
+                                    ))}
+                                  </div>
+                                  <Paragraph 
+                                    ellipsis={{ rows: 2 }} 
+                                    className="text-gray-600 mb-2"
+                                  >
+                                    {note.content}
+                                  </Paragraph>
+                                  <Text type="secondary" className="text-sm">
+                                    최종 수정: {note.date}
+                                  </Text>
+                                </div>
+                              </div>
+                            </Card>
+                          )}
+                        />
+                      </div>
+                    ))}
+                  </TabPane>
+                  <TabPane tab="태그별 노트" key="2">
+                    <div className="mb-4">
+                      <Space wrap>
+                        {['전체', '중요', 'AWS', '실습', '개념정리'].map(tag => (
+                          <Tag.CheckableTag
+                            key={tag}
+                            checked={tag === '전체'}
+                            onChange={checked => console.log(checked)}
+                          >
+                            {tag}
+                          </Tag.CheckableTag>
+                        ))}
+                      </Space>
+                    </div>
+                    <List
+                      dataSource={[
+                        {
+                          id: 1,
+                          title: '클라우드 컴퓨팅 기본 개념',
+                          content: '클라우드 컴퓨팅의 기본 개념과 특징에 대한 정리...',
+                          tags: ['중요', 'AWS'],
+                          week: 1,
+                          date: '2024-03-15 15:30'
+                        }
+                      ]}
+                      renderItem={(note) => (
+                        <Card 
+                          key={note.id}
+                          className="mb-4 hover:shadow-md transition-shadow"
+                          actions={[
+                            <Button type="text" icon={<Edit2 className="w-4 h-4" />} key="edit">
+                              수정
+                            </Button>,
+                            <Button type="text" icon={<Download className="w-4 h-4" />} key="download">
+                              다운로드
+                            </Button>,
+                            <Button type="text" icon={<Trash2 className="w-4 h-4" />} danger key="delete">
+                              삭제
+                            </Button>
+                          ]}
+                        >
+                          <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="text-lg font-medium text-gray-900">{note.title}</h3>
+                                <Tag color="blue">{note.week}주차</Tag>
+                                {note.tags.map((tag) => (
+                                  <Tag key={tag} color={tag === '중요' ? 'red' : 'blue'}>
+                                    {tag}
+                                  </Tag>
+                                ))}
+                              </div>
+                              <Paragraph 
+                                ellipsis={{ rows: 2 }} 
+                                className="text-gray-600 mb-2"
+                              >
+                                {note.content}
+                              </Paragraph>
+                              <Text type="secondary" className="text-sm">
+                                최종 수정: {note.date}
+                              </Text>
+                            </div>
+                          </div>
+                        </Card>
+                      )}
+                    />
+                  </TabPane>
+                </Tabs>
+              </Card>
+            )}
+
+            {activeTab === 'assignments' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-6">
+                  <Title level={4} className="mb-0">과제</Title>
+                  <Space>
+                    <Select defaultValue="all" style={{ width: 120 }}>
+                      <Select.Option value="all">전체 과제</Select.Option>
+                      <Select.Option value="pending">미제출</Select.Option>
+                      <Select.Option value="submitted">제출 완료</Select.Option>
+                      <Select.Option value="graded">채점 완료</Select.Option>
+                    </Select>
+                  </Space>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50">
+                    <Statistic
+                      title={<span className="text-orange-600 font-medium">미제출 과제</span>}
+                      value={2}
+                      suffix="개"
+                      prefix={<AlertCircle className="w-4 h-4 text-orange-600" />}
+                      valueStyle={{ color: '#ea580c' }}
+                    />
+                    <div className="mt-2">
+                      <Tag color="orange">마감 임박</Tag>
+                    </div>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
+                    <Statistic
+                      title={<span className="text-green-600 font-medium">제출 완료</span>}
+                      value={8}
+                      suffix="개"
+                      prefix={<FileText className="w-4 h-4 text-green-600" />}
+                      valueStyle={{ color: '#16a34a' }}
+                    />
+                    <div className="mt-2">
+                      <Tag color="success">채점 대기중</Tag>
+                    </div>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
+                    <Statistic
+                      title={<span className="text-blue-600 font-medium">평균 점수</span>}
+                      value={95}
+                      suffix="점"
+                      prefix={<Award className="w-4 h-4 text-blue-600" />}
+                      valueStyle={{ color: '#2563eb' }}
+                    />
+                    <div className="mt-2">
+                      <Tag color="blue">상위 10%</Tag>
+                    </div>
+                  </Card>
+                </div>
+
+                <List
+                  dataSource={[
+                    {
+                      id: 1,
+                      title: 'AWS EC2 인스턴스 생성 실습',
+                      description: 'EC2 인스턴스를 생성하고 웹 서버를 구축하는 실습입니다.',
+                      dueDate: '2024-03-20',
+                      status: 'pending',
+                      score: null,
+                      week: 2,
+                      type: 'practical'
+                    },
+                    {
+                      id: 2,
+                      title: 'S3 버킷 설정 및 정적 웹 호스팅',
+                      description: 'S3 버킷을 생성하고 정적 웹 사이트를 호스팅하는 실습입니다.',
+                      dueDate: '2024-03-15',
+                      status: 'submitted',
+                      score: 95,
+                      week: 1,
+                      type: 'practical'
+                    }
+                  ]}
+                  renderItem={(assignment) => (
+                    <Card 
+                      key={assignment.id}
+                      className="mb-4 hover:shadow-md transition-shadow"
+                      actions={[
+                        <Button key="view" type="link" icon={<FileText className="w-4 h-4" />}>
+                          상세 보기
+                        </Button>,
+                        assignment.status === 'pending' && (
+                          <Button key="submit" type="primary" ghost icon={<Upload className="w-4 h-4" />}>
+                            과제 제출
+                          </Button>
+                        )
+                      ].filter(Boolean)}
+                    >
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <Space className="mb-2">
+                            <Tag color="blue">{assignment.week}주차</Tag>
+                            <Tag color={assignment.type === 'practical' ? 'purple' : 'cyan'}>
+                              {assignment.type === 'practical' ? '실습 과제' : '이론 과제'}
+                            </Tag>
+                            <Tag 
+                              color={
+                                assignment.status === 'pending' ? 'warning' : 
+                                assignment.status === 'submitted' ? 'processing' : 
+                                'success'
+                              }
+                            >
+                              {
+                                assignment.status === 'pending' ? '미제출' : 
+                                assignment.status === 'submitted' ? '제출 완료' : 
+                                '채점 완료'
+                              }
+                            </Tag>
+                          </Space>
+                          <Title level={5} className="mb-2">{assignment.title}</Title>
+                          <Paragraph className="text-gray-600 mb-2">
+                            {assignment.description}
+                          </Paragraph>
+                          <Space split={<Divider type="vertical" />} className="text-sm text-gray-500">
+                            <Space>
+                              <Calendar className="w-4 h-4" />
+                              마감: {assignment.dueDate}
+                            </Space>
+                            {assignment.score && (
+                              <Space>
+                                <Award className="w-4 h-4" />
+                                점수: {assignment.score}점
+                              </Space>
+                            )}
+                          </Space>
+                        </div>
+                      </div>
+                    </Card>
+                  )}
+                />
+              </Card>
+            )}
+
+            {activeTab === 'posts' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <Title level={4} className="mb-0">게시글</Title>
+                  <Button 
+                    type="primary" 
+                    icon={<PenLine className="w-4 h-4" />}
+                    onClick={() => navigate('/community/create')}
+                  >
+                    글쓰기
+                  </Button>
+                </div>
+                {boardLoading ? (
+                  <div className="text-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : communityPosts.length === 0 ? (
+                  <Empty
+                    image={<MessageSquare className="w-12 h-12 text-gray-300" />}
+                    description="등록된 게시글이 없습니다."
+                  />
+                ) : (
+                  <List
+                    dataSource={communityPosts}
+                    renderItem={(post) => (
+                      <List.Item
+                        key={post.metadata.id}
+                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                        onClick={() => navigate(`/community/${post.metadata.id}`)}
+                      >
+                        <List.Item.Meta
+                          title={
+                            <Space>
+                              <Text strong>{post.content.title}</Text>
+                            </Space>
+                          }
+                          description={
+                            <div>
+                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                {post.content.summary}
+                              </Paragraph>
+                              <Space className="text-gray-500">
+                                <Text>{post.metadata.author}</Text>
+                                <Text>
+                                  {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                </Text>
+                                <Text>댓글 {post.metadata.commentCount}</Text>
+                              </Space>
+                            </div>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </Card>
+            )}
+
+            {activeTab === 'qna' && (
+              <Card className="rounded-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <Title level={4} className="mb-0">질의응답</Title>
+                  <Button 
+                    type="primary" 
+                    icon={<PenLine className="w-4 h-4" />}
+                    onClick={() => navigate('/qna/create')}
+                  >
+                    질문하기
+                  </Button>
+                </div>
+                {boardLoading ? (
+                  <div className="text-center py-8">
+                    <Spin size="large" />
+                  </div>
+                ) : qnaPosts.length === 0 ? (
+                  <Empty
+                    image={<HelpCircle className="w-12 h-12 text-gray-300" />}
+                    description="등록된 질문이 없습니다."
+                  />
+                ) : (
+                  <List
+                    dataSource={qnaPosts}
+                    renderItem={(post) => (
+                      <List.Item
+                        key={post.metadata.id}
+                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                        onClick={() => navigate(`/qna/${post.metadata.id}`)}
+                      >
+                        <List.Item.Meta
+                          title={
+                            <Space>
+                              <Tag color={post.metadata.status === 'resolved' ? 'success' : 'warning'}>
+                                {post.metadata.status === 'resolved' ? '답변완료' : '답변대기'}
+                              </Tag>
+                              <Text strong>{post.content.title}</Text>
+                            </Space>
+                          }
+                          description={
+                            <div>
+                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                {post.content.summary}
+                              </Paragraph>
+                              <Space className="text-gray-500">
+                                <Text>{post.metadata.author}</Text>
+                                <Text>
+                                  {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                </Text>
+                                <Text>답변 {post.metadata.commentCount}</Text>
+                              </Space>
+                            </div>
+                          }
+                        />
+                      </List.Item>
+                    )}
+                  />
+                )}
+              </Card>
+            )}
+          </Content>
         </div>
-      </div>
-      
-      {/* 비디오 모달 추가 */}
-      {selectedVideo && (
-        <VideoModal
-          isOpen={videoModalOpen}
-          onClose={() => {
-            setVideoModalOpen(false);
-            setSelectedVideo(null);
-          }}
-          videoUrl={selectedVideo.url}
-          title={selectedVideo.title}
-        />
-      )}
-    </div>
+      </Content>
+    </Layout>
   );
 };
 

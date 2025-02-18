@@ -20,7 +20,10 @@ import {
 const QuizPage: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const params = useParams<{ courseId: string; weekId: string; quizFile: string }>();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentAttempt, setCurrentAttempt] = useState<QuizAttempt | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
   const [answers, setAnswers] = useState<{ [key: number]: number | number[] }>({});
@@ -32,12 +35,58 @@ const QuizPage: FC = () => {
   const [pendingNavigationIndex, setPendingNavigationIndex] = useState<number | null>(null);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
 
-  // location.state에서 퀴즈 데이터 가져오기
-  useEffect(() => {
-    if (location.state?.quizData) {
-      setQuiz(location.state.quizData);
+  // 퀴즈 데이터 로딩 함수
+  const loadQuizData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // URL 파라미터에서 필요한 정보 추출
+      const { courseId, weekId, quizFile } = params;
+      if (!courseId || !weekId || !quizFile) {
+        throw new Error('필수 파라미터가 누락되었습니다.');
+      }
+
+      // 로컬 스토리지에서 퀴즈 데이터 확인
+      const storedQuizData = localStorage.getItem(`quiz_${courseId}_${weekId}_${quizFile}`);
+      if (storedQuizData) {
+        const { quizData } = JSON.parse(storedQuizData);
+        setQuiz(quizData);
+        return;
+      }
+
+      // location.state에서 퀴즈 데이터 확인
+      if (location.state?.quizUrl) {
+        const response = await fetch(location.state.quizUrl);
+        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
+        const quizData = await response.json();
+        setQuiz(quizData);
+
+        // 로컬 스토리지에 저장
+        localStorage.setItem(`quiz_${courseId}_${weekId}_${quizFile}`, JSON.stringify({
+          quizData,
+          downloadUrl: location.state.quizUrl,
+          title: quizFile.replace('.json', ''),
+          courseId,
+          weekId
+        }));
+        return;
+      }
+
+      throw new Error('퀴즈 데이터를 찾을 수 없습니다.');
+    } catch (error) {
+      console.error('Error loading quiz:', error);
+      setError(error instanceof Error ? error.message : '퀴즈 데이터를 불러오는데 실패했습니다.');
+      setQuiz(null);
+    } finally {
+      setLoading(false);
     }
-  }, [location.state]);
+  };
+
+  // 컴포넌트 마운트 시 퀴즈 데이터 로딩
+  useEffect(() => {
+    loadQuizData();
+  }, [params.courseId, params.weekId, params.quizFile]);
 
   // 타이머 관리
   useEffect(() => {
@@ -207,20 +256,46 @@ const QuizPage: FC = () => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  if (!quiz) {
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
+        <div className="max-w-3xl mx-auto">
+          <Card className="p-8 text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+            <h2 className="text-xl font-semibold text-gray-900 mt-4">퀴즈 로딩 중...</h2>
+            <p className="text-gray-600 mt-2">잠시만 기다려주세요.</p>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !quiz) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-8">
         <div className="max-w-3xl mx-auto">
           <Card className="p-8 text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">퀴즈를 찾을 수 없습니다</h2>
-            <p className="text-gray-600 mb-4">해당 주차에 등록된 퀴즈가 없습니다.</p>
-            <Button 
-              onClick={() => navigate(`/mycourse`)}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              강의로 돌아가기
-            </Button>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">
+              {error || '퀴즈를 찾을 수 없습니다'}
+            </h2>
+            <p className="text-gray-600 mb-4">
+              {error ? '문제가 발생했습니다. 다시 시도해주세요.' : '해당 주차에 등록된 퀴즈가 없습니다.'}
+            </p>
+            <div className="flex justify-center gap-4">
+              <Button 
+                onClick={() => loadQuizData()}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                다시 시도
+              </Button>
+              <Button 
+                onClick={() => navigate(`/mycourse/${params.courseId}`)}
+                variant="outline"
+              >
+                강의로 돌아가기
+              </Button>
+            </div>
           </Card>
         </div>
       </div>
