@@ -34,7 +34,6 @@ export interface CreateCourseRequest {
   level: CourseLevel;
   price: number;
   classmode: 'ONLINE' | 'VOD';
-  eng_title: string;
 }
 
 export interface UpdateCourseRequest {
@@ -234,7 +233,6 @@ export const courseApi = createApi({
             getApiUrl('/courses'),
             {
               title: body.title,
-              eng_title: body.eng_title,
               description: body.description,
               instructor_id: instructorId,
               main_category_id: body.main_category_id,

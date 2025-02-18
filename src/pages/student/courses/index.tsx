@@ -295,7 +295,7 @@ const StudentCoursesPage: FC = () => {
   };
 
   // 주차별 자료 렌더링 함수 수정
-  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }, weekNumber: number) => {
+  const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
     const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
 
@@ -544,7 +544,7 @@ const StudentCoursesPage: FC = () => {
                       </Accordion.Header>
                       <Accordion.Content>
                         <div className="p-6 bg-white border-t border-slate-200">
-                          {renderWeekMaterials(week.materials, week.weekNumber)}
+                          {renderWeekMaterials(week.materials)}
                         </div>
                       </Accordion.Content>
                     </Accordion.Item>

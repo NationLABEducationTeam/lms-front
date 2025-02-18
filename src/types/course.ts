@@ -36,7 +36,6 @@ export type CourseType = 'ONLINE' | 'VOD';
 export interface Course {
   id: string;
   title: string;
-  eng_title: string;
   description: string;
   instructor_id: string;
   instructor_name: string;

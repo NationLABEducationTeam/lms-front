@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Button } from '@/components/common/ui/button';
 import { motion } from 'framer-motion';
-import { Course, CATEGORY_MAPPING } from '@/types/course';
+import { Course, MainCategoryId, CATEGORY_MAPPING } from '@/types/course';
 import { listPublicCourses } from '@/services/api/courses';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { cn } from "@/lib/utils";
@@ -292,14 +292,14 @@ const CourseCard = ({ course }: { course: Course }) => {
     'CodeingTest': 'from-violet-400/20 to-purple-500/20'
   };
 
-  const categoryBadgeColors = {
-    'CLOUD': 'bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-blue-500/25',
-    'AI_ML': 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white shadow-indigo-500/25',
-    'WEB': 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-rose-500/25',
-    'AUTOMATION': 'bg-gradient-to-r from-emerald-500 to-green-500 text-white shadow-green-500/25',
-    'DEVOPS': 'bg-gradient-to-r from-amber-500 to-yellow-500 text-white shadow-yellow-500/25',
-    'DataEngineering': 'bg-gradient-to-r from-cyan-500 to-teal-500 text-white shadow-teal-500/25',
-    'CodeingTest': 'bg-gradient-to-r from-violet-500 to-purple-500 text-white shadow-purple-500/25'
+  const categoryBadgeColors: Record<MainCategoryId, string> = {
+    'CLOUD': 'bg-blue-100 text-blue-800',
+    'AI_ML': 'bg-purple-100 text-purple-800',
+    'WEB': 'bg-green-100 text-green-800',
+    'AUTOMATION': 'bg-yellow-100 text-yellow-800',
+    'DEVOPS': 'bg-red-100 text-red-800',
+    'DataEngineering': 'bg-indigo-100 text-indigo-800',
+    'CodeingTest': 'bg-pink-100 text-pink-800'
   };
 
   const levelBadgeColors = {
@@ -326,7 +326,7 @@ const CourseCard = ({ course }: { course: Course }) => {
           {/* 썸네일 컨테이너 */}
           <div className="relative h-[200px] w-full overflow-hidden rounded-t-2xl">
             {/* 카테고리별 그라데이션 오버레이 */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[course.main_category_id]} opacity-80`}></div>
+            <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[course.main_category_id as MainCategoryId]} opacity-80`}></div>
             
             {course.thumbnail_url ? (
               <img
@@ -342,8 +342,8 @@ const CourseCard = ({ course }: { course: Course }) => {
 
             {/* 뱃지 컨테이너 */}
             <div className="absolute top-4 left-4 flex gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${categoryBadgeColors[course.main_category_id]}`}>
-                {CATEGORY_MAPPING[course.main_category_id]}
+              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${categoryBadgeColors[course.main_category_id as MainCategoryId]}`}>
+                {CATEGORY_MAPPING[course.main_category_id as MainCategoryId]}
               </span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${levelBadgeColors[course.level]}`}>
                 {levelText[course.level]}
