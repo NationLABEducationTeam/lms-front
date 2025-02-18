@@ -136,70 +136,52 @@ const StudentCoursesPage: FC = () => {
     }
   };
 
-  const handleFileClick = async (file: WeekMaterial, weekNumber: number | null) => {
-    if (!selectedCourse) return;
-
-    // 디버깅을 위한 상세 로깅
-    console.log('파일 다운로드 요청:', {
-      파일명: file.fileName,
-      다운로드URL: file.downloadUrl,
-      다운로드권한: file.downloadable,
-      주차: weekNumber
-    });
-
-    // HLS 비디오 파일인 경우
-    if (file.fileName.endsWith('.m3u8')) {
-      navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/video/${encodeURIComponent(file.fileName)}`, {
-        state: { 
-          videoUrl: file.downloadUrl,
-          title: file.fileName,
-          lectureTitle: file.fileName.replace('.m3u8', ''),
-          weekTitle: `${weekNumber}주차 강의`,
+  const handleFileClick = async (downloadUrl: string | null, fileName: string, streamingUrl?: string | null) => {
+    if (fileName.endsWith('.m3u8')) {
+      const videoUrl = streamingUrl || downloadUrl;
+      if (!videoUrl) {
+        toast.error('비디오 URL이 유효하지 않습니다.');
+        return;
+      }
+      // 모달 대신 비디오 페이지로 이동
+      navigate(`/mycourse/${selectedCourse?.id}/week/${openWeeks[0]}/video/${encodeURIComponent(fileName)}`, {
+        state: {
+          videoUrl,
+          title: fileName.replace('.m3u8', ''),
+          courseId: selectedCourse?.id,
+          weekId: openWeeks[0]
         }
       });
       return;
     }
 
-    // 퀴즈 파일인 경우
-    if (file.fileName.endsWith('.json')) {
-      try {
-        const response = await fetch(file.downloadUrl);
-        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
-        const quizData = await response.json();
-        
-        navigate(`/mycourse/${selectedCourse.id}/week/${weekNumber}/quiz`, {
-          state: { quizData }
-        });
-        return;
-      } catch (error) {
-        console.error('퀴즈 로딩 오류:', error);
-        toast.error('퀴즈 데이터를 불러오는데 실패했습니다.');
-        return;
-      }
-    }
-
-    // 다운로드 권한 체크
-    if (!file.downloadable) {
-      toast.error('다운로드 권한이 없습니다.');
+    // 일반 파일은 다운로드
+    if (!downloadUrl) {
+      toast.error('다운로드 URL이 유효하지 않습니다.');
       return;
     }
 
     try {
-      // 일반 파일 다운로드
+      const response = await fetch(downloadUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = file.downloadUrl;
-      a.download = file.fileName;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
+      a.href = url;
+      const decodedFileName = decodeURIComponent(fileName);
+      a.download = decodedFileName;
       document.body.appendChild(a);
       a.click();
+      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
-      
-      toast.success('파일 다운로드가 시작되었습니다.');
     } catch (error) {
-      console.error('다운로드 오류:', error);
-      toast.error('파일 다운로드에 실패했습니다. 브라우저에서 직접 열기를 시도합니다.');
-      window.open(file.downloadUrl, '_blank');
+      console.error('Download error:', error);
+      toast.error('파일 다운로드에 실패했습니다.');
+      // 다운로드 실패 시 downloadUrl이 있다면 새 탭에서 열기 시도
+      if (downloadUrl) {
+        window.open(downloadUrl, '_blank');
+      }
     }
   };
 
@@ -261,6 +243,10 @@ const StudentCoursesPage: FC = () => {
         return <BrainCircuit className="w-5 h-5 text-purple-600" />;
       case 'pdf':
         return <FileText className="w-5 h-5 text-red-500" />;
+      case 'doc':
+      case 'docx':
+      case 'txt':
+        return <FileText className="w-5 h-5 text-blue-700" />;
       case 'mp4':
       case 'mov':
       case 'avi':
@@ -269,15 +255,15 @@ const StudentCoursesPage: FC = () => {
       case 'jpeg':
       case 'png':
       case 'gif':
+      case 'svg':
+      case 'webp':
         return <ImageIcon className="w-5 h-5 text-blue-500" />;
-      case 'doc':
-      case 'docx':
-        return <FileIcon className="w-5 h-5 text-blue-700" />;
       case 'xls':
       case 'xlsx':
+      case 'csv':
         return <FileIcon className="w-5 h-5 text-green-600" />;
       default:
-        return <File className="w-5 h-5 text-gray-500" />;
+        return <FileText className="w-5 h-5 text-gray-500" />;  // 기본 아이콘을 File에서 FileText로 변경
     }
   };
 
@@ -313,34 +299,14 @@ const StudentCoursesPage: FC = () => {
     const renderMaterialList = (items: WeekMaterial[] | undefined, type: string) => {
       if (!items || items.length === 0) return null;
 
-      // HLS 스트리밍 파일 필터링
-      const filteredItems = items.filter(item => {
-        const fileName = item.fileName.toLowerCase();
-        
-        // .ts 파일 제외
-        if (fileName.endsWith('.ts')) return false;
-        
-        // 화질별 m3u8 파일 제외
-        if (fileName.endsWith('.m3u8') && 
-            (fileName.includes('720x480') || 
-             fileName.includes('1280x720') || 
-             fileName.includes('1920x1080'))) {
-          return false;
-        }
-        
-        return true;
-      });
-
-      if (filteredItems.length === 0) return null;
-
       return (
         <div key={type} className="space-y-2">
           <h4 className="text-sm font-medium text-gray-500">{getFileTypeName(type)}</h4>
           <ul className="space-y-1">
-            {filteredItems.map((item, index) => (
+            {items.map((item, index) => (
               <li key={index}>
                 <button
-                  onClick={() => handleFileClick(item, weekNumber)}
+                  onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl)}
                   className={cn(
                     "w-full flex items-center p-2 rounded-lg group",
                     item.downloadable 

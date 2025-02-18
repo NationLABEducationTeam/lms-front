@@ -42,10 +42,8 @@ export interface Course {
   instructor_name: string;
   instructor_image?: string;
   instructor_bio?: string;
-  main_category_id: MainCategoryId;
-  main_category_name: string;
+  main_category_id: string;
   sub_category_id: string;
-  sub_category_name: string;
   thumbnail_url?: string;
   zoom_link?: string;
   price: number;
@@ -130,9 +128,12 @@ interface FAQ {
 export interface WeekMaterial {
   fileName: string;
   downloadUrl: string;
+  streamingUrl?: string;
   lastModified: string;
   size: number;
   downloadable?: boolean;
+  type?: string;
+  isHlsFile?: boolean;
 }
 
 export interface Quiz {

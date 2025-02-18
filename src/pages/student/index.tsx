@@ -343,7 +343,7 @@ const CourseCard = ({ course }: { course: Course }) => {
             {/* 뱃지 컨테이너 */}
             <div className="absolute top-4 left-4 flex gap-2">
               <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${categoryBadgeColors[course.main_category_id]}`}>
-                {course.main_category_name}
+                {CATEGORY_MAPPING[course.main_category_id]}
               </span>
               <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${levelBadgeColors[course.level]}`}>
                 {levelText[course.level]}

@@ -34,6 +34,7 @@ import { Progress } from '@/components/common/ui/progress';
 import type { WeekMaterial } from '@/types/course';
 import { Course } from '@/types/course';
 import { cn } from '@/lib/utils';
+import VideoModal from '@/components/video/VideoModal';
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
@@ -89,11 +90,11 @@ const getFileTypeName = (type: string) => {
 const categorizeFile = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
   if (ext === 'json') return 'quiz';
-  if (['pdf', 'doc', 'docx'].includes(ext || '')) return 'document';
-  if (['mp4', 'mov', 'avi'].includes(ext || '')) return 'video';
-  if (['jpg', 'jpeg', 'png', 'gif'].includes(ext || '')) return 'image';
-  if (['xls', 'xlsx'].includes(ext || '')) return 'spreadsheet';
-  return 'unknown';
+  if (['pdf', 'doc', 'docx', 'txt'].includes(ext || '')) return 'document';
+  if (['mp4', 'mov', 'avi', 'm3u8'].includes(ext || '')) return 'video';
+  if (['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp'].includes(ext || '')) return 'image';
+  if (['xls', 'xlsx', 'csv'].includes(ext || '')) return 'spreadsheet';
+  return 'document';  // 기본값을 'unknown'에서 'document'로 변경
 };
 
 // 파일 크기 포맷팅
@@ -114,6 +115,7 @@ const CourseDetail: FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<{ [key: string]: File[] }>({});
   const [isDragging, setIsDragging] = useState(false);
   const [showUploadArea, setShowUploadArea] = useState<number | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
 
   const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id!);
   const [createWeek] = useCreateWeekMutation();
@@ -267,9 +269,32 @@ const CourseDetail: FC = () => {
     }
   };
 
-  const handleDownload = async (downloadUrl: string) => {
+  const handleFileAction = async (downloadUrl: string | null, fileName: string, streamingUrl?: string | null) => {
+    if (fileName.endsWith('.m3u8')) {
+      const videoUrl = streamingUrl || downloadUrl;
+      if (!videoUrl) {
+        toast.error('비디오 URL이 유효하지 않습니다.');
+        return;
+      }
+      // 모달 대신 비디오 페이지로 이동
+      navigate(`/mycourse/${id}/week/${selectedWeek}/video/${encodeURIComponent(fileName)}`, {
+        state: {
+          videoUrl,
+          title: fileName.replace('.m3u8', ''),
+          courseId: id,
+          weekId: selectedWeek
+        }
+      });
+      return;
+    }
+
+    // 일반 파일은 다운로드
+    if (!downloadUrl) {
+      toast.error('다운로드 URL이 유효하지 않습니다.');
+      return;
+    }
+
     try {
-      // 파일 다운로드 처리
       const response = await fetch(downloadUrl);
       if (!response.ok) throw new Error('Download failed');
       
@@ -277,9 +302,8 @@ const CourseDetail: FC = () => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      // URL에서 파일 이름 추출
-      const fileName = downloadUrl.split('/').pop() || 'download';
-      a.download = decodeURIComponent(fileName);
+      const decodedFileName = decodeURIComponent(fileName);
+      a.download = decodedFileName;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -306,6 +330,13 @@ const CourseDetail: FC = () => {
 
   const handlePermissionToggle = async (weekNumber: number, fileName: string, currentPermission: boolean) => {
     try {
+      // 화질별 m3u8 파일은 권한 변경 불가
+      if (fileName.endsWith('.m3u8') && fileName.includes('x')) {
+        toast.error('화질별 m3u8 파일의 권한은 개별적으로 변경할 수 없습니다.');
+        return;
+      }
+
+      // 메인 m3u8 파일 또는 일반 파일의 권한 변경
       const response = await updateMaterialPermission({
         courseId: id!,
         weekNumber,
@@ -314,8 +345,11 @@ const CourseDetail: FC = () => {
       }).unwrap();
       
       if (response.success) {
-        toast.success('파일 다운로드 권한이 변경되었습니다.');
-        // 상태가 자동으로 업데이트되므로 refetch는 필요 없음
+        toast.success(
+          fileName.endsWith('.m3u8')
+            ? '비디오 파일의 권한이 변경되었습니다. (관련된 세그먼트 파일들의 권한도 함께 변경됩니다)'
+            : '파일 다운로드 권한이 변경되었습니다.'
+        );
       } else {
         toast.error('권한 변경에 실패했습니다.');
       }
@@ -334,58 +368,91 @@ const CourseDetail: FC = () => {
       
       console.log(`Rendering ${type} materials:`, items);
       
+      // .ts 파일 제외 및 화질별 m3u8 파일 필터링
+      const filteredItems = items.filter(item => {
+        const fileName = item.fileName.toLowerCase();
+        
+        // .ts 파일 제외
+        if (fileName.endsWith('.ts')) return false;
+        
+        // 화질별 m3u8 파일 제외
+        if (fileName.endsWith('.m3u8') && 
+            (fileName.includes('720x480') || 
+             fileName.includes('1280x720') || 
+             fileName.includes('1920x1080'))) {
+          return false;
+        }
+        
+        return true;
+      });
+
+      if (filteredItems.length === 0) return null;
+
       return (
         <div key={type} className="space-y-2">
           <h4 className="text-sm font-medium text-gray-500">{getFileTypeName(type)}</h4>
           <ul className="space-y-1">
-            {items.map((item, index) => (
-              <li key={index}>
-                <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all">
-                  <div className="flex items-center gap-3">
-                    {getFileIcon(item.fileName)}
+            {filteredItems.map((item, index) => (
+              <li key={index} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3 flex-1">
+                  {getFileIcon(item.fileName)}
+                  <div className="flex flex-col">
                     <span className="text-sm text-gray-700">{item.fileName}</span>
-                    <span className="text-xs text-gray-500">
-                      {formatFileSize(item.size)}
-                    </span>
+                    <span className="text-xs text-gray-500">{formatFileSize(item.size)}</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => handlePermissionToggle(selectedWeek!, item.fileName, item.downloadable ?? true)}
-                      className={cn(
-                        "p-2 rounded-lg transition-colors flex items-center gap-2",
-                        item.downloadable 
-                          ? "text-green-600 hover:bg-green-50 hover:text-green-700" 
-                          : "text-red-600 hover:bg-red-50 hover:text-red-700"
-                      )}
-                      title={item.downloadable ? "다운로드 허용됨" : "다운로드 제한됨"}
-                    >
-                      {item.downloadable ? (
-                        <>
-                          <Unlock className="w-4 h-4" />
-                          <span className="text-xs font-medium">허용</span>
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-4 h-4" />
-                          <span className="text-xs font-medium">제한</span>
-                        </>
-                      )}
-                    </button>
-                    <button
-                      onClick={() => handleDownload(item.downloadUrl)}
-                      className={cn(
-                        "p-2 rounded-lg transition-colors flex items-center gap-2",
-                        item.downloadable 
-                          ? "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                          : "text-gray-400 cursor-not-allowed"
-                      )}
-                      disabled={!item.downloadable}
-                      title={item.downloadable ? "파일 다운로드" : "다운로드가 제한된 파일입니다"}
-                    >
-                      <Download className="w-4 h-4" />
-                      <span className="text-xs font-medium">다운로드</span>
-                    </button>
-                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handlePermissionToggle(selectedWeek!, item.fileName, item.downloadable ?? true)}
+                    className={cn(
+                      "p-2 rounded-lg transition-colors flex items-center gap-2",
+                      item.downloadable 
+                        ? "text-green-600 hover:bg-green-50 hover:text-green-700" 
+                        : "text-red-600 hover:bg-red-50 hover:text-red-700"
+                    )}
+                    title={item.downloadable ? "다운로드 허용됨" : "다운로드 제한됨"}
+                  >
+                    {item.downloadable ? (
+                      <>
+                        <Unlock className="w-4 h-4" />
+                        <span className="text-xs font-medium">허용</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-4 h-4" />
+                        <span className="text-xs font-medium">제한</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => handleFileAction(item.downloadUrl, item.fileName, item.streamingUrl)}
+                    className={cn(
+                      "p-2 rounded-lg transition-colors flex items-center gap-2",
+                      item.downloadable 
+                        ? "text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                        : "text-gray-400 cursor-not-allowed"
+                    )}
+                    disabled={!item.downloadable}
+                    title={
+                      item.fileName.endsWith('.m3u8')
+                        ? "비디오 재생"
+                        : item.downloadable
+                          ? "파일 다운로드"
+                          : "다운로드가 제한된 파일입니다"
+                    }
+                  >
+                    {item.fileName.endsWith('.m3u8') ? (
+                      <>
+                        <Film className="w-4 h-4" />
+                        <span className="text-xs font-medium">재생</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        <span className="text-xs font-medium">다운로드</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </li>
             ))}
@@ -662,6 +729,16 @@ const CourseDetail: FC = () => {
           </div>
         )}
       </div>
+
+      {/* 비디오 모달 */}
+      {selectedVideo && (
+        <VideoModal
+          isOpen={!!selectedVideo}
+          onClose={() => setSelectedVideo(null)}
+          videoUrl={selectedVideo}
+          title="강의 영상"
+        />
+      )}
     </div>
   );
 };

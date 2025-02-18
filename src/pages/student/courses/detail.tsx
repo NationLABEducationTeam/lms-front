@@ -142,10 +142,10 @@ const CourseDetailPage: FC = () => {
             <div>
               <div className="flex gap-2 mb-4">
                 <span className="px-3 py-1 bg-blue-600/90 text-white text-sm rounded-full backdrop-blur-sm">
-                  {course?.main_category_name}
+                  {course?.main_category_id}
                 </span>
                 <span className="px-3 py-1 bg-blue-400/90 text-white text-sm rounded-full backdrop-blur-sm">
-                  {course?.sub_category_name}
+                  {course?.sub_category_id}
                 </span>
               </div>
               <h1 className="text-4xl font-bold mb-4">{course?.title}</h1>
