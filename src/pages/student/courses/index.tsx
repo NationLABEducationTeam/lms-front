@@ -182,34 +182,15 @@ const StudentCoursesPage: FC = () => {
 
     // 퀴즈 파일인 경우
     if (fileName.endsWith('.json')) {
-      if (!downloadUrl) {
-        toast.error('퀴즈 파일의 다운로드 URL이 유효하지 않습니다.');
-        return;
-      }
-
-      try {
-        // 퀴즈 데이터를 미리 로드
-        const response = await fetch(downloadUrl);
-        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
-        const quizData = await response.json();
-        
-        // 로컬 스토리지에 퀴즈 데이터 저장
-        localStorage.setItem(`quiz_${selectedCourse?.id}_${weekNumber}_${fileName}`, JSON.stringify({
-          quizData,
-          downloadUrl,
+      navigate(`/mycourse/${selectedCourse?.id}/quiz/${encodeURIComponent(fileName)}`, {
+        state: {
+          quizUrl: downloadUrl,
           title: fileName.replace('.json', ''),
           courseId: selectedCourse?.id,
           weekId: weekNumber.toString()
-        }));
-
-        // 퀴즈 페이지로 이동 (URL 패턴 수정)
-        navigate(`/mycourse/${selectedCourse?.id}/quiz/${weekNumber}/${encodeURIComponent(fileName)}`);
-        return;
-      } catch (error) {
-        console.error('Error loading quiz:', error);
-        toast.error('퀴즈 데이터를 불러오는데 실패했습니다.');
-        return;
-      }
+        }
+      });
+      return;
     }
 
     // 비디오 파일인 경우
