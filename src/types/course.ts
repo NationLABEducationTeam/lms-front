@@ -176,3 +176,40 @@ export interface Week {
     [key: string]: WeekMaterial[];
   };
 }
+
+export interface Timemark {
+  id: string;
+  courseId: string;
+  videoId: string;
+  userId: string;
+  timestamp: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  isSaved: boolean;
+  isEdited: boolean;
+}
+
+export interface TimemarkResponse {
+  success: boolean;
+  message: string;
+  data: Timemark;
+}
+
+export interface TimemarkListResponse {
+  success: boolean;
+  message: string;
+  data: Timemark[];
+}
+
+export interface CourseResponse {
+  success: boolean;
+  message: string;
+  data: Course;
+}
+
+export interface CourseListResponse {
+  success: boolean;
+  message: string;
+  data: Course[];
+}

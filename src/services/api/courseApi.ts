@@ -1,14 +1,15 @@
-// Lambda URLs
+// Lambda URLs (hybrid)
 const LIST_STUDENT_COURSES_URL = 'https://ixnk2hrpzmae6rn7xa6dgox57a0fofid.lambda-url.ap-northeast-2.on.aws/';
 const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-northeast-2.on.aws/';
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId, WeekMaterial } from '@/types/course';
+import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId, WeekMaterial, CourseResponse, CourseListResponse, Timemark, TimemarkResponse, TimemarkListResponse } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { S3Structure } from '@/types/s3';
 import axios from 'axios';
+import { baseQueryWithReauth } from '@/services/api/baseQuery';
 
 interface ListResponse {
   folders: S3Structure[];
@@ -73,36 +74,20 @@ interface CourseWithWeeks extends Course {
 
 export const courseApi = createApi({
   reducerPath: 'courseApi',
-  baseQuery: fetchBaseQuery({
-    baseUrl: getApiUrl(''),
-    prepareHeaders: async (headers) => {
-      try {
-        const { tokens } = await fetchAuthSession();
-        const idToken = tokens?.idToken?.toString();
-        if (idToken) {
-          headers.set('Authorization', `Bearer ${idToken}`);
-        }
-        return headers;
-      } catch (error) {
-        console.error('Error preparing headers:', error);
-        return headers;
-      }
-    },
-    timeout: 10000, // 10초 타임아웃
-  }),
+  baseQuery: baseQueryWithReauth,
   keepUnusedDataFor: 30, // 글로벌 캐시 시간 설정
   refetchOnMountOrArgChange: true, // 컴포넌트 마운트시 항상 리페치
   refetchOnFocus: false, // 포커스시 리페치 비활성화
-  tagTypes: ['Course', 'Week'],
+  tagTypes: ['Course', 'Week', 'Timemark'],
   endpoints: (builder) => ({
     // 공개 강의 목록 조회
     getPublicCourses: builder.query<Course[], void>({
       query: () => '/courses/public',
       transformResponse: (response: ApiResponse<{ courses: Course[] }>) => response.data.courses,
-      providesTags: (result) =>
+      providesTags: (result: Course[] | undefined) =>
         result
           ? [
-              ...result.map(({ id }) => ({ type: 'Course' as const, id })),
+              ...result.map(({ id }: { id: string }) => ({ type: 'Course' as const, id })),
               { type: 'Course', id: 'LIST' },
             ]
           : [{ type: 'Course', id: 'LIST' }],
@@ -110,10 +95,10 @@ export const courseApi = createApi({
 
     // 관리자용 강의 상세 조회
     getCourseById: builder.query<CourseWithWeeks, string>({
-      query: (id) => ({
-        url: `/admin/courses/${id}`,
+      query: (id: string) => ({
+        url: `/courses/${id}`,
         method: 'GET',
-        responseHandler: async (response) => {
+        responseHandler: async (response: Response) => {
           if (!response.ok) {
             const error = await response.json();
             return Promise.reject(error);
@@ -184,19 +169,19 @@ export const courseApi = createApi({
           message: response.data?.message || '강의 정보를 불러오는데 실패했습니다.'
         };
       },
-      async onQueryStarted(_arg, { queryFulfilled }) {
+      async onQueryStarted(id: string, { queryFulfilled }: { queryFulfilled: Promise<any> }) {
         try {
           await queryFulfilled;
         } catch (error) {
           console.debug('Query error handled:', error);
         }
       },
-      providesTags: (_result, _error, id) => [{ type: 'Course', id }],
+      providesTags: (_result: any, _error: any, id: string) => [{ type: 'Course', id }],
     }),
 
     // 강의 생성
     createCourse: builder.mutation<Course, CreateCourseRequest>({
-      queryFn: async (body) => {
+      queryFn: async (body: CreateCourseRequest) => {
         try {
           // Cognito 세션 확인
           const session = await fetchAuthSession();
@@ -244,7 +229,7 @@ export const courseApi = createApi({
             },
             {
               headers: {
-                'Authorization': `Bearer ${token}`,
+                Authorization: `Bearer ${token}`,
                 'Content-Type': 'application/json'
               }
             }
@@ -267,9 +252,9 @@ export const courseApi = createApi({
       invalidatesTags: [{ type: 'Course', id: 'LIST' }],
     }),
 
-    // 강의 수정
+    // 강의 수정 (관리자)
     updateCourse: builder.mutation<CourseWithWeeks, { id: string; body: UpdateCourseRequest }>({
-      query: ({ id, body }) => ({
+      query: ({ id, body }: { id: string; body: UpdateCourseRequest }) => ({
         url: `/admin/courses/${id}`,
         method: 'PUT',
         body,
@@ -281,24 +266,24 @@ export const courseApi = createApi({
       ],
     }),
 
-    // 강의 삭제
+    // 강의 삭제 (관리자)
     deleteCourse: builder.mutation<void, string>({
-      query: (id) => ({
+      query: (id: string) => ({
         url: `/admin/courses/${id}`,
         method: 'DELETE',
       }),
-      invalidatesTags: (_result, _error, id) => [
+      invalidatesTags: (_result: any, _error: any, id: string) => [
         { type: 'Course', id },
         { type: 'Course', id: 'LIST' },
       ],
     }),
 
-    // 새 주차 생성
+    // 새 주차 생성 (관리자)
     createWeek: builder.mutation<
       { courseId: string; weekNumber: number; folderPath: string },
       { courseId: string; weekNumber: number }
     >({
-      query: ({ courseId, weekNumber }) => ({
+      query: ({ courseId, weekNumber }: { courseId: string; weekNumber: number }) => ({
         url: `/admin/courses/${courseId}`,
         method: 'POST',
         body: { weekNumber },
@@ -319,12 +304,16 @@ export const courseApi = createApi({
       invalidatesTags: (_result, _error, { courseId }) => [{ type: 'Course', id: courseId }],
     }),
 
-    // 파일 업로드를 위한 URL 조회
+    // 파일 업로드를 위한 URL 조회 (관리자)
     getUploadUrls: builder.mutation<
       { urls: { fileName: string; url: string; key: string }[] },
       { courseId: string; weekNumber: number; files: { name: string; type: string; size: number }[] }
     >({
-      query: ({ courseId, weekNumber, files }) => ({
+      query: ({ courseId, weekNumber, files }: {
+        courseId: string;
+        weekNumber: number;
+        files: { name: string; type: string; size: number }[];
+      }) => ({
         url: `/admin/courses/${courseId}/${weekNumber}/upload`,
         method: 'POST',
         body: { files },
@@ -407,14 +396,18 @@ export const courseApi = createApi({
         method: 'PUT',
         body: { isDownloadable },
       }),
-      async onQueryStarted({ courseId, weekNumber, fileName, isDownloadable }, { dispatch, queryFulfilled }) {
-        // 낙관적 업데이트
+      async onQueryStarted({ courseId, weekNumber, fileName, isDownloadable }: {
+        courseId: string;
+        weekNumber: number;
+        fileName: string;
+        isDownloadable: boolean;
+      }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
-          courseApi.util.updateQueryData('getCourseById', courseId, (draft) => {
-            const week = draft.weeks?.find(w => w.weekNumber === weekNumber);
+          courseApi.util.updateQueryData('getCourseById', courseId, (draft: CourseWithWeeks) => {
+            const week = draft.weeks?.find((w: { weekNumber: number }) => w.weekNumber === weekNumber);
             if (week && week.materials) {
               Object.entries(week.materials).forEach(([_, materials]) => {
-                materials.forEach(material => {
+                materials.forEach((material: WeekMaterial) => {
                   if (material.fileName === fileName) {
                     material.downloadable = isDownloadable;
                   }
@@ -435,6 +428,67 @@ export const courseApi = createApi({
         }
       },
     }),
+
+    // Timemark endpoints
+    createTimemark: builder.mutation<TimemarkResponse, { courseId: string; videoId: string; timestamp: number; content: string }>({
+      query: (body: { courseId: string; videoId: string; timestamp: number; content: string }) => ({
+        url: '/timemarks',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: (_result: any, _error: any, { courseId, videoId }: { courseId: string; videoId: string }) => [
+        { type: 'Timemark', id: `${courseId}-${videoId}` }
+      ],
+    }),
+
+    getTimemarks: builder.query<TimemarkListResponse, { courseId: string; videoId: string }>({
+      query: ({ courseId, videoId }: { courseId: string; videoId: string }) => 
+        `/timemarks/${courseId}/${videoId}`,
+      providesTags: (_result: any, _error: any, { courseId, videoId }: { courseId: string; videoId: string }) => [
+        { type: 'Timemark', id: `${courseId}-${videoId}` }
+      ],
+    }),
+
+    updateTimemark: builder.mutation<TimemarkResponse, { timemarkId: string; timestamp: number; content: string }>({
+      query: ({ timemarkId, ...body }: { timemarkId: string; timestamp: number; content: string }) => ({
+        url: `/timemarks/${timemarkId}`,
+        method: 'PUT',
+        body,
+      }),
+      invalidatesTags: (_result: any, _error: any, { timemarkId }: { timemarkId: string }) => [
+        { type: 'Timemark', id: timemarkId }
+      ],
+      async onQueryStarted({ timemarkId }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: response } = await queryFulfilled;
+          const updatedTimemark = response.data;
+          
+          // 타임마크 목록 쿼리 업데이트
+          dispatch(
+            courseApi.util.updateQueryData('getTimemarks', 
+              { courseId: updatedTimemark.courseId, videoId: updatedTimemark.videoId }, 
+              (draft) => {
+                const index = draft.data.findIndex(t => t.id === timemarkId);
+                if (index !== -1) {
+                  draft.data[index] = updatedTimemark;
+                }
+            })
+          );
+        } catch {
+          // 실패 시 자동으로 재요청됨
+        }
+      },
+    }),
+
+    deleteTimemark: builder.mutation<{ success: boolean; message: string }, { timemarkId: string; timestamp: number }>({
+      query: ({ timemarkId, timestamp }: { timemarkId: string; timestamp: number }) => ({
+        url: `/timemarks/${timemarkId}?timestamp=${timestamp}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: (_result: any, _error: any, { timemarkId }: { timemarkId: string }) => [
+        { type: 'Timemark', id: timemarkId }
+      ],
+    }),
   }),
 });
 
@@ -453,4 +507,8 @@ export const {
   useGetDownloadUrlMutation,
   useToggleCourseStatusMutation,
   useUpdateMaterialPermissionMutation,
+  useCreateTimemarkMutation,
+  useGetTimemarksQuery,
+  useUpdateTimemarkMutation,
+  useDeleteTimemarkMutation,
 } = courseApi; 
