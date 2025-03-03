@@ -5,6 +5,7 @@ import { DBUser } from '@/types/user';
 import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
 import { courseApi } from '@/services/api/courseApi';
+import { zoomApi } from '@/services/api/zoomApi';
 
 interface CoursesState {
   categories: S3Structure[];
@@ -22,6 +23,7 @@ export interface RootState {
     error: Error | null;
   };
   [courseApi.reducerPath]: ReturnType<typeof courseApi.reducer>;
+  [zoomApi.reducerPath]: ReturnType<typeof zoomApi.reducer>;
 }
 
 export const store = configureStore({
@@ -29,9 +31,10 @@ export const store = configureStore({
     courses: coursesReducer,
     auth: authReducer,
     [courseApi.reducerPath]: courseApi.reducer,
+    [zoomApi.reducerPath]: zoomApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(courseApi.middleware),
+    getDefaultMiddleware().concat(courseApi.middleware, zoomApi.middleware),
 });
 
 export type AppDispatch = typeof store.dispatch; 

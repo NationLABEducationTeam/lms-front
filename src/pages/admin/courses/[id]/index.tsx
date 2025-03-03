@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, ReactNode } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
 import { 
@@ -25,16 +25,22 @@ import {
   BrainCircuit,
   BarChart2,
   Lock,
-  Unlock
+  Unlock,
+  Award,
+  BookCheck,
+  PenTool
 } from 'lucide-react';
-import { Card } from '@/components/common/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
 import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
 import { Progress } from '@/components/common/ui/progress';
-import type { WeekMaterial } from '@/types/course';
-import { Course } from '@/types/course';
+import type { WeekMaterial, Course, GradeItem } from '@/types/course';
 import { cn } from '@/lib/utils';
 import VideoModal from '@/components/video/VideoModal';
+import { CATEGORY_MAPPING, MainCategoryId } from '@/types/course';
+import { SerializedError } from '@reduxjs/toolkit';
+import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
   const ext = fileName.split('.').pop()?.toLowerCase();
@@ -116,8 +122,34 @@ const CourseDetail: FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const [showUploadArea, setShowUploadArea] = useState<number | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [showCourseInfo, setShowCourseInfo] = useState(false);
+  const [showGradeRules, setShowGradeRules] = useState(false);
+  const [showEvaluationItems, setShowEvaluationItems] = useState(false);
+  const [newEvaluationItem, setNewEvaluationItem] = useState({
+    type: 'ASSIGNMENT' as 'ASSIGNMENT' | 'EXAM',
+    title: '',
+    max_score: 100,
+    weight: 10
+  });
+  // 임시 성적 항목 데이터 (API 호출 대신 사용)
+  const [mockGradeItems] = useState<GradeItem[]>([
+    {
+      id: '1',
+      type: 'ASSIGNMENT',
+      title: '중간 과제',
+      max_score: 100,
+      weight: 30
+    },
+    {
+      id: '2',
+      type: 'EXAM',
+      title: '기말고사',
+      max_score: 100,
+      weight: 40
+    }
+  ]);
 
-  const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id!);
+  const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id || '');
   const [createWeek] = useCreateWeekMutation();
   const [getUploadUrls] = useGetUploadUrlsMutation();
   const [getDownloadUrl] = useGetDownloadUrlMutation();
@@ -134,6 +166,28 @@ const CourseDetail: FC = () => {
     }
   }, [location.hash]);
 
+  // 토글 상태 초기화
+  useEffect(() => {
+    // 컴포넌트 마운트 시 토글 상태 초기화
+    setShowCourseInfo(false);
+    setShowGradeRules(false);
+  }, [id]); // 강의 ID가 변경될 때만 실행
+
+  // 에러 타입 가드 함수
+  const getErrorMessage = (error: FetchBaseQueryError | SerializedError | undefined): string => {
+    if (!error) return '알 수 없는 에러가 발생했습니다.';
+    
+    if ('status' in error) {
+      // FetchBaseQueryError
+      return typeof error.data === 'object' && error.data && 'message' in error.data
+        ? String(error.data.message)
+        : '강의 정보를 불러오는데 실패했습니다.';
+    }
+    
+    // SerializedError
+    return error.message || '강의 정보를 불러오는데 실패했습니다.';
+  };
+
   const handleCreateWeek = async () => {
     if (!course) return;
     
@@ -146,7 +200,14 @@ const CourseDetail: FC = () => {
         navigate(`#${nextWeekNumber}`);
         setSelectedWeek(nextWeekNumber);
         // 데이터 새로고침
-        refetch();
+        await refetch();
+        // 화면 스크롤
+        setTimeout(() => {
+          const element = document.getElementById(`week-${nextWeekNumber}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
       }
     } catch (error: any) {
       toast.error(error.message || '주차 생성에 실패했습니다.');
@@ -359,6 +420,30 @@ const CourseDetail: FC = () => {
     }
   };
 
+  // 성적 항목 생성 핸들러
+  const handleCreateEvaluationItem = async () => {
+    // API 호출 대신 토스트 메시지만 표시
+    toast.info('현재 성적 항목 추가 기능은 비활성화되어 있습니다.');
+    setNewEvaluationItem({
+      type: 'ASSIGNMENT',
+      title: '',
+      max_score: 100,
+      weight: 10
+    });
+  };
+  
+  // 성적 항목 타입별 아이콘
+  const getEvaluationTypeIcon = (type: string) => {
+    switch (type) {
+      case 'ASSIGNMENT':
+        return <PenTool className="w-5 h-5 text-blue-500" />;
+      case 'EXAM':
+        return <BookCheck className="w-5 h-5 text-red-500" />;
+      default:
+        return <Award className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
   // 파일 목록 렌더링 수정
   const renderWeekMaterials = (materials: { [key: string]: WeekMaterial[] }) => {
     console.log('Rendering materials:', materials);
@@ -473,272 +558,458 @@ const CourseDetail: FC = () => {
     );
   };
 
-  if (isLoading) {
+  // 강의 정보 컴포넌트
+  const CourseInfoCard = () => {
+    if (!course) return null;
+    
     return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
-      </div>
+      <Card className="p-6 border-l-4 border-l-blue-500">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setShowCourseInfo(!showCourseInfo)}
+        >
+          <h2 className="text-lg font-semibold">강의 정보</h2>
+          {showCourseInfo ? (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          )}
+        </div>
+        {showCourseInfo && (
+          <div className="space-y-4 mt-4">
+            <div className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5 text-blue-600" />
+              <span className="text-gray-600">카테고리: {CATEGORY_MAPPING[course.main_category_id as MainCategoryId]} - {course.sub_category_id}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Users className="w-5 h-5 text-green-600" />
+              <span className="text-gray-600">강사: {course.instructor_name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-purple-600" />
+              <span className="text-gray-600">수업 방식: {course.classmode}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-yellow-600" />
+              <span className="text-gray-600">난이도: {course.level}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <BarChart2 className="w-5 h-5 text-indigo-600" />
+              <span className="text-gray-600">가격: {Number(course.price).toLocaleString()}원</span>
+            </div>
+          </div>
+        )}
+      </Card>
     );
-  }
+  };
 
-  if (error || !course) {
+  // 성적 처리 규칙 컴포넌트
+  const GradeRulesCard = () => {
+    if (!course) return null;
+    
     return (
-      <div className="text-center py-12 text-red-600">
-        강의 정보를 불러오는데 실패했습니다.
-      </div>
+      <Card className="p-6 border-l-4 border-l-green-500">
+        <div 
+          className="flex items-center justify-between cursor-pointer"
+          onClick={() => setShowGradeRules(!showGradeRules)}
+        >
+          <h2 className="text-lg font-semibold">성적 처리 규칙</h2>
+          {showGradeRules ? (
+            <ChevronDown className="w-5 h-5 text-gray-400" />
+          ) : (
+            <ChevronRight className="w-5 h-5 text-gray-400" />
+          )}
+        </div>
+        {showGradeRules && (
+          course.grade_items ? (
+            <div className="space-y-6 mt-4">
+              <div className="grid grid-cols-1 gap-4">
+                {course.grade_items.map((item) => (
+                  <div key={item.id} className={cn(
+                    "p-4 rounded-lg",
+                    item.type === 'ASSIGNMENT' ? "bg-green-50" :
+                    item.type === 'ATTENDANCE' ? "bg-blue-50" :
+                    "bg-purple-50"
+                  )}>
+                    <h3 className={cn(
+                      "text-sm font-medium mb-2",
+                      item.type === 'ASSIGNMENT' ? "text-green-700" :
+                      item.type === 'ATTENDANCE' ? "text-blue-700" :
+                      "text-purple-700"
+                    )}>{item.title}</h3>
+                    <div className="flex items-end justify-between">
+                      <span className={cn(
+                        "text-2xl font-bold",
+                        item.type === 'ASSIGNMENT' ? "text-green-700" :
+                        item.type === 'ATTENDANCE' ? "text-blue-700" :
+                        "text-purple-700"
+                      )}>{item.weight}%</span>
+                      <span className={cn(
+                        "text-sm",
+                        item.type === 'ASSIGNMENT' ? "text-green-600" :
+                        item.type === 'ATTENDANCE' ? "text-blue-600" :
+                        "text-purple-600"
+                      )}>비중</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {course.gradeRules?.min_attendance_rate && (
+                <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
+                  ※ 최소 출석률({course.gradeRules.min_attendance_rate}%) 미달 시 성적과 관계없이 F학점이 부여됩니다.
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 p-4 bg-red-50 rounded-lg mt-4">
+              <AlertCircle className="w-5 h-5 text-red-600" />
+              <p className="text-red-600">성적 처리 규칙이 설정되지 않았습니다.</p>
+            </div>
+          )
+        )}
+      </Card>
     );
-  }
+  };
 
   return (
     <div className="p-8 bg-gradient-to-b from-gray-50 to-white min-h-screen">
       <div className="max-w-7xl mx-auto">
-        {/* 헤더 섹션 */}
-        <div className="flex items-center gap-6 mb-8 bg-white p-6 rounded-xl shadow-sm">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/admin/courses')}
-            className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            목록으로
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">{course.title}</h1>
-            <p className="text-gray-500 text-sm">{course.description}</p>
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
           </div>
-          <Button
-            onClick={() => navigate(`/admin/courses/${id}/edit`)}
-            className="bg-blue-600 text-white hover:bg-blue-700"
-          >
-            강의 수정
-          </Button>
-        </div>
-
-        {/* Zoom 링크 섹션 */}
-        {course.classmode === 'ONLINE' && (
-          <div className="mb-8 bg-white p-6 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Link className="w-4 h-4 text-blue-600" />
-                </div>
-                <h2 className="text-lg font-semibold text-gray-900">Zoom 링크</h2>
-              </div>
-              <Button
-                onClick={() => navigate(`/admin/courses/${id}/edit`)}
-                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                variant="ghost"
-                size="sm"
-              >
-                <Link className="w-4 h-4 mr-2" />
-                {course.zoom_link ? '수정하기' : '링크 설정하기'}
-              </Button>
-            </div>
-            {course.zoom_link ? (
-              <div className="flex items-center gap-4">
-                <a 
-                  href={course.zoom_link} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex-1 text-blue-600 hover:text-blue-700 hover:underline text-lg bg-blue-50 p-3 rounded-lg"
-                >
-                  {course.zoom_link}
-                </a>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="shrink-0"
-                  onClick={() => {
-                    navigator.clipboard.writeText(course.zoom_link || '');
-                    toast.success('Zoom 링크가 클립보드에 복사되었습니다.');
-                  }}
-                >
-                  <Paperclip className="w-4 h-4 mr-2" />
-                  복사하기
-                </Button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2 p-4 bg-red-50 rounded-lg border border-red-100">
-                <p className="text-red-600">
-                  아직 Zoom 링크가 설정되지 않았습니다. 위 버튼을 클릭하여 링크를 설정해주세요.
-                </p>
-              </div>
-            )}
+        ) : error ? (
+          <div className="text-center text-red-600">
+            {getErrorMessage(error)}
           </div>
-        )}
-
-        {/* 주차 관리 헤더 */}
-        <div className="mb-6 flex justify-between items-center bg-white p-5 rounded-xl shadow-sm">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">주차별 수업 관리</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {course.weeks?.length || 0}개의 주차가 등록되어 있습니다
-            </p>
-          </div>
-          <Button 
-            onClick={handleCreateWeek} 
-            className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all duration-200 hover:shadow"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            새 주차 만들기
-          </Button>
-        </div>
-
-        {!course.weeks || !Array.isArray(course.weeks) || course.weeks.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm">
-            <div className="w-16 h-16 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Plus className="w-8 h-8 text-indigo-600" />
-            </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">등록된 주차가 없습니다</h3>
-            <p className="text-gray-500 mb-4">새로운 주차를 만들어 강의를 시작해보세요</p>
-            <Button 
-              onClick={handleCreateWeek}
-              className="bg-indigo-600 hover:bg-indigo-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              첫 주차 만들기
-            </Button>
+        ) : !course ? (
+          <div className="text-center text-red-600">
+            강의 정보를 찾을 수 없습니다.
           </div>
         ) : (
-          <div className="space-y-4">
-            {course.weeks?.map((week) => (
-              <Card key={week.weekNumber} className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div 
-                  className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
-                  onClick={() => handleWeekClick(week.weekNumber)}
+          <>
+            {/* 헤더 섹션 */}
+            <div className="flex items-center gap-6 mb-8 bg-white p-6 rounded-xl shadow-sm">
+              <Button
+                variant="ghost"
+                onClick={() => navigate('/admin/courses')}
+                className="text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                목록으로
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold text-gray-900 mb-1">{course.title}</h1>
+                <p className="text-gray-500 text-sm">{course.description}</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={handleCreateWeek}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
-                        <span className="text-indigo-600 font-semibold">{week.weekNumber}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {week.weekNumber}주차
-                      </h3>
-                    </div>
-                    {selectedWeek === week.weekNumber ? (
-                      <ChevronDown className="w-5 h-5 text-gray-400" />
-                    ) : (
-                      <ChevronRight className="w-5 h-5 text-gray-400" />
-                    )}
-                  </div>
-                </div>
+                  <Plus className="w-4 h-4 mr-2" />
+                  주차 추가
+                </Button>
+                <Button
+                  onClick={() => navigate(`/admin/courses/${id}/edit`)}
+                  className="bg-blue-600 text-white hover:bg-blue-700"
+                >
+                  <Edit2 className="w-4 h-4 mr-2" />
+                  강의 수정
+                </Button>
+              </div>
+            </div>
 
-                {selectedWeek === week.weekNumber && (
-                  <div className="border-t border-gray-100 p-6 bg-gray-50">
-                    <div className="flex justify-between items-center mb-6">
-                      <div className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-indigo-600" />
-                        <h4 className="font-medium text-gray-900">수업 자료</h4>
+            {/* 강의 정보 및 성적 처리 규칙 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              {/* 강의 기본 정보 */}
+              <CourseInfoCard />
+
+              {/* 성적 처리 규칙 */}
+              <GradeRulesCard />
+            </div>
+
+            {/* 성적 항목 관리 섹션 */}
+            <Card className="mb-8">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-xl font-bold">성적 항목 관리</CardTitle>
+                <Button 
+                  variant="ghost" 
+                  onClick={() => setShowEvaluationItems(!showEvaluationItems)}
+                  className="flex items-center gap-2"
+                >
+                  {showEvaluationItems ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                </Button>
+              </CardHeader>
+              
+              {showEvaluationItems && course && (
+                <CardContent className="space-y-4">
+                  {/* 성적 항목 추가 폼 */}
+                  <div className="bg-gray-50 p-4 rounded-md space-y-4">
+                    <h3 className="font-medium">새 성적 항목 추가</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
+                        <select 
+                          className="w-full rounded-md border border-gray-300 p-2"
+                          value={newEvaluationItem.type}
+                          onChange={(e) => setNewEvaluationItem({
+                            ...newEvaluationItem,
+                            type: e.target.value as 'ASSIGNMENT' | 'EXAM'
+                          })}
+                        >
+                          <option value="ASSIGNMENT">과제</option>
+                          <option value="EXAM">시험</option>
+                        </select>
                       </div>
-                      <Button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleUploadClick(week.weekNumber);
-                        }}
-                        className="bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 hover:border-indigo-300 shadow-sm"
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">제목</label>
+                        <input 
+                          type="text" 
+                          className="w-full rounded-md border border-gray-300 p-2"
+                          value={newEvaluationItem.title}
+                          onChange={(e) => setNewEvaluationItem({
+                            ...newEvaluationItem,
+                            title: e.target.value
+                          })}
+                          placeholder="중간고사, 기말과제 등"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">최대 점수</label>
+                        <input 
+                          type="number" 
+                          className="w-full rounded-md border border-gray-300 p-2"
+                          value={newEvaluationItem.max_score}
+                          onChange={(e) => setNewEvaluationItem({
+                            ...newEvaluationItem,
+                            max_score: parseInt(e.target.value)
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">가중치 (%)</label>
+                        <input 
+                          type="number" 
+                          className="w-full rounded-md border border-gray-300 p-2"
+                          value={newEvaluationItem.weight}
+                          onChange={(e) => setNewEvaluationItem({
+                            ...newEvaluationItem,
+                            weight: parseInt(e.target.value)
+                          })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <Button 
+                        onClick={handleCreateEvaluationItem}
+                        className="bg-blue-600 text-white hover:bg-blue-700"
+                        disabled={!newEvaluationItem.title}
                       >
-                        <Upload className="w-4 h-4 mr-2" />
-                        파일 업로드
+                        <Plus className="w-4 h-4 mr-2" />
+                        항목 추가
                       </Button>
                     </div>
-
-                    {showUploadArea === week.weekNumber && (
-                      <div 
-                        className={`border-2 border-dashed rounded-xl p-8 mb-6 transition-all duration-200 ${
-                          isDragging 
-                            ? 'border-indigo-500 bg-indigo-50' 
-                            : 'border-gray-200 bg-white'
-                        }`}
-                        onDragOver={handleDragOver}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, week.weekNumber)}
-                      >
-                        <div className="text-center">
-                          <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <Upload className="w-6 h-6 text-indigo-600" />
-                          </div>
-                          <p className="text-gray-600 mb-3">
-                            파일을 드래그하여 업로드하거나
-                          </p>
-                          <input
-                            type="file"
-                            id={`file-${week.weekNumber}`}
-                            multiple
-                            className="hidden"
-                            onChange={(e) => handleFileChange(week.weekNumber, e)}
-                          />
-                          <Button
-                            variant="outline"
-                            onClick={() => document.getElementById(`file-${week.weekNumber}`)?.click()}
-                            className="bg-white hover:bg-gray-50"
-                          >
-                            파일 선택
-                          </Button>
-                        </div>
+                  </div>
+                  
+                  {/* 성적 항목 목록 */}
+                  <div className="space-y-2">
+                    <h3 className="font-medium">성적 항목 목록</h3>
+                    {false ? (
+                      <div className="flex justify-center items-center h-20">
+                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
+                      </div>
+                    ) : mockGradeItems && mockGradeItems.length > 0 ? (
+                      <div className="bg-white border rounded-md overflow-hidden">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유형</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">최대 점수</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가중치 (%)</th>
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {mockGradeItems.map((item) => (
+                              <tr key={item.id}>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <div className="flex items-center">
+                                    {getEvaluationTypeIcon(item.type)}
+                                    <span className="ml-2">
+                                      {item.type === 'ASSIGNMENT' ? '과제' : '시험'}
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap">{item.title}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{item.max_score}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{item.weight}%</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="bg-gray-50 p-4 text-center text-gray-500 rounded-md">
+                        등록된 성적 항목이 없습니다.
                       </div>
                     )}
+                    <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md mt-2">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="w-5 h-5 text-yellow-500" />
+                        <p className="text-sm text-yellow-700">현재 성적 항목 관리 기능은 개발 중입니다. 곧 사용 가능해질 예정입니다.</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+            </Card>
 
-                    {selectedFiles[week.weekNumber]?.length > 0 && (
-                      <div className="space-y-4 mb-6 bg-white p-4 rounded-xl">
-                        <div className="flex items-center gap-2 mb-4">
-                          <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                            <Upload className="w-4 h-4 text-blue-600" />
-                          </div>
-                          <h4 className="font-medium text-gray-900">업로드 대기 중인 파일</h4>
+            {/* 주차별 자료 */}
+            <div className="space-y-6">
+              {course.weeks?.map((week) => (
+                <Card 
+                  key={week.weekNumber} 
+                  className="p-6"
+                  id={`week-${week.weekNumber}`}
+                >
+                  <div 
+                    className="p-6 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleWeekClick(week.weekNumber)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center">
+                          <span className="text-indigo-600 font-semibold">{week.weekNumber}</span>
                         </div>
-                        {selectedFiles[week.weekNumber].map((file) => (
-                          <div key={file.name} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                            <div className="flex items-center justify-between mb-2">
-                              <div className="flex items-center gap-3">
-                                {getFileIcon(file.name)}
-                                <span className="text-sm text-gray-900">{file.name}</span>
-                              </div>
-                              <span className="text-sm text-gray-500">
-                                {(file.size / 1024 / 1024).toFixed(2)} MB
-                              </span>
-                            </div>
-                            {uploadProgress[`${week.weekNumber}-${file.name}`] !== undefined && (
-                              <div className="mt-2">
-                                <Progress 
-                                  value={uploadProgress[`${week.weekNumber}-${file.name}`]} 
-                                  className="h-1.5 bg-gray-100"
-                                />
-                                <p className="text-xs text-gray-500 mt-1 text-right">
-                                  {uploadProgress[`${week.weekNumber}-${file.name}`]}%
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {week.weekNumber}주차
+                        </h3>
+                      </div>
+                      {selectedWeek === week.weekNumber ? (
+                        <ChevronDown className="w-5 h-5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedWeek === week.weekNumber && week && (
+                    <div className="border-t border-gray-100 p-6 bg-gray-50">
+                      <div className="flex justify-between items-center mb-6">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-indigo-600" />
+                          <h4 className="font-medium text-gray-900">수업 자료</h4>
+                        </div>
                         <Button
-                          onClick={() => handleUpload(week.weekNumber)}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleUploadClick(week.weekNumber);
+                          }}
+                          className="bg-white hover:bg-gray-50 text-indigo-600 border border-indigo-200 hover:border-indigo-300 shadow-sm"
                         >
                           <Upload className="w-4 h-4 mr-2" />
-                          업로드 시작
+                          파일 업로드
                         </Button>
                       </div>
-                    )}
 
-                    {renderWeekMaterials(week.materials || {})}
-                  </div>
-                )}
-              </Card>
-            ))}
-          </div>
+                      {showUploadArea === week.weekNumber && (
+                        <div 
+                          className={`border-2 border-dashed rounded-xl p-8 mb-6 transition-all duration-200 ${
+                            isDragging 
+                              ? 'border-indigo-500 bg-indigo-50' 
+                              : 'border-gray-200 bg-white'
+                          }`}
+                          onDragOver={handleDragOver}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, week.weekNumber)}
+                        >
+                          <div className="text-center">
+                            <div className="w-12 h-12 bg-indigo-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Upload className="w-6 h-6 text-indigo-600" />
+                            </div>
+                            <p className="text-gray-600 mb-3">
+                              파일을 드래그하여 업로드하거나
+                            </p>
+                            <input
+                              type="file"
+                              id={`file-${week.weekNumber}`}
+                              multiple
+                              className="hidden"
+                              onChange={(e) => handleFileChange(week.weekNumber, e)}
+                            />
+                            <Button
+                              variant="outline"
+                              onClick={() => document.getElementById(`file-${week.weekNumber}`)?.click()}
+                              className="bg-white hover:bg-gray-50"
+                            >
+                              파일 선택
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {selectedFiles[week.weekNumber]?.length > 0 && (
+                        <div className="space-y-4 mb-6 bg-white p-4 rounded-xl">
+                          <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
+                              <Upload className="w-4 h-4 text-blue-600" />
+                            </div>
+                            <h4 className="font-medium text-gray-900">업로드 대기 중인 파일</h4>
+                          </div>
+                          {selectedFiles[week.weekNumber].map((file) => (
+                            <div key={file.name} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  {getFileIcon(file.name)}
+                                  <span className="text-sm text-gray-900">{file.name}</span>
+                                </div>
+                                <span className="text-sm text-gray-500">
+                                  {formatFileSize(file.size)}
+                                </span>
+                              </div>
+                              {uploadProgress[`${week.weekNumber}-${file.name}`] !== undefined && (
+                                <div className="mt-2">
+                                  <Progress 
+                                    value={uploadProgress[`${week.weekNumber}-${file.name}`]} 
+                                    className="h-1.5 bg-gray-100"
+                                  />
+                                  <p className="text-xs text-gray-500 mt-1 text-right">
+                                    {uploadProgress[`${week.weekNumber}-${file.name}`]}%
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <Button
+                            onClick={() => handleUpload(week.weekNumber)}
+                            className="w-full bg-indigo-600 hover:bg-indigo-700 shadow-sm"
+                          >
+                            <Upload className="w-4 h-4 mr-2" />
+                            업로드 시작
+                          </Button>
+                        </div>
+                      )}
+
+                      {renderWeekMaterials(week.materials || {})}
+                    </div>
+                  )}
+                </Card>
+              ))}
+            </div>
+
+            {/* 비디오 모달 */}
+            {selectedVideo && (
+              <VideoModal
+                isOpen={!!selectedVideo}
+                onClose={() => setSelectedVideo(null)}
+                videoUrl={selectedVideo}
+                title="강의 영상"
+              />
+            )}
+          </>
         )}
       </div>
-
-      {/* 비디오 모달 */}
-      {selectedVideo && (
-        <VideoModal
-          isOpen={!!selectedVideo}
-          onClose={() => setSelectedVideo(null)}
-          videoUrl={selectedVideo}
-          title="강의 영상"
-        />
-      )}
     </div>
   );
 };

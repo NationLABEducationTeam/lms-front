@@ -4,7 +4,7 @@ const UPLOAD_FILE_URL = 'https://taqgrjjwno2q62ymz5vqq3xcme0dqhqt.lambda-url.ap-
 const GET_DOWNLOAD_URL = 'https://gabagm5wjii6gzeztxvf74cgbi0svoja.lambda-url.ap-northeast-2.on.aws/';
 
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId, WeekMaterial, CourseResponse, CourseListResponse, Timemark, TimemarkResponse, TimemarkListResponse } from '@/types/course';
+import { Course, CourseLevel, MainCategory, CourseStatus, CourseType, CATEGORY_MAPPING, MainCategoryId, WeekMaterial, CourseResponse, CourseListResponse, Timemark, TimemarkResponse, TimemarkListResponse, CourseNotesResponse, GradeItem } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { fetchAuthSession, getCurrentUser } from 'aws-amplify/auth';
 import { S3Structure } from '@/types/s3';
@@ -35,6 +35,16 @@ export interface CreateCourseRequest {
   level: CourseLevel;
   price: number;
   classmode: 'ONLINE' | 'VOD';
+  zoom_link?: string | null;
+  weeks_count?: number;
+  assignment_count?: number;
+  exam_count?: number;
+  gradeRules?: {
+    attendance_weight: number;
+    assignment_weight: number;
+    exam_weight: number;
+    min_attendance_rate: number;
+  };
 }
 
 export interface UpdateCourseRequest {
@@ -70,6 +80,20 @@ interface CourseWithWeeks extends Course {
   weeks: Week[];
   zoom_link?: string;
   classmode: 'ONLINE' | 'VOD';
+  gradeRules?: {
+    attendance_weight: number;
+    assignment_weight: number;
+    exam_weight: number;
+    min_attendance_rate: number;
+  };
+}
+
+export interface CreateGradeItemRequest {
+  courseId: string;
+  type: 'ASSIGNMENT' | 'ATTENDANCE' | 'EXAM';
+  title: string;
+  max_score: number;
+  weight: number;
 }
 
 export const courseApi = createApi({
@@ -78,7 +102,7 @@ export const courseApi = createApi({
   keepUnusedDataFor: 30, // 글로벌 캐시 시간 설정
   refetchOnMountOrArgChange: true, // 컴포넌트 마운트시 항상 리페치
   refetchOnFocus: false, // 포커스시 리페치 비활성화
-  tagTypes: ['Course', 'Week', 'Timemark'],
+  tagTypes: ['Course', 'Week', 'Timemark', 'CourseNotes', 'GradeItems'],
   endpoints: (builder) => ({
     // 공개 강의 목록 조회
     getPublicCourses: builder.query<Course[], void>({
@@ -96,7 +120,7 @@ export const courseApi = createApi({
     // 관리자용 강의 상세 조회
     getCourseById: builder.query<CourseWithWeeks, string>({
       query: (id: string) => ({
-        url: `/courses/${id}`,
+        url: `/admin/courses/${id}`,
         method: 'GET',
         responseHandler: async (response: Response) => {
           if (!response.ok) {
@@ -215,7 +239,7 @@ export const courseApi = createApi({
 
           // API 호출
           const response = await axios.post(
-            getApiUrl('/courses'),
+            getApiUrl('/admin/courses'),
             {
               title: body.title,
               description: body.description,
@@ -225,7 +249,9 @@ export const courseApi = createApi({
               thumbnail_url: thumbnailBase64,
               price: body.price,
               level: body.level,
-              classmode: body.classmode
+              classmode: body.classmode,
+              zoom_link: body.zoom_link,
+              gradeRules: body.gradeRules
             },
             {
               headers: {
@@ -392,7 +418,7 @@ export const courseApi = createApi({
       { courseId: string; weekNumber: number; fileName: string; isDownloadable: boolean }
     >({
       query: ({ courseId, weekNumber, fileName, isDownloadable }) => ({
-        url: `/courses/${courseId}/materials/${weekNumber}/${fileName}/permission`,
+        url: `/admin/courses/${courseId}/materials/${weekNumber}/${fileName}/permission`,
         method: 'PUT',
         body: { isDownloadable },
       }),
@@ -431,20 +457,19 @@ export const courseApi = createApi({
 
     // Timemark endpoints
     createTimemark: builder.mutation<TimemarkResponse, { courseId: string; videoId: string; timestamp: number; content: string }>({
-      query: (body: { courseId: string; videoId: string; timestamp: number; content: string }) => ({
+      query: (body) => ({
         url: '/timemarks',
         method: 'POST',
         body,
       }),
-      invalidatesTags: (_result: any, _error: any, { courseId, videoId }: { courseId: string; videoId: string }) => [
+      invalidatesTags: (_result: any, _error: any, { courseId, videoId }) => [
         { type: 'Timemark', id: `${courseId}-${videoId}` }
       ],
     }),
 
     getTimemarks: builder.query<TimemarkListResponse, { courseId: string; videoId: string }>({
-      query: ({ courseId, videoId }: { courseId: string; videoId: string }) => 
-        `/timemarks/${courseId}/${videoId}`,
-      providesTags: (_result: any, _error: any, { courseId, videoId }: { courseId: string; videoId: string }) => [
+      query: ({ courseId, videoId }) => `/timemarks/${courseId}/${videoId}`,
+      providesTags: (_result: any, _error: any, { courseId, videoId }) => [
         { type: 'Timemark', id: `${courseId}-${videoId}` }
       ],
     }),
@@ -489,6 +514,45 @@ export const courseApi = createApi({
         { type: 'Timemark', id: timemarkId }
       ],
     }),
+
+    // 새로운 엔드포인트 추가
+    getAllNotes: builder.query<CourseNotesResponse, void>({
+      query: () => ({
+        url: '/timemarks/notes/all',
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }),
+      providesTags: ['Timemark']
+    }),
+
+    // 성적 항목 생성
+    createGradeItem: builder.mutation<GradeItem, CreateGradeItemRequest>({
+      query: (body) => ({
+        url: `${getApiUrl('/admin/grades/items')}/${body.courseId}`,
+        method: 'POST',
+        body: {
+          type: body.type,
+          title: body.title,
+          max_score: body.max_score,
+          weight: body.weight
+        }
+      }),
+      invalidatesTags: (result, error, arg) => [{ type: 'GradeItems', id: arg.courseId }]
+    }),
+    
+    // 성적 항목 목록 조회
+    getGradeItems: builder.query<GradeItem[], string>({
+      query: (courseId) => `${getApiUrl('/admin/grades/items')}/${courseId}`,
+      providesTags: (result, error, courseId) => 
+        result 
+          ? [
+              ...result.map(item => ({ type: 'GradeItems' as const, id: item.id })),
+              { type: 'GradeItems', id: courseId }
+            ]
+          : [{ type: 'GradeItems', id: courseId }]
+    }),
   }),
 });
 
@@ -511,4 +575,7 @@ export const {
   useGetTimemarksQuery,
   useUpdateTimemarkMutation,
   useDeleteTimemarkMutation,
+  useGetAllNotesQuery,
+  useCreateGradeItemMutation,
+  useGetGradeItemsQuery,
 } = courseApi; 

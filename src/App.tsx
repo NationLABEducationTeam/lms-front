@@ -18,6 +18,7 @@ import AdminStatistics from './pages/admin/statistics';
 import AdminCertificates from './pages/admin/certificates';
 import AdminBoards from './pages/admin/boards';
 import AdminReviews from './pages/admin/reviews';
+import AdminMonitoring from './pages/admin/monitoring';
 import NoticeList from './pages/student/board/NoticeList';
 import NoticeDetail from './pages/student/board/NoticeDetail';
 import CommunityList from './pages/student/board/CommunityList';
@@ -39,6 +40,17 @@ import EditCourse from '@/pages/admin/courses/[id]/edit';
 import QuizPage from './pages/student/courses/quiz';
 import QuizResults from './pages/admin/courses/quiz/results';
 import VideoPlayerPage from '@/pages/student/courses/video';
+
+// Vite 환경 변수 타입 확장
+declare global {
+  interface ImportMeta {
+    env: {
+      VITE_ENV: string;
+      VITE_API_URL: string;
+      [key: string]: string;
+    };
+  }
+}
 
 const App = () => {
   console.log('🚀 Current Environment:', import.meta.env.VITE_ENV);
@@ -71,6 +83,7 @@ const App = () => {
               <Route path="/admin/courses/:id/edit" element={<EditCourse />} />
               <Route path="/admin/courses/:courseId/quiz/:quizId/results" element={<QuizResults />} />
               <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/monitoring" element={<AdminMonitoring />} />
               <Route path="/admin/system" element={<AdminSystem />} />
               <Route path="/admin/statistics" element={<AdminStatistics />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />

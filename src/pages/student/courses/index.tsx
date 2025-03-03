@@ -1,4 +1,4 @@
-import { FC, useState, useEffect } from 'react';
+import { FC, useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getEnrolledCourses, getDownloadUrl } from '@/services/api/courses';
 import { CATEGORY_MAPPING } from '@/types/course';
@@ -6,13 +6,15 @@ import type {
   Course as BaseCourse, 
   WeekMaterial, 
   Week,
-  MainCategoryId
+  MainCategoryId,
+  VideoNotes,
+  WeekNotes
 } from '@/types/course';
 import { 
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
   Film, Image as ImageIcon, FileIcon, File, Play, Lock, AlertCircle,
-  BarChart2, Edit2, Trash2, Search, Upload
+  BarChart2, Edit2, Trash2, Search, Upload, Clock, ChevronRight, Plus
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { 
@@ -46,6 +48,9 @@ import { getQnaPosts } from '@/services/api/qna';
 import type { Notice, NoticeMetadata } from '@/types/notice';
 import type { CommunityPost, CommunityMetadata } from '@/types/community';
 import type { QnaPost, QnaMetadata } from '@/types/qna';
+import { useGetAllNotesQuery } from '@/services/api/courseApi';
+import { Note } from '@/types/course';
+import { getApiUrl } from '@/config/api';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -99,6 +104,325 @@ const transformApiResponse = (apiCourse: any): Course => {
   };
 };
 
+const NotesPanel: FC = () => {
+  const { data: notesData } = useGetAllNotesQuery();
+  const [expandedCourses, setExpandedCourses] = useState<Set<string>>(new Set());
+  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+  const [expandedVideos, setExpandedVideos] = useState<Set<string>>(new Set());
+  const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  const toggleCourse = (courseId: string) => {
+    setExpandedCourses(prev => {
+      const next = new Set(prev);
+      if (next.has(courseId)) {
+        next.delete(courseId);
+      } else {
+        next.add(courseId);
+      }
+      return next;
+    });
+  };
+
+  const toggleWeek = (weekId: string) => {
+    setExpandedWeeks(prev => {
+      const next = new Set(prev);
+      if (next.has(weekId)) {
+        next.delete(weekId);
+      } else {
+        next.add(weekId);
+      }
+      return next;
+    });
+  };
+
+  const toggleVideo = (videoId: string) => {
+    setExpandedVideos(prev => {
+      const next = new Set(prev);
+      if (next.has(videoId)) {
+        next.delete(videoId);
+      } else {
+        next.add(videoId);
+      }
+      return next;
+    });
+  };
+
+  const toggleNote = (noteId: string) => {
+    setExpandedNotes(prev => {
+      const next = new Set(prev);
+      if (next.has(noteId)) {
+        next.delete(noteId);
+      } else {
+        next.add(noteId);
+      }
+      return next;
+    });
+  };
+
+  const filteredNotes = useMemo(() => {
+    if (!notesData?.data) return [];
+    
+    let courses = notesData.data;
+
+    // 검색어로 필터링
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      courses = courses.map(course => ({
+        ...course,
+        videos: course.videos.map(video => ({
+          ...video,
+          notes: video.notes.filter(note => 
+            note.content.toLowerCase().includes(term) ||
+            (video.videoTitle || '').toLowerCase().includes(term)
+          )
+        })).filter(video => video.notes.length > 0)
+      })).filter(course => course.videos.length > 0);
+    }
+
+    return courses;
+  }, [notesData, searchTerm]);
+
+  const handleVideoClick = (courseId: string, videoId: string, weekNumber: number, timestamp: number) => {
+    if (!weekNumber) {
+      console.error('주차 정보가 없습니다:', { courseId, videoId, weekNumber, timestamp });
+      toast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
+      return;
+    }
+
+    navigate(`/mycourse/${courseId}/week/${weekNumber}/video/${encodeURIComponent(videoId)}`, {
+      state: {
+        videoUrl: `${getApiUrl('')}/videos/${courseId}/${weekNumber}/${videoId}`,
+        title: videoId.replace('.m3u8', ''),
+        courseId,
+        timestamp,
+        weekNumber,
+        weekTitle: `${weekNumber}주차 강의`
+      }
+    });
+  };
+
+  if (!notesData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Spin size="large" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* 검색 및 통계 영역 */}
+      <div className="flex flex-col gap-4 p-4 bg-white rounded-lg shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex-1">
+            <input
+              type="text"
+              placeholder="노트 내용이나 영상 제목으로 검색..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+        {filteredNotes.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-blue-50">
+              <Statistic
+                title="전체 노트"
+                value={filteredNotes.reduce((acc, course) => acc + course.totalNotes, 0)}
+                prefix={<PenLine className="w-4 h-4" />}
+              />
+            </Card>
+            <Card className="bg-purple-50">
+              <Statistic
+                title="영상 수"
+                value={filteredNotes.reduce((acc, course) => acc + course.videoCount, 0)}
+                prefix={<Film className="w-4 h-4" />}
+              />
+            </Card>
+            <Card className="bg-green-50">
+              <Statistic
+                title="최근 업데이트"
+                value={new Date(filteredNotes[0]?.lastUpdated).toLocaleDateString()}
+                prefix={<Clock className="w-4 h-4" />}
+              />
+            </Card>
+          </div>
+        )}
+      </div>
+
+      {/* 노트 목록 */}
+      {filteredNotes.length === 0 ? (
+        <div className="text-center py-12 bg-gray-50 rounded-lg border border-gray-100">
+          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+          <p className="text-gray-600 mb-1">노트가 없습니다</p>
+          <p className="text-sm text-gray-500">
+            {searchTerm ? '검색 조건을 변경해보세요.' : '강의를 시청하면서 노트를 작성해보세요.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {filteredNotes.map((course) => (
+            <div
+              key={course.courseId}
+              className="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-100"
+            >
+              {/* 과목 헤더 */}
+              <button
+                onClick={() => toggleCourse(course.courseId)}
+                className="w-full flex items-center justify-between p-4 hover:bg-gray-50"
+              >
+                <div className="flex items-center gap-3">
+                  <BookOpen className="w-5 h-5 text-blue-600" />
+                  <h3 className="font-medium text-gray-900">{course.courseTitle}</h3>
+                  <Badge 
+                    count={course.totalNotes}
+                    className="bg-blue-100 text-blue-600 border-blue-100"
+                  />
+                </div>
+                <div className="flex items-center gap-4">
+                  <div className="text-sm text-gray-500">
+                    마지막 업데이트: {new Date(course.lastUpdated).toLocaleDateString()}
+                  </div>
+                  <ChevronDown 
+                    className={cn(
+                      "w-5 h-5 text-gray-400 transition-transform",
+                      expandedCourses.has(course.courseId) ? "transform rotate-180" : ""
+                    )} 
+                  />
+                </div>
+              </button>
+
+              {/* 영상별 노트 목록 */}
+              {expandedCourses.has(course.courseId) && (
+                <div className="border-t border-gray-100">
+                  {course.videos.map((video) => (
+                    <div key={video.videoId} className="border-b border-gray-100 last:border-b-0">
+                      {/* 영상 헤더 */}
+                      <button
+                        onClick={() => toggleVideo(video.videoId)}
+                        className="w-full flex items-center justify-between p-4 hover:bg-gray-50"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Film className="w-4 h-4 text-purple-600" />
+                          <div className="flex flex-col items-start">
+                            <span className="text-sm font-medium text-gray-900">
+                              {video.weekNumber}주차 - {(video.videoTitle || '').replace('.m3u8', '')}
+                            </span>
+                            {video.weekTitle && (
+                              <span className="text-xs text-gray-500">{video.weekTitle}</span>
+                            )}
+                          </div>
+                          <Badge 
+                            count={video.noteCount}
+                            className="bg-purple-100 text-purple-600 border-purple-100"
+                          />
+                        </div>
+                        <ChevronDown 
+                          className={cn(
+                            "w-4 h-4 text-gray-400 transition-transform",
+                            expandedVideos.has(video.videoId) ? "transform rotate-180" : ""
+                          )} 
+                        />
+                      </button>
+
+                      {/* 노트 목록 */}
+                      {expandedVideos.has(video.videoId) && (
+                        <div className="p-4 space-y-3">
+                          {video.notes.map((note) => (
+                            <div
+                              key={note.id}
+                              className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Clock className="w-4 h-4 text-blue-600" />
+                                  <Button
+                                    type="link"
+                                    size="small"
+                                    className="text-blue-600 hover:text-blue-700 p-0"
+                                    onClick={() => toggleNote(note.id)}
+                                  >
+                                    {note.formattedTime}
+                                  </Button>
+                                </div>
+                                <Space split={<Divider type="vertical" />}>
+                                  <span className="text-xs text-gray-500">
+                                    작성: {new Date(note.createdAt).toLocaleDateString()}
+                                  </span>
+                                  {note.updatedAt !== note.createdAt && (
+                                    <span className="text-xs text-gray-500">
+                                      수정: {new Date(note.updatedAt).toLocaleDateString()}
+                                    </span>
+                                  )}
+                                </Space>
+                              </div>
+                              <div className="mb-3">
+                                <p className={cn(
+                                  "text-sm text-gray-700",
+                                  expandedNotes.has(note.id) ? '' : 'line-clamp-2'
+                                )}>
+                                  {note.content}
+                                </p>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <Button
+                                  type="text"
+                                  size="small"
+                                  onClick={() => toggleNote(note.id)}
+                                  className="text-gray-600 hover:text-gray-900"
+                                >
+                                  {expandedNotes.has(note.id) ? '접기' : '더보기'}
+                                </Button>
+                                <Space>
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<Edit2 className="w-4 h-4" />}
+                                    className="text-gray-600 hover:text-gray-900"
+                                  >
+                                    수정
+                                  </Button>
+                                  <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<Trash2 className="w-4 h-4" />}
+                                    className="text-red-600 hover:text-red-700"
+                                  >
+                                    삭제
+                                  </Button>
+                                  <Button
+                                    type="primary"
+                                    size="small"
+                                    onClick={() => {
+                                      console.log('비디오 데이터:', { courseId: course.courseId, videoId: video.videoId, weekNumber: video.weekNumber, timestamp: note.timestamp });
+                                      handleVideoClick(course.courseId, video.videoId, video.weekNumber, note.timestamp);
+                                    }}
+                                    className="bg-blue-600 hover:bg-blue-700"
+                                  >
+                                    <Play className="w-4 h-4 mr-1" />
+                                    동영상 보기
+                                  </Button>
+                                </Space>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const StudentCoursesPage: FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -115,6 +439,8 @@ const StudentCoursesPage: FC = () => {
   const [qnaPosts, setQnaPosts] = useState<QnaPost[]>([]);
   const [boardLoading, setBoardLoading] = useState(false);
   const navigate = useNavigate();
+  const { data: allNotes, isLoading: isLoadingNotes } = useGetAllNotesQuery();
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -205,7 +531,8 @@ const StudentCoursesPage: FC = () => {
           videoUrl,
           title: fileName.replace('.m3u8', ''),
           courseId: selectedCourse?.id,
-          weekId: weekNumber.toString()
+          weekNumber: weekNumber,
+          weekTitle: `${weekNumber}주차 강의`
         }
       });
       return;
@@ -270,6 +597,29 @@ const StudentCoursesPage: FC = () => {
       fetchBoardData();
     }
   }, [selectedCourse, activeTab]);
+
+  const handleVideoClick = (courseId: string, videoId: string, weekNumber: number, timestamp: number) => {
+    if (!weekNumber) {
+      console.error('주차 정보가 없습니다:', { courseId, videoId, weekNumber, timestamp });
+      toast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
+      return;
+    }
+
+    navigate(`/mycourse/${courseId}/week/${weekNumber}/video/${encodeURIComponent(videoId)}`, {
+      state: {
+        videoUrl: `${getApiUrl('')}/videos/${courseId}/${weekNumber}/${videoId}`,
+        title: videoId.replace('.m3u8', ''),
+        courseId,
+        timestamp,
+        weekNumber,
+        weekTitle: `${weekNumber}주차 강의`
+      }
+    });
+  };
+
+  const renderNotesPanel = () => {
+    return <NotesPanel />;
+  };
 
   if (loading) {
     return (
@@ -779,165 +1129,9 @@ const StudentCoursesPage: FC = () => {
             )}
 
             {activeTab === 'notes' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-6">
-                  <Title level={4} className="mb-0">강의 노트</Title>
-                  <Space>
-                    <Button icon={<Download className="w-4 h-4" />}>
-                      전체 노트 다운로드
-                    </Button>
-                    <Button type="primary" icon={<PenLine className="w-4 h-4" />}>
-                      새 노트 작성
-                    </Button>
-                  </Space>
-                </div>
-
-                <Tabs defaultActiveKey="1">
-                  <TabPane tab="주차별 노트" key="1">
-                    {selectedCourse?.weeks.map((week) => (
-                      <div key={week.weekNumber} className="mb-8">
-                        <div className="flex items-center justify-between mb-4">
-                          <Space>
-                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center">
-                              <span className="text-lg font-semibold text-blue-600">
-                                {week.weekNumber}
-                              </span>
-                            </div>
-                            <Title level={5} className="mb-0">{week.weekNumber}주차</Title>
-                          </Space>
-                          <Button type="primary" ghost icon={<PenLine className="w-4 h-4" />}>
-                            노트 추가
-                          </Button>
-                        </div>
-                        <List
-                          dataSource={[
-                            {
-                              id: 1,
-                              title: '클라우드 컴퓨팅 기본 개념',
-                              content: '클라우드 컴퓨팅의 기본 개념과 특징에 대한 정리...',
-                              tags: ['중요', 'AWS'],
-                              date: '2024-03-15 15:30'
-                            },
-                            {
-                              id: 2,
-                              title: 'EC2 인스턴스 생성 절차',
-                              content: 'AWS EC2 인스턴스를 생성하는 상세 절차와 주의사항...',
-                              tags: ['실습'],
-                              date: '2024-03-15 16:45'
-                            }
-                          ]}
-                          renderItem={(note) => (
-                            <Card 
-                              key={note.id}
-                              className="mb-4 hover:shadow-md transition-shadow"
-                              actions={[
-                                <Button type="text" icon={<Edit2 className="w-4 h-4" />} key="edit">
-                                  수정
-                                </Button>,
-                                <Button type="text" icon={<Download className="w-4 h-4" />} key="download">
-                                  다운로드
-                                </Button>,
-                                <Button type="text" icon={<Trash2 className="w-4 h-4" />} danger key="delete">
-                                  삭제
-                                </Button>
-                              ]}
-                            >
-                              <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <h3 className="text-lg font-medium text-gray-900">{note.title}</h3>
-                                    {note.tags.map((tag) => (
-                                      <Tag key={tag} color={tag === '중요' ? 'red' : 'blue'}>
-                                        {tag}
-                                      </Tag>
-                                    ))}
-                                  </div>
-                                  <Paragraph 
-                                    ellipsis={{ rows: 2 }} 
-                                    className="text-gray-600 mb-2"
-                                  >
-                                    {note.content}
-                                  </Paragraph>
-                                  <Text type="secondary" className="text-sm">
-                                    최종 수정: {note.date}
-                                  </Text>
-                                </div>
-                              </div>
-                            </Card>
-                          )}
-                        />
-                      </div>
-                    ))}
-                  </TabPane>
-                  <TabPane tab="태그별 노트" key="2">
-                    <div className="mb-4">
-                      <Space wrap>
-                        {['전체', '중요', 'AWS', '실습', '개념정리'].map(tag => (
-                          <Tag.CheckableTag
-                            key={tag}
-                            checked={tag === '전체'}
-                            onChange={checked => console.log(checked)}
-                          >
-                            {tag}
-                          </Tag.CheckableTag>
-                        ))}
-                      </Space>
-                    </div>
-                    <List
-                      dataSource={[
-                        {
-                          id: 1,
-                          title: '클라우드 컴퓨팅 기본 개념',
-                          content: '클라우드 컴퓨팅의 기본 개념과 특징에 대한 정리...',
-                          tags: ['중요', 'AWS'],
-                          week: 1,
-                          date: '2024-03-15 15:30'
-                        }
-                      ]}
-                      renderItem={(note) => (
-                        <Card 
-                          key={note.id}
-                          className="mb-4 hover:shadow-md transition-shadow"
-                          actions={[
-                            <Button type="text" icon={<Edit2 className="w-4 h-4" />} key="edit">
-                              수정
-                            </Button>,
-                            <Button type="text" icon={<Download className="w-4 h-4" />} key="download">
-                              다운로드
-                            </Button>,
-                            <Button type="text" icon={<Trash2 className="w-4 h-4" />} danger key="delete">
-                              삭제
-                            </Button>
-                          ]}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <h3 className="text-lg font-medium text-gray-900">{note.title}</h3>
-                                <Tag color="blue">{note.week}주차</Tag>
-                                {note.tags.map((tag) => (
-                                  <Tag key={tag} color={tag === '중요' ? 'red' : 'blue'}>
-                                    {tag}
-                                  </Tag>
-                                ))}
-                              </div>
-                              <Paragraph 
-                                ellipsis={{ rows: 2 }} 
-                                className="text-gray-600 mb-2"
-                              >
-                                {note.content}
-                              </Paragraph>
-                              <Text type="secondary" className="text-sm">
-                                최종 수정: {note.date}
-                              </Text>
-                            </div>
-                          </div>
-                        </Card>
-                      )}
-                    />
-                  </TabPane>
-                </Tabs>
-              </Card>
+              <div className="p-6">
+                {renderNotesPanel()}
+              </div>
             )}
 
             {activeTab === 'assignments' && (

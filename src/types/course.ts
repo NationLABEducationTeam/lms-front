@@ -33,6 +33,21 @@ export interface MainCategory {
 
 export type CourseType = 'ONLINE' | 'VOD';
 
+export interface GradeRules {
+  attendance_weight: number;  // 출석 반영 비율
+  assignment_weight: number;  // 과제 반영 비율
+  exam_weight: number;       // 시험 반영 비율
+  min_attendance_rate: number; // 최소 출석률
+}
+
+export interface GradeItem {
+  id: string;
+  type: 'ASSIGNMENT' | 'ATTENDANCE' | 'EXAM';
+  title: string;
+  max_score: number;
+  weight: number;
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -50,6 +65,8 @@ export interface Course {
   status: CourseStatus;
   type: CourseType;
   classmode: 'ONLINE' | 'VOD';
+  gradeRules?: GradeRules;  // 성적 산출 규칙
+  grade_items?: GradeItem[];  // 성적 항목들
   created_at: string;
   updated_at: string;
   weeks?: Week[];
@@ -212,4 +229,49 @@ export interface CourseListResponse {
   success: boolean;
   message: string;
   data: Course[];
+}
+
+export interface Note {
+  id: string;
+  timestamp: number;
+  formattedTime: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  courseId: string;
+  videoId: string;
+}
+
+export interface VideoNotes {
+  videoId: string;
+  videoTitle: string;
+  weekNumber: number;
+  weekTitle?: string;
+  noteCount: number;
+  notes: Note[];
+}
+
+export interface WeekNotes {
+  weekNumber: number;
+  videos: VideoNotes[];
+}
+
+export interface CourseNotes {
+  courseId: string;
+  courseTitle: string;
+  totalNotes: number;
+  videoCount: number;
+  lastUpdated: string;
+  preview?: {
+    content: string;
+    formattedTime: string;
+    videoId: string;
+  };
+  videos: VideoNotes[];
+}
+
+export interface CourseNotesResponse {
+  success: boolean;
+  data: CourseNotes[];
 }

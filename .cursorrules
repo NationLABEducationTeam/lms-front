@@ -106,33 +106,31 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
 - WeekMaterial 인터페이스는 src/types/course.ts에 정의되어 있으며, 다른 파일에서 사용할 때는 명시적으로 import 해야 함
+- getApiUrl() 함수는 인자가 필요하며, 경로를 인자로 전달해야 함 (예: getApiUrl('/courses'))
+- 성적 항목 관리 UI는 src/pages/admin/courses/[id]/index.tsx 파일의 700-850 라인에 구현되어 있으며, 성적 항목 추가 폼과 목록 표시 기능을 포함함
 
 # Scratchpad
 
-## Current Task: 코드베이스 분석 및 문제 해결
+## Current Task: 성적 항목 관리 기능 구현
 
 ### 현재 상태
 1. 파일 구조:
-   - src/pages/admin/courses/[id]/index.tsx: 강의 상세 페이지 (주차별 자료 관리)
-   - src/pages/student/courses/index.tsx: 학생용 강의 목록/상세 페이지
-   - src/types/course.ts: 타입 정의
-   - src/services/api/courseApi.ts: API 호출 로직
+   - src/pages/admin/courses/[id]/index.tsx: 강의 상세 페이지 (주차별 자료 관리 및 성적 항목 관리)
+   - src/services/api/courseApi.ts: API 호출 로직 (성적 항목 관련 API 포함)
+   - src/types/course.ts: 타입 정의 (GradeItem 인터페이스 포함)
 
-2. 기능:
-   - 강의 CRUD
-   - 주차별 자료 관리
-   - 파일 업로드/다운로드
-   - 퀴즈 기능
+2. 구현된 기능:
+   - 성적 항목 API 엔드포인트 (createGradeItem, getGradeItems)
+   - 성적 항목 관리 UI (추가 폼, 목록 표시, 유형별 아이콘)
+   - 성적 항목 상태 관리 (useState, RTK Query)
 
-### 발견된 문제
-1. WeekMaterial 타입 import 누락:
-   - src/pages/admin/courses/[id]/index.tsx
-   - src/services/api/courseApi.ts
-   에서 WeekMaterial 타입을 import하지 않아 타입 에러 발생
+### 해결된 문제
+[X] 성적 항목 관리 UI 구현 (700-850 라인)
+[X] 성적 항목 API 엔드포인트 구현 (courseApi.ts)
+[X] getApiUrl() 함수 호출 시 인자 추가하여 린터 에러 수정
 
-### 해결 계획
-[X] 코드베이스 전체 분석
-[ ] WeekMaterial 타입 import 추가
-[ ] 파일 분류 로직 검증
-[ ] 디버그 로그 추가
-[ ] 코드 정리 및 최적화
+### 남은 작업
+[ ] 성적 항목 삭제 기능 추가
+[ ] 성적 항목 수정 기능 추가
+[ ] 성적 항목 정렬 기능 추가
+[ ] 성적 항목 필터링 기능 추가

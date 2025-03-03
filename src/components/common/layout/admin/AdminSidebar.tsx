@@ -9,12 +9,14 @@ import {
   Bell,
   MessageSquare,
   Star,
+  Video,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const menuItems = [
   { icon: BookOpen, label: '강의 관리', path: '/admin/courses' },
   { icon: Users, label: '수강생 관리', path: '/admin/students' },
+  { icon: Video, label: '수업 모니터링', path: '/admin/monitoring' },
   { icon: Settings, label: '시스템 관리', path: '/admin/system' },
   { icon: BarChart2, label: '통계', path: '/admin/statistics' },
   { icon: Award, label: '수료 관리', path: '/admin/certificates' },
