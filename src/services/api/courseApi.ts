@@ -92,8 +92,10 @@ export interface CreateGradeItemRequest {
   courseId: string;
   type: 'ASSIGNMENT' | 'ATTENDANCE' | 'EXAM';
   title: string;
-  max_score: number;
-  weight: number;
+  max_score?: number;
+  weight?: number;
+  deadline?: string;
+  files?: { name: string; type: string; size: number }[];
 }
 
 export const courseApi = createApi({
@@ -102,7 +104,7 @@ export const courseApi = createApi({
   keepUnusedDataFor: 30, // 글로벌 캐시 시간 설정
   refetchOnMountOrArgChange: true, // 컴포넌트 마운트시 항상 리페치
   refetchOnFocus: false, // 포커스시 리페치 비활성화
-  tagTypes: ['Course', 'Week', 'Timemark', 'CourseNotes', 'GradeItems'],
+  tagTypes: ['Course', 'Week', 'Timemark', 'CourseNotes', 'GradeItems', 'GradeItemFiles'],
   endpoints: (builder) => ({
     // 공개 강의 목록 조회
     getPublicCourses: builder.query<Course[], void>({
@@ -251,6 +253,9 @@ export const courseApi = createApi({
               level: body.level,
               classmode: body.classmode,
               zoom_link: body.zoom_link,
+              weeks_count: body.weeks_count,
+              assignment_count: body.assignment_count,
+              exam_count: body.exam_count,
               gradeRules: body.gradeRules
             },
             {
@@ -530,28 +535,116 @@ export const courseApi = createApi({
     // 성적 항목 생성
     createGradeItem: builder.mutation<GradeItem, CreateGradeItemRequest>({
       query: (body) => ({
-        url: `${getApiUrl('/admin/grades/items')}/${body.courseId}`,
+        url: `/admin/grades/items`,
         method: 'POST',
         body: {
+          courseId: body.courseId,
           type: body.type,
           title: body.title,
-          max_score: body.max_score,
-          weight: body.weight
+          due_date: body.deadline,
+          files: body.files
         }
       }),
+      transformResponse: (response: ApiResponse<any>, _meta, arg) => {
+        console.log('성적 항목 생성 응답:', response);
+        if (!response.data) {
+          throw new Error('성적 항목 생성에 실패했습니다.');
+        }
+        
+        // 백엔드 응답을 프론트엔드 형식으로 변환
+        const item = response.data;
+        const result = {
+          id: item.item_id || `temp-${Math.random()}`,
+          type: item.item_type || arg.type,
+          title: item.item_name || arg.title,
+          deadline: item.due_date || arg.deadline,
+          item_id: item.item_id,
+          course_id: item.course_id,
+          item_type: item.item_type,
+          item_name: item.item_name,
+          item_order: item.item_order,
+          due_date: item.due_date,
+          created_at: item.created_at,
+          updated_at: item.updated_at,
+          uploadUrls: item.uploadUrls || []
+        };
+        
+        return result;
+      },
       invalidatesTags: (result, error, arg) => [{ type: 'GradeItems', id: arg.courseId }]
     }),
     
     // 성적 항목 목록 조회
     getGradeItems: builder.query<GradeItem[], string>({
-      query: (courseId) => `${getApiUrl('/admin/grades/items')}/${courseId}`,
-      providesTags: (result, error, courseId) => 
-        result 
-          ? [
-              ...result.map(item => ({ type: 'GradeItems' as const, id: item.id })),
-              { type: 'GradeItems', id: courseId }
-            ]
-          : [{ type: 'GradeItems', id: courseId }]
+      query: (courseId) => getApiUrl(`/admin/grades/items/${courseId}`),
+      transformResponse: (response: ApiResponse<any[]>) => {
+        console.log('성적 항목 API 원본 응답:', response);
+        // 응답 데이터가 없거나 배열이 아닌 경우 빈 배열 반환
+        if (!response.data || !Array.isArray(response.data)) {
+          console.log('성적 항목 데이터가 없거나 배열이 아님, 빈 배열 반환');
+          return [];
+        }
+        
+        // 백엔드 응답 형식을 프론트엔드 형식으로 변환
+        const transformedItems = response.data.map(item => ({
+          id: item.item_id || item.id || `temp-${Math.random()}`,
+          type: item.item_type || 'ASSIGNMENT',
+          title: item.item_name || '제목 없음',
+          deadline: item.due_date,
+          item_id: item.item_id,
+          course_id: item.course_id,
+          item_type: item.item_type,
+          item_name: item.item_name,
+          item_order: item.item_order,
+          due_date: item.due_date,
+          created_at: item.created_at,
+          updated_at: item.updated_at
+        }));
+        
+        // 중복 항목 제거 (id 기준)
+        const uniqueItems = Array.from(
+          new Map(transformedItems.map(item => [item.id, item])).values()
+        );
+        
+        console.log('변환 및 중복 제거 후 성적 항목:', uniqueItems);
+        return uniqueItems;
+      },
+      providesTags: (_result, _error, courseId) => [{ type: 'GradeItems', id: courseId }]
+    }),
+
+    // 성적 항목에 파일 추가를 위한 업로드 URL 요청
+    getGradeItemUploadUrls: builder.mutation<
+      { urls: Array<{ fileName: string; sanitizedFileName: string; url: string; key: string }> },
+      { itemId: string; files: Array<{ name: string; type: string; size: number }> }
+    >({
+      query: ({ itemId, files }) => ({
+        url: `/admin/grades/items/${itemId}/upload-urls`,
+        method: 'POST',
+        body: { files }
+      }),
+      transformResponse: (response: ApiResponse<any>) => {
+        console.log('성적 항목 파일 업로드 URL 응답:', response);
+        if (!response.success || !response.data) {
+          throw new Error(response.message || '업로드 URL 생성에 실패했습니다.');
+        }
+        return { urls: response.data.urls };
+      }
+    }),
+    
+    // 성적 항목 파일 목록 조회
+    getGradeItemFiles: builder.query<
+      Array<{ key: string; fileName: string; fileType: string; lastModified: string; size: number; isDownloadable: boolean }>,
+      string
+    >({
+      query: (itemId) => `/admin/grades/items/${itemId}/files`,
+      transformResponse: (response: ApiResponse<any>) => {
+        console.log('성적 항목 파일 목록 응답:', response);
+        if (!response.success || !response.data) {
+          return [];
+        }
+        return response.data.files;
+      },
+      providesTags: (_result, _error, itemId) => [{ type: 'GradeItemFiles', id: itemId }]
     }),
   }),
 });
@@ -578,4 +671,6 @@ export const {
   useGetAllNotesQuery,
   useCreateGradeItemMutation,
   useGetGradeItemsQuery,
+  useGetGradeItemUploadUrlsMutation,
+  useGetGradeItemFilesQuery,
 } = courseApi; 

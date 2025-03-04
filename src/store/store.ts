@@ -6,6 +6,7 @@ import { Course } from '@/types/course';
 import { S3Structure } from '@/types/s3';
 import { courseApi } from '@/services/api/courseApi';
 import { zoomApi } from '@/services/api/zoomApi';
+import { studentApi } from '@/services/api/studentApi';
 
 interface CoursesState {
   categories: S3Structure[];
@@ -24,6 +25,7 @@ export interface RootState {
   };
   [courseApi.reducerPath]: ReturnType<typeof courseApi.reducer>;
   [zoomApi.reducerPath]: ReturnType<typeof zoomApi.reducer>;
+  [studentApi.reducerPath]: ReturnType<typeof studentApi.reducer>;
 }
 
 export const store = configureStore({
@@ -32,9 +34,14 @@ export const store = configureStore({
     auth: authReducer,
     [courseApi.reducerPath]: courseApi.reducer,
     [zoomApi.reducerPath]: zoomApi.reducer,
+    [studentApi.reducerPath]: studentApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(courseApi.middleware, zoomApi.middleware),
+    getDefaultMiddleware().concat(
+      courseApi.middleware, 
+      zoomApi.middleware,
+      studentApi.middleware
+    ),
 });
 
 export type AppDispatch = typeof store.dispatch; 

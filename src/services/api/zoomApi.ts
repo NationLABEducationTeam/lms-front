@@ -17,6 +17,19 @@ interface ZoomMeeting {
   supportGoLive: boolean;
 }
 
+// 라이브 미팅은 구조가 다름
+interface ZoomLiveMeeting {
+  meeting: ZoomMeeting;
+  participants: Array<{
+    id: string;
+    name: string;
+    email: string;
+    join_time: string;
+  }>;
+  participant_count: number;
+  error?: string;
+}
+
 interface ZoomAccountInfo {
   id: string;
   email: string;
@@ -31,12 +44,17 @@ interface ZoomMeetingsGroup {
   meetings: ZoomMeeting[];
 }
 
+interface ZoomLiveMeetingsGroup {
+  count: number;
+  meetings: ZoomLiveMeeting[];
+}
+
 interface ZoomDashboardSummaryResponse {
   success: boolean;
   message: string;
   data: {
     account_info: ZoomAccountInfo;
-    live_meetings: ZoomMeetingsGroup;
+    live_meetings: ZoomLiveMeetingsGroup;
     upcoming_meetings: ZoomMeetingsGroup;
     recent_past_meetings: ZoomMeetingsGroup;
     course_meetings: ZoomMeetingsGroup;
@@ -101,11 +119,16 @@ export const zoomApi = createApi({
             email: data.account_info.email,
             name: `${data.account_info.first_name} ${data.account_info.last_name}`,
           },
-          activeMeetings: data.live_meetings.meetings.map(meeting => ({
-            id: meeting.id.toString(),
-            topic: meeting.topic,
-            startTime: meeting.start_time,
-            participants: [], // 백엔드에서 참가자 정보를 제공하지 않음
+          activeMeetings: data.live_meetings.meetings.map(liveMeeting => ({
+            id: liveMeeting.meeting.id.toString(),
+            topic: liveMeeting.meeting.topic,
+            startTime: liveMeeting.meeting.start_time,
+            participants: liveMeeting.participants.map(participant => ({
+              id: participant.id || '',
+              name: participant.name || '',
+              email: participant.email || '',
+              joinTime: participant.join_time || new Date().toISOString(),
+            })),
           })),
           upcomingMeetings: data.upcoming_meetings.meetings.map(meeting => ({
             id: meeting.id.toString(),

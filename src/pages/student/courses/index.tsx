@@ -51,6 +51,7 @@ import type { QnaPost, QnaMetadata } from '@/types/qna';
 import { useGetAllNotesQuery } from '@/services/api/courseApi';
 import { Note } from '@/types/course';
 import { getApiUrl } from '@/config/api';
+import { useGetStudentAssignmentsQuery } from '@/services/api/studentApi';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -441,6 +442,7 @@ const StudentCoursesPage: FC = () => {
   const navigate = useNavigate();
   const { data: allNotes, isLoading: isLoadingNotes } = useGetAllNotesQuery();
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const { data: assignmentsData, isLoading: isLoadingAssignments } = useGetStudentAssignmentsQuery();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -619,6 +621,390 @@ const StudentCoursesPage: FC = () => {
 
   const renderNotesPanel = () => {
     return <NotesPanel />;
+  };
+
+  // 과제 및 시험 탭 렌더링
+  const renderAssignmentsTab = () => {
+    if (isLoadingAssignments) {
+      return (
+        <div className="flex justify-center items-center h-64">
+          <Spin size="large" />
+        </div>
+      );
+    }
+
+    if (!assignmentsData) {
+      return (
+        <Empty
+          image={<FileText className="w-12 h-12 text-gray-300" />}
+          description="과제 및 시험 정보를 불러올 수 없습니다."
+        />
+      );
+    }
+
+    const { assignments, exams } = assignmentsData;
+    const totalAssignments = assignments.total;
+    const totalExams = exams.total;
+    const pendingAssignments = assignments.pending.length;
+    const pendingExams = exams.pending.length;
+    const overdueAssignments = assignments.overdue.length;
+    const overdueExams = exams.overdue.length;
+    const completedAssignments = assignments.completed.length;
+    const completedExams = exams.completed.length;
+
+    return (
+      <Card className="rounded-xl">
+        <div className="flex justify-between items-center mb-6">
+          <Title level={4} className="mb-0">과제 및 시험</Title>
+          <Space>
+            <Select defaultValue="all" style={{ width: 120 }}>
+              <Select.Option value="all">전체 보기</Select.Option>
+              <Select.Option value="pending">미제출</Select.Option>
+              <Select.Option value="overdue">기한 초과</Select.Option>
+              <Select.Option value="completed">완료</Select.Option>
+            </Select>
+          </Space>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50">
+            <Statistic
+              title={<span className="text-orange-600 font-medium">미제출 항목</span>}
+              value={pendingAssignments + pendingExams}
+              suffix="개"
+              prefix={<AlertCircle className="w-4 h-4 text-orange-600" />}
+              valueStyle={{ color: '#ea580c' }}
+            />
+            <div className="mt-2">
+              <Tag color="orange">마감 임박</Tag>
+            </div>
+          </Card>
+          <Card className="bg-gradient-to-br from-red-50 to-red-100/50">
+            <Statistic
+              title={<span className="text-red-600 font-medium">기한 초과</span>}
+              value={overdueAssignments + overdueExams}
+              suffix="개"
+              prefix={<Clock className="w-4 h-4 text-red-600" />}
+              valueStyle={{ color: '#dc2626' }}
+            />
+            <div className="mt-2">
+              <Tag color="error">제출 필요</Tag>
+            </div>
+          </Card>
+          <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
+            <Statistic
+              title={<span className="text-green-600 font-medium">완료 항목</span>}
+              value={completedAssignments + completedExams}
+              suffix="개"
+              prefix={<FileText className="w-4 h-4 text-green-600" />}
+              valueStyle={{ color: '#16a34a' }}
+            />
+            <div className="mt-2">
+              <Tag color="success">제출 완료</Tag>
+            </div>
+          </Card>
+        </div>
+
+        <Tabs defaultActiveKey="assignments">
+          <Tabs.TabPane 
+            tab={
+              <span className="flex items-center">
+                <FileText className="w-4 h-4 mr-2" />
+                과제 
+                <Badge count={pendingAssignments + overdueAssignments} offset={[5, 0]} style={{ marginLeft: 8 }} />
+              </span>
+            } 
+            key="assignments"
+          >
+            {assignments.pending.length === 0 && assignments.overdue.length === 0 && assignments.completed.length === 0 ? (
+              <Empty description="등록된 과제가 없습니다." />
+            ) : (
+              <>
+                {assignments.pending.length > 0 && (
+                  <>
+                    <Divider orientation="left">진행 중인 과제</Divider>
+                    <List
+                      dataSource={assignments.pending}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button type="primary">
+                              과제 제출
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+
+                {assignments.overdue.length > 0 && (
+                  <>
+                    <Divider orientation="left">기한 초과 과제</Divider>
+                    <List
+                      dataSource={assignments.overdue}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button type="primary" danger>
+                              지금 제출
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                                <AlertCircle className="w-5 h-5 text-red-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                <Tag color="red">기한 초과</Tag>
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>제출일: {item.submission_date ? new Date(item.submission_date).toLocaleDateString('ko-KR') + ' ' + new Date(item.submission_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '정보 없음'}</span>
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+
+                {assignments.completed.length > 0 && (
+                  <>
+                    <Divider orientation="left">완료된 과제</Divider>
+                    <List
+                      dataSource={assignments.completed}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button>
+                              제출물 보기
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                                <FileText className="w-5 h-5 text-green-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                {item.score !== undefined && (
+                                  <Tag color="green">{item.score}/{item.max_score || 100}점</Tag>
+                                )}
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>제출일: {item.submission_date ? new Date(item.submission_date).toLocaleDateString('ko-KR') + ' ' + new Date(item.submission_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '정보 없음'}</span>
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </Tabs.TabPane>
+
+          <Tabs.TabPane 
+            tab={
+              <span className="flex items-center">
+                <BookOpen className="w-4 h-4 mr-2" />
+                시험/퀴즈
+                <Badge count={pendingExams + overdueExams} offset={[5, 0]} style={{ marginLeft: 8 }} />
+              </span>
+            } 
+            key="exams"
+          >
+            {exams.pending.length === 0 && exams.overdue.length === 0 && exams.completed.length === 0 ? (
+              <Empty description="등록된 시험/퀴즈가 없습니다." />
+            ) : (
+              <>
+                {exams.pending.length > 0 && (
+                  <>
+                    <Divider orientation="left">진행 중인 시험/퀴즈</Divider>
+                    <List
+                      dataSource={exams.pending}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button type="primary">
+                              시험 응시
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <BookOpen className="w-5 h-5 text-blue-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+
+                {exams.overdue.length > 0 && (
+                  <>
+                    <Divider orientation="left">기한 초과 시험/퀴즈</Divider>
+                    <List
+                      dataSource={exams.overdue}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button type="primary" danger>
+                              지금 응시
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-red-50 flex items-center justify-center">
+                                <AlertCircle className="w-5 h-5 text-red-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                <Tag color="red">기한 초과</Tag>
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+
+                {exams.completed.length > 0 && (
+                  <>
+                    <Divider orientation="left">완료된 시험/퀴즈</Divider>
+                    <List
+                      dataSource={exams.completed}
+                      renderItem={(item) => (
+                        <List.Item
+                          key={item.id}
+                          actions={[
+                            <Button>
+                              결과 보기
+                            </Button>
+                          ]}
+                        >
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-green-50 flex items-center justify-center">
+                                <BookOpen className="w-5 h-5 text-green-600" />
+                              </div>
+                            }
+                            title={
+                              <Space>
+                                <Text strong>{item.title}</Text>
+                                {item.score !== undefined && (
+                                  <Tag color="green">{item.score}/{item.max_score || 100}점</Tag>
+                                )}
+                                <Tag color="blue">{item.course_title}</Tag>
+                              </Space>
+                            }
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Text>{item.description || '설명 없음'}</Text>
+                                <Space className="text-xs text-gray-500">
+                                  <span>응시일: {item.submission_date ? new Date(item.submission_date).toLocaleDateString('ko-KR') + ' ' + new Date(item.submission_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) : '정보 없음'}</span>
+                                  <span>마감일: {new Date(item.due_date).toLocaleDateString('ko-KR')} {new Date(item.due_date).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                                  <span>{item.week_number}주차</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </>
+                )}
+              </>
+            )}
+          </Tabs.TabPane>
+        </Tabs>
+      </Card>
+    );
   };
 
   if (loading) {
@@ -1135,139 +1521,7 @@ const StudentCoursesPage: FC = () => {
             )}
 
             {activeTab === 'assignments' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-6">
-                  <Title level={4} className="mb-0">과제</Title>
-                  <Space>
-                    <Select defaultValue="all" style={{ width: 120 }}>
-                      <Select.Option value="all">전체 과제</Select.Option>
-                      <Select.Option value="pending">미제출</Select.Option>
-                      <Select.Option value="submitted">제출 완료</Select.Option>
-                      <Select.Option value="graded">채점 완료</Select.Option>
-                    </Select>
-                  </Space>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50">
-                    <Statistic
-                      title={<span className="text-orange-600 font-medium">미제출 과제</span>}
-                      value={2}
-                      suffix="개"
-                      prefix={<AlertCircle className="w-4 h-4 text-orange-600" />}
-                      valueStyle={{ color: '#ea580c' }}
-                    />
-                    <div className="mt-2">
-                      <Tag color="orange">마감 임박</Tag>
-                    </div>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
-                    <Statistic
-                      title={<span className="text-green-600 font-medium">제출 완료</span>}
-                      value={8}
-                      suffix="개"
-                      prefix={<FileText className="w-4 h-4 text-green-600" />}
-                      valueStyle={{ color: '#16a34a' }}
-                    />
-                    <div className="mt-2">
-                      <Tag color="success">채점 대기중</Tag>
-                    </div>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
-                    <Statistic
-                      title={<span className="text-blue-600 font-medium">평균 점수</span>}
-                      value={95}
-                      suffix="점"
-                      prefix={<Award className="w-4 h-4 text-blue-600" />}
-                      valueStyle={{ color: '#2563eb' }}
-                    />
-                    <div className="mt-2">
-                      <Tag color="blue">상위 10%</Tag>
-                    </div>
-                  </Card>
-                </div>
-
-                <List
-                  dataSource={[
-                    {
-                      id: 1,
-                      title: 'AWS EC2 인스턴스 생성 실습',
-                      description: 'EC2 인스턴스를 생성하고 웹 서버를 구축하는 실습입니다.',
-                      dueDate: '2024-03-20',
-                      status: 'pending',
-                      score: null,
-                      week: 2,
-                      type: 'practical'
-                    },
-                    {
-                      id: 2,
-                      title: 'S3 버킷 설정 및 정적 웹 호스팅',
-                      description: 'S3 버킷을 생성하고 정적 웹 사이트를 호스팅하는 실습입니다.',
-                      dueDate: '2024-03-15',
-                      status: 'submitted',
-                      score: 95,
-                      week: 1,
-                      type: 'practical'
-                    }
-                  ]}
-                  renderItem={(assignment) => (
-                    <Card 
-                      key={assignment.id}
-                      className="mb-4 hover:shadow-md transition-shadow"
-                      actions={[
-                        <Button key="view" type="link" icon={<FileText className="w-4 h-4" />}>
-                          상세 보기
-                        </Button>,
-                        assignment.status === 'pending' && (
-                          <Button key="submit" type="primary" ghost icon={<Upload className="w-4 h-4" />}>
-                            과제 제출
-                          </Button>
-                        )
-                      ].filter(Boolean)}
-                    >
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <Space className="mb-2">
-                            <Tag color="blue">{assignment.week}주차</Tag>
-                            <Tag color={assignment.type === 'practical' ? 'purple' : 'cyan'}>
-                              {assignment.type === 'practical' ? '실습 과제' : '이론 과제'}
-                            </Tag>
-                            <Tag 
-                              color={
-                                assignment.status === 'pending' ? 'warning' : 
-                                assignment.status === 'submitted' ? 'processing' : 
-                                'success'
-                              }
-                            >
-                              {
-                                assignment.status === 'pending' ? '미제출' : 
-                                assignment.status === 'submitted' ? '제출 완료' : 
-                                '채점 완료'
-                              }
-                            </Tag>
-                          </Space>
-                          <Title level={5} className="mb-2">{assignment.title}</Title>
-                          <Paragraph className="text-gray-600 mb-2">
-                            {assignment.description}
-                          </Paragraph>
-                          <Space split={<Divider type="vertical" />} className="text-sm text-gray-500">
-                            <Space>
-                              <Calendar className="w-4 h-4" />
-                              마감: {assignment.dueDate}
-                            </Space>
-                            {assignment.score && (
-                              <Space>
-                                <Award className="w-4 h-4" />
-                                점수: {assignment.score}점
-                              </Space>
-                            )}
-                          </Space>
-                        </div>
-                      </div>
-                    </Card>
-                  )}
-                />
-              </Card>
+              renderAssignmentsTab()
             )}
 
             {activeTab === 'posts' && (

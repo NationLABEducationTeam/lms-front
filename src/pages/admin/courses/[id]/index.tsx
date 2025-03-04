@@ -11,7 +11,7 @@ import {
   FileText,
   Film,
   Image,
-  FileIcon,
+  File as FileIcon,
   File,
   Link,
   Paperclip,
@@ -28,10 +28,14 @@ import {
   Unlock,
   Award,
   BookCheck,
-  PenTool
+  PenTool,
+  X,
+  Video,
+  FileSpreadsheet,
+  FileCode
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
-import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation } from '@/services/api/courseApi';
+import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation, useCreateGradeItemMutation, useGetGradeItemsQuery, useGetGradeItemUploadUrlsMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
 import { Progress } from '@/components/common/ui/progress';
 import type { WeekMaterial, Course, GradeItem } from '@/types/course';
@@ -40,37 +44,39 @@ import VideoModal from '@/components/video/VideoModal';
 import { CATEGORY_MAPPING, MainCategoryId } from '@/types/course';
 import { SerializedError } from '@reduxjs/toolkit';
 import { FetchBaseQueryError } from '@reduxjs/toolkit/query';
+import { DatePicker } from 'antd';
+import dayjs from 'dayjs';
+import 'dayjs/locale/ko';
+import locale from 'antd/es/date-picker/locale/ko_KR';
 
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
-  const ext = fileName.split('.').pop()?.toLowerCase();
-  switch (ext) {
-    case 'json':
-      return <BrainCircuit className="w-5 h-5 text-purple-600" />;
-    case 'pdf':
-      return <FileText className="w-5 h-5 text-red-500" />;
-    case 'mp4':
-    case 'mov':
-    case 'avi':
-      return <Film className="w-5 h-5 text-purple-500" />;
+  const extension = fileName.split('.').pop()?.toLowerCase() || '';
+  
+  switch (extension) {
+    case 'doc':
+    case 'docx':
+      return <FileText className="w-5 h-5 text-blue-500" />;
+    case 'xls':
+    case 'xlsx':
+    case 'csv':
+      return <FileSpreadsheet className="w-5 h-5 text-green-500" />;
     case 'jpg':
     case 'jpeg':
     case 'png':
     case 'gif':
-      return <Image className="w-5 h-5 text-blue-500" />;
-    case 'doc':
-    case 'docx':
-      return <FileIcon className="w-5 h-5 text-blue-700" />;
-    case 'xls':
-    case 'xlsx':
-      return <FileIcon className="w-5 h-5 text-green-600" />;
-    case 'ppt':
-    case 'pptx':
-      return <FileIcon className="w-5 h-5 text-orange-600" />;
-    case 'url':
-      return <Link className="w-5 h-5 text-blue-600" />;
+    case 'svg':
+      return <Image className="w-5 h-5 text-purple-500" />;
+    case 'js':
+    case 'jsx':
+    case 'ts':
+    case 'tsx':
+    case 'html':
+    case 'css':
+    case 'json':
+      return <FileCode className="w-5 h-5 text-yellow-500" />;
     default:
-      return <File className="w-5 h-5 text-gray-500" />;
+      return <FileIcon className="w-5 h-5 text-gray-500" />;
   }
 };
 
@@ -104,7 +110,7 @@ const categorizeFile = (fileName: string) => {
 };
 
 // 파일 크기 포맷팅
-const formatFileSize = (bytes: number) => {
+const formatFileSize = (bytes: number): string => {
   if (bytes === 0) return '0 Bytes';
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
@@ -128,32 +134,34 @@ const CourseDetail: FC = () => {
   const [newEvaluationItem, setNewEvaluationItem] = useState({
     type: 'ASSIGNMENT' as 'ASSIGNMENT' | 'EXAM',
     title: '',
-    max_score: 100,
-    weight: 10
+    deadline: undefined as string | undefined
   });
-  // 임시 성적 항목 데이터 (API 호출 대신 사용)
-  const [mockGradeItems] = useState<GradeItem[]>([
-    {
-      id: '1',
-      type: 'ASSIGNMENT',
-      title: '중간 과제',
-      max_score: 100,
-      weight: 30
-    },
-    {
-      id: '2',
-      type: 'EXAM',
-      title: '기말고사',
-      max_score: 100,
-      weight: 40
-    }
-  ]);
+  const [evaluationFiles, setEvaluationFiles] = useState<File[]>([]);
+  const [evaluationFileUploadProgress, setEvaluationFileUploadProgress] = useState<{ [key: string]: number }>({});
+  const [selectedGradeItem, setSelectedGradeItem] = useState<string | null>(null);
+  const [gradeItemFiles, setGradeItemFiles] = useState<File[]>([]);
+  const [gradeItemFileUploadProgress, setGradeItemFileUploadProgress] = useState<{ [key: string]: number }>({});
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
 
   const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id || '');
   const [createWeek] = useCreateWeekMutation();
   const [getUploadUrls] = useGetUploadUrlsMutation();
   const [getDownloadUrl] = useGetDownloadUrlMutation();
   const [updateMaterialPermission] = useUpdateMaterialPermissionMutation();
+  const [createGradeItem] = useCreateGradeItemMutation();
+  const [getGradeItemUploadUrls] = useGetGradeItemUploadUrlsMutation();
+  
+  // 성적 항목 조회 - skip 옵션 추가 및 refetchOnMountOrArgChange 설정
+  const { 
+    data: gradeItems, 
+    isLoading: isLoadingGradeItems,
+    refetch: refetchGradeItems
+  } = useGetGradeItemsQuery(id || '', {
+    skip: !id || !showEvaluationItems,
+    refetchOnMountOrArgChange: false, // 마운트 시 자동 리페치 비활성화
+    refetchOnFocus: false, // 포커스 시 리페치 비활성화
+    refetchOnReconnect: false // 재연결 시 리페치 비활성화
+  });
 
   // 해시 변경 감지하여 주차 선택
   useEffect(() => {
@@ -420,16 +428,103 @@ const CourseDetail: FC = () => {
     }
   };
 
+  // 성적 항목 파일 선택 핸들러
+  const handleEvaluationFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const fileList = Array.from(event.target.files);
+      setEvaluationFiles(prev => [...prev, ...fileList]);
+    }
+  };
+
+  // 성적 항목 파일 제거 핸들러
+  const handleRemoveEvaluationFile = (fileName: string) => {
+    setEvaluationFiles(prev => prev.filter(file => file.name !== fileName));
+  };
+
   // 성적 항목 생성 핸들러
   const handleCreateEvaluationItem = async () => {
-    // API 호출 대신 토스트 메시지만 표시
-    toast.info('현재 성적 항목 추가 기능은 비활성화되어 있습니다.');
-    setNewEvaluationItem({
-      type: 'ASSIGNMENT',
-      title: '',
-      max_score: 100,
-      weight: 10
-    });
+    // 제목이 비어있는지 확인
+    if (!newEvaluationItem.title.trim()) {
+      toast.error('제목을 입력해주세요.');
+      return;
+    }
+
+    try {
+      // 파일 정보 준비
+      const fileInfos = evaluationFiles.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size
+      }));
+
+      // createGradeItem API 호출
+      const response = await createGradeItem({
+        courseId: id!,
+        type: newEvaluationItem.type,
+        title: newEvaluationItem.title,
+        deadline: newEvaluationItem.deadline,
+        files: fileInfos.length > 0 ? fileInfos : undefined
+      }).unwrap();
+
+      // 파일 업로드 처리
+      if (evaluationFiles.length > 0 && response.uploadUrls && response.uploadUrls.length > 0) {
+        // 파일 업로드
+        await Promise.all(
+          response.uploadUrls.map(async ({ url, fileName }) => {
+            const file = evaluationFiles.find(f => f.name === fileName);
+            if (!file) {
+              console.warn('File not found:', fileName);
+              return;
+            }
+
+            console.log('Uploading file:', fileName);
+
+            const xhr = new XMLHttpRequest();
+            xhr.upload.addEventListener('progress', (event) => {
+              if (event.lengthComputable) {
+                const progress = Math.round((event.loaded * 100) / event.total);
+                setEvaluationFileUploadProgress(prev => ({
+                  ...prev,
+                  [fileName]: progress
+                }));
+              }
+            });
+
+            return new Promise((resolve, reject) => {
+              xhr.open('PUT', url);
+              xhr.setRequestHeader('Content-Type', file.type);
+              xhr.onload = () => {
+                console.log('Upload completed for:', fileName);
+                resolve(xhr.response);
+              };
+              xhr.onerror = () => {
+                console.error('Upload failed for:', fileName);
+                reject(xhr.statusText);
+              };
+              xhr.send(file);
+            });
+          })
+        );
+      }
+
+      // 성공 메시지 표시
+      toast.success('성적 항목이 추가되었습니다.');
+      
+      // 성적 항목 목록 새로고침
+      refetchGradeItems();
+      
+      // 폼 초기화
+      setNewEvaluationItem({
+        type: 'ASSIGNMENT',
+        title: '',
+        deadline: undefined
+      });
+      setEvaluationFiles([]);
+      setEvaluationFileUploadProgress({});
+    } catch (error) {
+      console.error('성적 항목 추가 오류:', error);
+      toast.error('성적 항목 추가에 실패했습니다.');
+    }
   };
   
   // 성적 항목 타입별 아이콘
@@ -442,6 +537,12 @@ const CourseDetail: FC = () => {
       default:
         return <Award className="w-5 h-5 text-gray-500" />;
     }
+  };
+
+  // 날짜 포맷 함수
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return '-';
+    return dayjs(dateString).format('YYYY년 MM월 DD일');
   };
 
   // 파일 목록 렌더링 수정
@@ -671,6 +772,100 @@ const CourseDetail: FC = () => {
     );
   };
 
+  // 성적 항목에 파일 추가 모달 열기
+  const handleOpenFileUploadModal = (itemId: string) => {
+    setSelectedGradeItem(itemId);
+    setGradeItemFiles([]);
+    setGradeItemFileUploadProgress({});
+    setShowFileUploadModal(true);
+  };
+
+  // 성적 항목 파일 선택 핸들러
+  const handleGradeItemFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files.length > 0) {
+      const fileList = Array.from(event.target.files);
+      setGradeItemFiles(prev => [...prev, ...fileList]);
+    }
+  };
+
+  // 성적 항목 파일 제거 핸들러
+  const handleRemoveGradeItemFile = (fileName: string) => {
+    setGradeItemFiles(prev => prev.filter(file => file.name !== fileName));
+  };
+
+  // 성적 항목에 파일 업로드
+  const handleUploadGradeItemFiles = async () => {
+    if (!selectedGradeItem || gradeItemFiles.length === 0) return;
+
+    try {
+      // 파일 정보 준비
+      const fileInfos = gradeItemFiles.map(file => ({
+        name: file.name,
+        type: file.type,
+        size: file.size
+      }));
+
+      // 업로드 URL 요청
+      const { urls } = await getGradeItemUploadUrls({
+        itemId: selectedGradeItem,
+        files: fileInfos
+      }).unwrap();
+
+      // 파일 업로드
+      await Promise.all(
+        urls.map(async ({ url, fileName }) => {
+          const file = gradeItemFiles.find(f => f.name === fileName);
+          if (!file) {
+            console.warn('File not found:', fileName);
+            return;
+          }
+
+          console.log('Uploading file:', fileName);
+
+          const xhr = new XMLHttpRequest();
+          xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable) {
+              const progress = Math.round((event.loaded * 100) / event.total);
+              setGradeItemFileUploadProgress(prev => ({
+                ...prev,
+                [fileName]: progress
+              }));
+            }
+          });
+
+          return new Promise((resolve, reject) => {
+            xhr.open('PUT', url);
+            xhr.setRequestHeader('Content-Type', file.type);
+            xhr.onload = () => {
+              console.log('Upload completed for:', fileName);
+              resolve(xhr.response);
+            };
+            xhr.onerror = () => {
+              console.error('Upload failed for:', fileName);
+              reject(xhr.statusText);
+            };
+            xhr.send(file);
+          });
+        })
+      );
+
+      // 성공 메시지 표시
+      toast.success('파일이 성공적으로 업로드되었습니다.');
+      
+      // 모달 닫기 및 상태 초기화
+      setShowFileUploadModal(false);
+      setSelectedGradeItem(null);
+      setGradeItemFiles([]);
+      setGradeItemFileUploadProgress({});
+      
+      // 성적 항목 목록 새로고침
+      refetchGradeItems();
+    } catch (error) {
+      console.error('파일 업로드 오류:', error);
+      toast.error('파일 업로드에 실패했습니다.');
+    }
+  };
+
   return (
     <div className="p-8 bg-gradient-to-b from-gray-50 to-white min-h-screen">
       <div className="max-w-7xl mx-auto">
@@ -747,7 +942,7 @@ const CourseDetail: FC = () => {
                   {/* 성적 항목 추가 폼 */}
                   <div className="bg-gray-50 p-4 rounded-md space-y-4">
                     <h3 className="font-medium">새 성적 항목 추가</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">유형</label>
                         <select 
@@ -776,30 +971,80 @@ const CourseDetail: FC = () => {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">최대 점수</label>
-                        <input 
-                          type="number" 
-                          className="w-full rounded-md border border-gray-300 p-2"
-                          value={newEvaluationItem.max_score}
-                          onChange={(e) => setNewEvaluationItem({
+                        <label className="block text-sm font-medium text-gray-700 mb-1">제출 기한</label>
+                        <DatePicker 
+                          locale={locale}
+                          className="w-full border border-gray-300 rounded-md"
+                          placeholder="기한 선택"
+                          onChange={(date) => setNewEvaluationItem({
                             ...newEvaluationItem,
-                            max_score: parseInt(e.target.value)
+                            deadline: date ? date.format('YYYY-MM-DD') : undefined
                           })}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">가중치 (%)</label>
-                        <input 
-                          type="number" 
-                          className="w-full rounded-md border border-gray-300 p-2"
-                          value={newEvaluationItem.weight}
-                          onChange={(e) => setNewEvaluationItem({
-                            ...newEvaluationItem,
-                            weight: parseInt(e.target.value)
-                          })}
+                          value={newEvaluationItem.deadline ? dayjs(newEvaluationItem.deadline) : null}
                         />
                       </div>
                     </div>
+                    
+                    {/* 파일 업로드 영역 */}
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">파일 첨부</label>
+                      <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                        <div className="flex flex-col items-center justify-center space-y-2">
+                          <Upload className="w-8 h-8 text-gray-400" />
+                          <p className="text-sm text-gray-500">
+                            파일을 드래그하거나 클릭하여 업로드하세요
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            PDF, Word, Excel, JSON 등 (최대 10MB)
+                          </p>
+                          <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            id="evaluation-file-upload"
+                            onChange={handleEvaluationFileChange}
+                          />
+                          <label
+                            htmlFor="evaluation-file-upload"
+                            className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+                          >
+                            파일 선택
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 선택된 파일 목록 */}
+                    {evaluationFiles.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        <h4 className="text-sm font-medium text-gray-700">선택된 파일</h4>
+                        <div className="space-y-2">
+                          {evaluationFiles.map((file) => (
+                            <div key={file.name} className="flex items-center justify-between bg-white p-3 rounded-md border border-gray-200">
+                              <div className="flex items-center space-x-2">
+                                {getFileIcon(file.name)}
+                                <span className="text-sm">{file.name}</span>
+                                <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                              </div>
+                              {evaluationFileUploadProgress[file.name] !== undefined ? (
+                                <div className="w-24">
+                                  <Progress value={evaluationFileUploadProgress[file.name]} className="h-1.5" />
+                                  <p className="text-xs text-right mt-1">{evaluationFileUploadProgress[file.name]}%</p>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => handleRemoveEvaluationFile(file.name)}
+                                  className="text-red-500 hover:text-red-700"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    
                     <div className="flex justify-end">
                       <Button 
                         onClick={handleCreateEvaluationItem}
@@ -815,35 +1060,65 @@ const CourseDetail: FC = () => {
                   {/* 성적 항목 목록 */}
                   <div className="space-y-2">
                     <h3 className="font-medium">성적 항목 목록</h3>
-                    {false ? (
+                    {isLoadingGradeItems ? (
                       <div className="flex justify-center items-center h-20">
                         <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-500"></div>
                       </div>
-                    ) : mockGradeItems && mockGradeItems.length > 0 ? (
+                    ) : gradeItems && gradeItems.filter(item => {
+                        const itemType = item.type || item.item_type;
+                        return itemType !== 'ATTENDANCE';
+                      }).length > 0 ? (
                       <div className="bg-white border rounded-md overflow-hidden">
+                        {/* 렌더링 중인 성적 항목 */}
+                        {(() => { 
+                          console.log('렌더링 중인 성적 항목:', gradeItems.filter(item => {
+                            const itemType = item.type || item.item_type;
+                            return itemType !== 'ATTENDANCE';
+                          })); 
+                          return null; 
+                        })()}
                         <table className="min-w-full divide-y divide-gray-200">
                           <thead className="bg-gray-50">
                             <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유형</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">최대 점수</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">가중치 (%)</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">유형</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제목</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">제출 기한</th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">작업</th>
                             </tr>
                           </thead>
                           <tbody className="bg-white divide-y divide-gray-200">
-                            {mockGradeItems.map((item) => (
-                              <tr key={item.id}>
+                            {Array.from(
+                              new Map(
+                                gradeItems
+                                  .filter(item => {
+                                    const itemType = item.type || item.item_type;
+                                    return itemType !== 'ATTENDANCE';
+                                  })
+                                  .map(item => [item.id || item.item_id, item])
+                              ).values()
+                            ).map((item, index) => (
+                              <tr key={(item.id || item.item_id) + '-' + index}>
                                 <td className="px-6 py-4 whitespace-nowrap">
                                   <div className="flex items-center">
-                                    {getEvaluationTypeIcon(item.type)}
+                                    {getEvaluationTypeIcon(item.type || item.item_type)}
                                     <span className="ml-2">
-                                      {item.type === 'ASSIGNMENT' ? '과제' : '시험'}
+                                      {(item.type || item.item_type) === 'ASSIGNMENT' ? '과제' : '시험'}
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">{item.title}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{item.max_score}</td>
-                                <td className="px-6 py-4 whitespace-nowrap">{item.weight}%</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{item.title || item.item_name}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.deadline || item.due_date)}</td>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleOpenFileUploadModal(item.id || item.item_id!)}
+                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                  >
+                                    <Upload className="w-4 h-4 mr-1" />
+                                    파일 추가
+                                  </Button>
+                                </td>
                               </tr>
                             ))}
                           </tbody>
@@ -854,12 +1129,6 @@ const CourseDetail: FC = () => {
                         등록된 성적 항목이 없습니다.
                       </div>
                     )}
-                    <div className="bg-yellow-50 border border-yellow-200 p-3 rounded-md mt-2">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="w-5 h-5 text-yellow-500" />
-                        <p className="text-sm text-yellow-700">현재 성적 항목 관리 기능은 개발 중입니다. 곧 사용 가능해질 예정입니다.</p>
-                      </div>
-                    </div>
                   </div>
                 </CardContent>
               )}
@@ -960,9 +1229,10 @@ const CourseDetail: FC = () => {
                           {selectedFiles[week.weekNumber].map((file) => (
                             <div key={file.name} className="bg-gray-50 p-4 rounded-lg border border-gray-100">
                               <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center space-x-2">
                                   {getFileIcon(file.name)}
-                                  <span className="text-sm text-gray-900">{file.name}</span>
+                                  <span className="text-sm">{file.name}</span>
+                                  <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
                                 </div>
                                 <span className="text-sm text-gray-500">
                                   {formatFileSize(file.size)}
@@ -1006,6 +1276,100 @@ const CourseDetail: FC = () => {
                 videoUrl={selectedVideo}
                 title="강의 영상"
               />
+            )}
+
+            {/* 성적 항목 파일 업로드 모달 */}
+            {showFileUploadModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">성적 항목 파일 추가</h3>
+                    <button
+                      onClick={() => setShowFileUploadModal(false)}
+                      className="text-gray-500 hover:text-gray-700"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
+                  {/* 파일 업로드 영역 */}
+                  <div className="mb-4">
+                    <div className="border-2 border-dashed border-gray-300 rounded-md p-4">
+                      <div className="flex flex-col items-center justify-center space-y-2">
+                        <Upload className="w-8 h-8 text-gray-400" />
+                        <p className="text-sm text-gray-500">
+                          파일을 드래그하거나 클릭하여 업로드하세요
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          PDF, Word, Excel, JSON 등 (최대 10MB)
+                        </p>
+                        <input
+                          type="file"
+                          multiple
+                          className="hidden"
+                          id="grade-item-file-upload"
+                          onChange={handleGradeItemFileChange}
+                        />
+                        <label
+                          htmlFor="grade-item-file-upload"
+                          className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 cursor-pointer"
+                        >
+                          파일 선택
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* 선택된 파일 목록 */}
+                  {gradeItemFiles.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      <h4 className="text-sm font-medium text-gray-700">선택된 파일</h4>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {gradeItemFiles.map((file) => (
+                          <div key={file.name} className="flex items-center justify-between bg-white p-3 rounded-md border border-gray-200">
+                            <div className="flex items-center space-x-2">
+                              {getFileIcon(file.name)}
+                              <span className="text-sm">{file.name}</span>
+                              <span className="text-xs text-gray-500">({formatFileSize(file.size)})</span>
+                            </div>
+                            {gradeItemFileUploadProgress[file.name] !== undefined ? (
+                              <div className="w-24">
+                                <Progress value={gradeItemFileUploadProgress[file.name]} className="h-1.5" />
+                                <p className="text-xs text-right mt-1">{gradeItemFileUploadProgress[file.name]}%</p>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => handleRemoveGradeItemFile(file.name)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end space-x-2">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowFileUploadModal(false)}
+                      className="border-gray-300 text-gray-700"
+                    >
+                      취소
+                    </Button>
+                    <Button
+                      onClick={handleUploadGradeItemFiles}
+                      className="bg-blue-600 text-white hover:bg-blue-700"
+                      disabled={gradeItemFiles.length === 0}
+                    >
+                      <Upload className="w-4 h-4 mr-2" />
+                      업로드
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}

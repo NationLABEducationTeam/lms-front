@@ -34,6 +34,7 @@ import { UserRole } from './config/cognito';
 import './App.css';
 import StudentCoursesPage from '@/pages/student/courses';
 import CorporatePage from '@/pages/corporate';
+import DeepCodingPage from '@/pages/deepcoding';
 import CourseDetail from '@/pages/admin/courses/[id]';
 import CreateCourse from '@/pages/admin/courses/create';
 import EditCourse from '@/pages/admin/courses/[id]/edit';
@@ -69,6 +70,9 @@ const App = () => {
 
           {/* Corporate Page - No Layout */}
           <Route path="/corporate" element={<CorporatePage />} />
+          
+          {/* DeepCoding Page - No Layout */}
+          <Route path="/deepcoding" element={<DeepCodingPage />} />
 
           {/* Admin Routes with AdminLayout */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>

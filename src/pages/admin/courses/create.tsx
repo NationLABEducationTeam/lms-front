@@ -465,7 +465,7 @@ const CreateCourse: FC = () => {
                     <div className="space-y-2">
                       <Label htmlFor="weeksCount" className="flex items-center gap-2">
                         <Calendar className="w-5 h-5 text-orange-600" />
-                        <span>주차 수</span>
+                        <span>차수 수</span>
                       </Label>
                       <div className="flex items-center">
                         <Input
@@ -477,10 +477,10 @@ const CreateCourse: FC = () => {
                           onChange={(e) => setWeeksCount(e.target.value)}
                           className="w-full"
                         />
-                        <span className="ml-2 text-gray-500">주</span>
+                        <span className="ml-2 text-gray-500">차수</span>
                       </div>
                       <p className="text-xs text-gray-500">
-                        강의의 총 주차 수를 입력하세요. (기본값: 16주)
+                        강의의 총 차수를 입력하세요. (기본값: 16차수)
                       </p>
                     </div>
                     

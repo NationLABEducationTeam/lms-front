@@ -42,10 +42,25 @@ export interface GradeRules {
 
 export interface GradeItem {
   id: string;
+  item_id?: string; // 백엔드 응답에서 사용하는 필드
+  course_id?: string; // 백엔드 응답에서 사용하는 필드
   type: 'ASSIGNMENT' | 'ATTENDANCE' | 'EXAM';
+  item_type?: 'ASSIGNMENT' | 'ATTENDANCE' | 'EXAM'; // 백엔드 응답에서 사용하는 필드
   title: string;
-  max_score: number;
-  weight: number;
+  item_name?: string; // 백엔드 응답에서 사용하는 필드
+  item_order?: number; // 백엔드 응답에서 사용하는 필드
+  max_score?: number;
+  weight?: number;
+  deadline?: string; // ISO 형식의 날짜 문자열 (YYYY-MM-DD)
+  due_date?: string; // 백엔드 응답에서 사용하는 필드
+  created_at?: string;
+  updated_at?: string;
+  uploadUrls?: Array<{
+    fileName: string;
+    sanitizedFileName: string;
+    url: string;
+    key: string;
+  }>;
 }
 
 export interface Course {

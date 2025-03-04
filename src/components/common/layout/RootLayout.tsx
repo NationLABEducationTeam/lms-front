@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, CreditCard, History, Settings, LogOut, ChevronDown, Briefcase, BookOpen } from 'lucide-react';
+import { User, CreditCard, History, Settings, LogOut, ChevronDown, Briefcase, BookOpen, Code } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -79,6 +79,22 @@ const RootLayout: FC = () => {
               >
                 <Briefcase className="w-3.5 h-3.5 text-blue-600" />
                 기업교육
+              </button>
+              <div className={cn(
+                "h-3 w-px",
+                isMainPage && isAtTop ? "bg-slate-300" : "bg-gray-300"
+              )} />
+              <button 
+                onClick={() => navigate('/deepcoding')}
+                className={cn(
+                  "text-sm flex items-center gap-1.5 transition-colors",
+                  isMainPage && isAtTop 
+                    ? "text-slate-700 hover:text-slate-900" 
+                    : "text-gray-700 hover:text-gray-900"
+                )}
+              >
+                <Code className="w-3.5 h-3.5 text-indigo-600" />
+                딥코딩테스트
               </button>
               <div className={cn(
                 "h-3 w-px",
