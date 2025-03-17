@@ -1106,18 +1106,34 @@ const CourseDetail: FC = () => {
                                     </span>
                                   </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap">{item.title || item.item_name}</td>
+                                <td 
+                                  className="px-6 py-4 whitespace-nowrap cursor-pointer text-blue-600 hover:underline"
+                                  onClick={() => navigate(`/admin/courses/assignments/submissions/${item.id || item.item_id}`)}
+                                >
+                                  {item.title || item.item_name}
+                                </td>
                                 <td className="px-6 py-4 whitespace-nowrap">{formatDate(item.deadline || item.due_date)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleOpenFileUploadModal(item.id || item.item_id!)}
-                                    className="text-blue-600 border-blue-200 hover:bg-blue-50"
-                                  >
-                                    <Upload className="w-4 h-4 mr-1" />
-                                    파일 추가
-                                  </Button>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => navigate(`/admin/courses/assignments/submissions/${item.id || item.item_id}`)}
+                                      className="text-green-600 border-green-200 hover:bg-green-50"
+                                    >
+                                      <Users className="w-4 h-4 mr-1" />
+                                      제출현황
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleOpenFileUploadModal(item.id || item.item_id!)}
+                                      className="text-blue-600 border-blue-200 hover:bg-blue-50"
+                                    >
+                                      <Upload className="w-4 h-4 mr-1" />
+                                      파일 추가
+                                    </Button>
+                                  </div>
                                 </td>
                               </tr>
                             ))}

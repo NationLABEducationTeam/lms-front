@@ -22,8 +22,17 @@ const DeepCodingHeader: FC = () => {
 
           {/* 네비게이션 */}
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="#features" className="text-gray-600 hover:text-gray-900 font-medium">
-              서비스 소개
+            <a 
+              onClick={() => navigate('/deepcoding')}
+              className="text-gray-600 hover:text-gray-900 font-medium cursor-pointer"
+            >
+              홈
+            </a>
+            <a 
+              onClick={() => navigate('/deepcoding/problems')}
+              className="text-gray-600 hover:text-gray-900 font-medium cursor-pointer"
+            >
+              문제 목록
             </a>
             <a href="#pricing" className="text-gray-600 hover:text-gray-900 font-medium">
               요금제

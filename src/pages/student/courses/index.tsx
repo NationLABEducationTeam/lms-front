@@ -1,5 +1,5 @@
 import { FC, useState, useEffect, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getEnrolledCourses, getDownloadUrl } from '@/services/api/courses';
 import { CATEGORY_MAPPING } from '@/types/course';
 import type { 
@@ -51,7 +51,7 @@ import type { QnaPost, QnaMetadata } from '@/types/qna';
 import { useGetAllNotesQuery } from '@/services/api/courseApi';
 import { Note } from '@/types/course';
 import { getApiUrl } from '@/config/api';
-import { useGetStudentAssignmentsQuery } from '@/services/api/studentApi';
+import { useGetStudentAssignmentsQuery, useGetCourseAssignmentsQuery } from '@/services/api/studentApi';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -63,7 +63,27 @@ interface Course extends BaseCourse {
   enrolled_at: string;
   enrollment_status: string;
   progress_status: string;
+  progress?: number;
   last_accessed_at: string;
+}
+
+interface AssignmentItem {
+  id: string;
+  item_id: string;
+  course_id: string;
+  course_title: string;
+  title: string;
+  description?: string;
+  due_date: string;
+  status: string;
+  score?: number;
+  max_score?: number;
+  submission_date?: string;
+  feedback?: string;
+  week_number: number;
+  type: 'ASSIGNMENT' | 'EXAM' | 'QUIZ';
+  item_type: 'ASSIGNMENT' | 'EXAM' | 'QUIZ';
+  is_completed: boolean;
 }
 
 const transformApiResponse = (apiCourse: any): Course => {
@@ -424,6 +444,23 @@ const NotesPanel: FC = () => {
   );
 };
 
+// 과제 및 시험 항목 클릭 핸들러 함수
+const useAssignmentHandlers = () => {
+  const navigate = useNavigate();
+  
+  const handleAssignmentClick = (item: AssignmentItem) => {
+    // 과제 제출 페이지로 이동 (item_id 사용)
+    navigate(`/assignments/${item.item_id}`);
+  };
+  
+  const handleExamClick = (item: AssignmentItem) => {
+    // 시험 응시 페이지로 이동 (item_id 사용)
+    navigate(`/assignments/${item.item_id}`);
+  };
+  
+  return { handleAssignmentClick, handleExamClick };
+};
+
 const StudentCoursesPage: FC = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -440,9 +477,17 @@ const StudentCoursesPage: FC = () => {
   const [qnaPosts, setQnaPosts] = useState<QnaPost[]>([]);
   const [boardLoading, setBoardLoading] = useState(false);
   const navigate = useNavigate();
+  const { courseId } = useParams<{ courseId: string }>();
   const { data: allNotes, isLoading: isLoadingNotes } = useGetAllNotesQuery();
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
-  const { data: assignmentsData, isLoading: isLoadingAssignments } = useGetStudentAssignmentsQuery();
+  const { data: courseAssignments, isLoading: isLoadingCourseAssignments } = useGetCourseAssignmentsQuery(
+    selectedCourse?.id || '', 
+    { 
+      skip: !selectedCourse,
+      refetchOnMountOrArgChange: true
+    }
+  );
+  const { handleAssignmentClick, handleExamClick } = useAssignmentHandlers();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -466,9 +511,21 @@ const StudentCoursesPage: FC = () => {
         console.log('Enrolled courses response:', response);
         const fetchedCourses = response.courses.map(transformApiResponse) || [];
         setCourses(fetchedCourses);
-        // 첫 번째 강의를 기본 선택
-        if (fetchedCourses.length > 0) {
+        
+        // URL에서 courseId가 있으면 해당 과목 선택
+        if (courseId) {
+          const course = fetchedCourses.find(c => c.id === courseId);
+          if (course) {
+            setSelectedCourse(course);
+          } else if (fetchedCourses.length > 0) {
+            // courseId가 유효하지 않으면 첫 번째 과목 선택 및 URL 업데이트
+            setSelectedCourse(fetchedCourses[0]);
+            navigate(`/mycourse/${fetchedCourses[0].id}`, { replace: true });
+          }
+        } else if (fetchedCourses.length > 0) {
+          // courseId가 없으면 첫 번째 과목 선택 및 URL 업데이트
           setSelectedCourse(fetchedCourses[0]);
+          navigate(`/mycourse/${fetchedCourses[0].id}`, { replace: true });
         }
       } catch (error) {
         console.error('Error fetching enrolled courses:', error);
@@ -480,7 +537,7 @@ const StudentCoursesPage: FC = () => {
     };
 
     checkAuth().then(() => fetchEnrolledCourses());
-  }, [navigate]);
+  }, [navigate, courseId]);
 
   // URL 해시 기반 상태 관리
   useEffect(() => {
@@ -625,7 +682,7 @@ const StudentCoursesPage: FC = () => {
 
   // 과제 및 시험 탭 렌더링
   const renderAssignmentsTab = () => {
-    if (isLoadingAssignments) {
+    if (isLoadingCourseAssignments) {
       return (
         <div className="flex justify-center items-center h-64">
           <Spin size="large" />
@@ -633,29 +690,32 @@ const StudentCoursesPage: FC = () => {
       );
     }
 
-    if (!assignmentsData) {
+    if (!courseAssignments || courseAssignments.length === 0) {
       return (
         <Empty
           image={<FileText className="w-12 h-12 text-gray-300" />}
-          description="과제 및 시험 정보를 불러올 수 없습니다."
+          description={`${selectedCourse?.title || '현재 과목'}에 등록된 과제 및 시험이 없습니다.`}
         />
       );
     }
+    
+    // 백엔드 API 결과 구조에 맞게 데이터 변환
+    const pendingAssignments = courseAssignments.filter(a => a.status === '진행중' && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    const overdueAssignments = courseAssignments.filter(a => a.status === '마감됨' && !a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    const completedAssignments = courseAssignments.filter(a => a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    
+    const pendingExams = courseAssignments.filter(a => a.status === '진행중' && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
+    const overdueExams = courseAssignments.filter(a => a.status === '마감됨' && !a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
+    const completedExams = courseAssignments.filter(a => a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
 
-    const { assignments, exams } = assignmentsData;
-    const totalAssignments = assignments.total;
-    const totalExams = exams.total;
-    const pendingAssignments = assignments.pending.length;
-    const pendingExams = exams.pending.length;
-    const overdueAssignments = assignments.overdue.length;
-    const overdueExams = exams.overdue.length;
-    const completedAssignments = assignments.completed.length;
-    const completedExams = exams.completed.length;
-
+    // 과제 및 시험 항목 개수 계산
+    const totalAssignments = pendingAssignments.length + overdueAssignments.length + completedAssignments.length;
+    const totalExams = pendingExams.length + overdueExams.length + completedExams.length;
+    
     return (
       <Card className="rounded-xl">
         <div className="flex justify-between items-center mb-6">
-          <Title level={4} className="mb-0">과제 및 시험</Title>
+          <Title level={4} className="mb-0">{selectedCourse?.title} 과제 및 시험</Title>
           <Space>
             <Select defaultValue="all" style={{ width: 120 }}>
               <Select.Option value="all">전체 보기</Select.Option>
@@ -670,7 +730,7 @@ const StudentCoursesPage: FC = () => {
           <Card className="bg-gradient-to-br from-orange-50 to-orange-100/50">
             <Statistic
               title={<span className="text-orange-600 font-medium">미제출 항목</span>}
-              value={pendingAssignments + pendingExams}
+              value={pendingAssignments.length + pendingExams.length}
               suffix="개"
               prefix={<AlertCircle className="w-4 h-4 text-orange-600" />}
               valueStyle={{ color: '#ea580c' }}
@@ -682,7 +742,7 @@ const StudentCoursesPage: FC = () => {
           <Card className="bg-gradient-to-br from-red-50 to-red-100/50">
             <Statistic
               title={<span className="text-red-600 font-medium">기한 초과</span>}
-              value={overdueAssignments + overdueExams}
+              value={overdueAssignments.length + overdueExams.length}
               suffix="개"
               prefix={<Clock className="w-4 h-4 text-red-600" />}
               valueStyle={{ color: '#dc2626' }}
@@ -694,7 +754,7 @@ const StudentCoursesPage: FC = () => {
           <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
             <Statistic
               title={<span className="text-green-600 font-medium">완료 항목</span>}
-              value={completedAssignments + completedExams}
+              value={completedAssignments.length + completedExams.length}
               suffix="개"
               prefix={<FileText className="w-4 h-4 text-green-600" />}
               valueStyle={{ color: '#16a34a' }}
@@ -711,25 +771,28 @@ const StudentCoursesPage: FC = () => {
               <span className="flex items-center">
                 <FileText className="w-4 h-4 mr-2" />
                 과제 
-                <Badge count={pendingAssignments + overdueAssignments} offset={[5, 0]} style={{ marginLeft: 8 }} />
+                <Badge count={pendingAssignments.length + overdueAssignments.length} offset={[5, 0]} style={{ marginLeft: 8 }} />
               </span>
             } 
             key="assignments"
           >
-            {assignments.pending.length === 0 && assignments.overdue.length === 0 && assignments.completed.length === 0 ? (
+            {pendingAssignments.length === 0 && overdueAssignments.length === 0 && completedAssignments.length === 0 ? (
               <Empty description="등록된 과제가 없습니다." />
             ) : (
               <>
-                {assignments.pending.length > 0 && (
+                {pendingAssignments.length > 0 && (
                   <>
                     <Divider orientation="left">진행 중인 과제</Divider>
                     <List
-                      dataSource={assignments.pending}
+                      dataSource={pendingAssignments}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button type="primary">
+                            <Button 
+                              type="primary"
+                              onClick={() => handleAssignmentClick(item)}
+                            >
                               과제 제출
                             </Button>
                           ]}
@@ -762,16 +825,20 @@ const StudentCoursesPage: FC = () => {
                   </>
                 )}
 
-                {assignments.overdue.length > 0 && (
+                {overdueAssignments.length > 0 && (
                   <>
                     <Divider orientation="left">기한 초과 과제</Divider>
                     <List
-                      dataSource={assignments.overdue}
+                      dataSource={overdueAssignments}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button type="primary" danger>
+                            <Button 
+                              type="primary" 
+                              danger
+                              onClick={() => handleAssignmentClick(item)}
+                            >
                               지금 제출
                             </Button>
                           ]}
@@ -806,16 +873,18 @@ const StudentCoursesPage: FC = () => {
                   </>
                 )}
 
-                {assignments.completed.length > 0 && (
+                {completedAssignments.length > 0 && (
                   <>
                     <Divider orientation="left">완료된 과제</Divider>
                     <List
-                      dataSource={assignments.completed}
+                      dataSource={completedAssignments}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button>
+                            <Button
+                              onClick={() => handleAssignmentClick(item)}
+                            >
                               제출물 보기
                             </Button>
                           ]}
@@ -860,25 +929,28 @@ const StudentCoursesPage: FC = () => {
               <span className="flex items-center">
                 <BookOpen className="w-4 h-4 mr-2" />
                 시험/퀴즈
-                <Badge count={pendingExams + overdueExams} offset={[5, 0]} style={{ marginLeft: 8 }} />
+                <Badge count={pendingExams.length + overdueExams.length} offset={[5, 0]} style={{ marginLeft: 8 }} />
               </span>
             } 
             key="exams"
           >
-            {exams.pending.length === 0 && exams.overdue.length === 0 && exams.completed.length === 0 ? (
+            {pendingExams.length === 0 && overdueExams.length === 0 && completedExams.length === 0 ? (
               <Empty description="등록된 시험/퀴즈가 없습니다." />
             ) : (
               <>
-                {exams.pending.length > 0 && (
+                {pendingExams.length > 0 && (
                   <>
                     <Divider orientation="left">진행 중인 시험/퀴즈</Divider>
                     <List
-                      dataSource={exams.pending}
+                      dataSource={pendingExams}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button type="primary">
+                            <Button 
+                              type="primary"
+                              onClick={() => handleExamClick(item)}
+                            >
                               시험 응시
                             </Button>
                           ]}
@@ -911,16 +983,20 @@ const StudentCoursesPage: FC = () => {
                   </>
                 )}
 
-                {exams.overdue.length > 0 && (
+                {overdueExams.length > 0 && (
                   <>
                     <Divider orientation="left">기한 초과 시험/퀴즈</Divider>
                     <List
-                      dataSource={exams.overdue}
+                      dataSource={overdueExams}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button type="primary" danger>
+                            <Button 
+                              type="primary" 
+                              danger
+                              onClick={() => handleExamClick(item)}
+                            >
                               지금 응시
                             </Button>
                           ]}
@@ -954,16 +1030,18 @@ const StudentCoursesPage: FC = () => {
                   </>
                 )}
 
-                {exams.completed.length > 0 && (
+                {completedExams.length > 0 && (
                   <>
                     <Divider orientation="left">완료된 시험/퀴즈</Divider>
                     <List
-                      dataSource={exams.completed}
+                      dataSource={completedExams}
                       renderItem={(item) => (
                         <List.Item
                           key={item.id}
                           actions={[
-                            <Button>
+                            <Button
+                              onClick={() => handleExamClick(item)}
+                            >
                               결과 보기
                             </Button>
                           ]}
@@ -1005,6 +1083,17 @@ const StudentCoursesPage: FC = () => {
         </Tabs>
       </Card>
     );
+  };
+
+  // 과목 선택 핸들러
+  const handleCourseSelect = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course) {
+      setSelectedCourse(course);
+      // URL 업데이트
+      navigate(`/mycourse/${courseId}`);
+      console.log(`과목 선택: ${course.title} (ID: ${course.id})`);
+    }
   };
 
   if (loading) {
@@ -1107,13 +1196,14 @@ const StudentCoursesPage: FC = () => {
     }
   };
 
-  // 파일 크기 포맷팅
+  // 파일 크기 포맷팅 함수를 새로 작성
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    const result = parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    return result;
   };
 
   // 주차별 자료 렌더링 함수 수정
@@ -1184,10 +1274,7 @@ const StudentCoursesPage: FC = () => {
               <Select
                 style={{ width: 300 }}
                 value={selectedCourse?.id}
-                onChange={(value) => {
-                  const course = courses.find(c => c.id === value);
-                  if (course) setSelectedCourse(course);
-                }}
+                onChange={handleCourseSelect}
                 optionLabelProp="label"
                 dropdownRender={(menu) => (
                   <div>
@@ -1285,7 +1372,7 @@ const StudentCoursesPage: FC = () => {
               </Space>
               <Space>
                 <BarChart className="w-4 h-4" />
-                <Text>전체 진도율: 75%</Text>
+                <Text>전체 진도율: {selectedCourse?.progress || 0}%</Text>
               </Space>
             </Space>
           </div>

@@ -41,6 +41,13 @@ import EditCourse from '@/pages/admin/courses/[id]/edit';
 import QuizPage from './pages/student/courses/quiz';
 import QuizResults from './pages/admin/courses/quiz/results';
 import VideoPlayerPage from '@/pages/student/courses/video';
+import ProblemListPage from '@/pages/deepcoding/problems/list';
+import ProblemDetailPage from '@/pages/deepcoding/problems/detail';
+import AssignmentListPage from '@/pages/student/assignments';
+import AssignmentDetailPage from '@/pages/student/assignments/detail';
+import CourseAssignmentsPage from '@/pages/admin/courses/assignments';
+import SubmissionsPage from '@/pages/admin/courses/assignments/submissions/[assignmentId]';
+import SubmissionDetailPage from '@/pages/admin/courses/assignments/submission/[submissionId]';
 
 // Vite 환경 변수 타입 확장
 declare global {
@@ -73,6 +80,8 @@ const App = () => {
           
           {/* DeepCoding Page - No Layout */}
           <Route path="/deepcoding" element={<DeepCodingPage />} />
+          <Route path="/deepcoding/problems" element={<ProblemListPage />} />
+          <Route path="/deepcoding/problems/:id" element={<ProblemDetailPage />} />
 
           {/* Admin Routes with AdminLayout */}
           <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
@@ -86,6 +95,9 @@ const App = () => {
               <Route path="/admin/courses/:id" element={<CourseDetail />} />
               <Route path="/admin/courses/:id/edit" element={<EditCourse />} />
               <Route path="/admin/courses/:courseId/quiz/:quizId/results" element={<QuizResults />} />
+              <Route path="/admin/courses/:courseId/assignments" element={<CourseAssignmentsPage />} />
+              <Route path="/admin/courses/assignments/submissions/:assignmentId" element={<SubmissionsPage />} />
+              <Route path="/admin/courses/assignments/submission/:submissionId" element={<SubmissionDetailPage />} />
               <Route path="/admin/students" element={<AdminStudents />} />
               <Route path="/admin/monitoring" element={<AdminMonitoring />} />
               <Route path="/admin/system" element={<AdminSystem />} />
@@ -107,6 +119,7 @@ const App = () => {
             <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
               <Route path="/dashboard" element={<StudentDashboard />} />
               <Route path="/mycourse" element={<StudentCoursesPage />} />
+              <Route path="/mycourse/:courseId" element={<StudentCoursesPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
               <Route path="/mycourse/:courseId/quiz/:quizFileName" element={<QuizPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
@@ -118,6 +131,8 @@ const App = () => {
               <Route path="/qna" element={<QnaList />} />
               <Route path="/qna/create" element={<QnaCreate />} />
               <Route path="/qna/:id" element={<QnaDetail />} />
+              <Route path="/assignments" element={<AssignmentListPage />} />
+              <Route path="/assignments/:id" element={<AssignmentDetailPage />} />
             </Route>
 
             {/* Protected Instructor Routes */}

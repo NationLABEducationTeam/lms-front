@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/common/ui/button';
 import { Code, Brain, Zap, Trophy, CheckCircle, ArrowRight, Users, Laptop, BarChart } from 'lucide-react';
 import DeepCodingHeader from '@/components/deepcoding/DeepCodingHeader';
+import { useNavigate } from 'react-router-dom';
 
 const DeepCodingPage: FC = () => {
   const features = [
@@ -35,6 +36,8 @@ const DeepCodingPage: FC = () => {
   const redirectToDeepCoding = () => {
     window.open('https://deepcoding.nationlab.io', '_blank');
   };
+
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen bg-white">
@@ -74,6 +77,14 @@ const DeepCodingPage: FC = () => {
                 onClick={redirectToDeepCoding}
               >
                 무료로 시작하기
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Button>
+              <Button 
+                size="lg" 
+                className="bg-white text-indigo-600 hover:bg-gray-100 border border-indigo-200 px-8 py-6 text-lg rounded-xl flex items-center justify-center gap-2 group"
+                onClick={() => navigate('/deepcoding/problems')}
+              >
+                문제 풀어보기
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
             </motion.div>
@@ -350,13 +361,22 @@ const DeepCodingPage: FC = () => {
           <p className="text-lg text-indigo-100 mb-8">
             코딩 테스트 합격률을 높이고 개발 역량을 향상시키는 가장 스마트한 방법
           </p>
-          <Button 
-            size="lg" 
-            className="bg-white text-indigo-700 hover:bg-indigo-50 px-8 py-6 text-lg rounded-xl"
-            onClick={redirectToDeepCoding}
-          >
-            무료로 시작하기
-          </Button>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button 
+              size="lg" 
+              className="bg-white text-indigo-700 hover:bg-indigo-50 px-8 py-6 text-lg rounded-xl"
+              onClick={redirectToDeepCoding}
+            >
+              무료로 시작하기
+            </Button>
+            <Button 
+              size="lg" 
+              className="bg-indigo-800 text-white hover:bg-indigo-900 border border-indigo-500 px-8 py-6 text-lg rounded-xl"
+              onClick={() => navigate('/deepcoding/problems')}
+            >
+              문제 풀어보기
+            </Button>
+          </div>
         </div>
       </section>
 
