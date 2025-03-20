@@ -13,7 +13,7 @@ import type { KeenSliderInstance } from 'keen-slider';
 import 'keen-slider/keen-slider.min.css';
 import { useAuth } from '@/hooks/useAuth';
 import { getApiConfig } from '@/config/api';
-import { Target, User, Users, ChevronRight, BookOpen } from 'lucide-react';
+import { Target, User, Users, ChevronRight, BookOpen, ArrowDown, ArrowRight, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/common/ui/badge';
 
 const CategoryIcon: FC<{ category: string; className?: string }> = ({ category, className }) => {
@@ -282,112 +282,158 @@ const ImageCarousel: FC = () => {
 
 const CourseCard = ({ course }: { course: Course }) => {
   const navigate = useNavigate();
-  const categoryColors = {
-    'CLOUD': 'from-sky-400/20 to-blue-500/20',
-    'AI_ML': 'from-purple-400/20 to-indigo-500/20',
-    'WEB': 'from-pink-400/20 to-rose-500/20',
-    'AUTOMATION': 'from-emerald-400/20 to-green-500/20',
-    'DEVOPS': 'from-amber-400/20 to-yellow-500/20',
-    'DataEngineering': 'from-cyan-400/20 to-teal-500/20',
-    'CodeingTest': 'from-violet-400/20 to-purple-500/20'
+  const cardColors = {
+    WEB: {
+      bgLight: 'bg-blue-50',
+      border: 'border-blue-200',
+      hover: 'bg-blue-100',
+    },
+    AI_ML: {
+      bgLight: 'bg-purple-50',
+      border: 'border-purple-200',
+      hover: 'bg-purple-100',
+    },
+    CLOUD: {
+      bgLight: 'bg-emerald-50',
+      border: 'border-emerald-200',
+      hover: 'bg-emerald-100',
+    },
+    DEVOPS: {
+      bgLight: 'bg-amber-50',
+      border: 'border-amber-200',
+      hover: 'bg-amber-100',
+    },
+    AUTOMATION: {
+      bgLight: 'bg-red-50',
+      border: 'border-red-200',
+      hover: 'bg-red-100',
+    },
+    DataEngineering: {
+      bgLight: 'bg-indigo-50',
+      border: 'border-indigo-200',
+      hover: 'bg-indigo-100',
+    },
+    CodeingTest: {
+      bgLight: 'bg-lime-50',
+      border: 'border-lime-200',
+      hover: 'bg-lime-100',
+    },
   };
 
-  const categoryBadgeColors: Record<MainCategoryId, string> = {
-    'CLOUD': 'bg-blue-100 text-blue-800',
-    'AI_ML': 'bg-purple-100 text-purple-800',
-    'WEB': 'bg-green-100 text-green-800',
-    'AUTOMATION': 'bg-yellow-100 text-yellow-800',
-    'DEVOPS': 'bg-red-100 text-red-800',
-    'DataEngineering': 'bg-indigo-100 text-indigo-800',
-    'CodeingTest': 'bg-pink-100 text-pink-800'
+  const getCategoryColor = (category: string) => {
+    return cardColors[category as keyof typeof cardColors] || {
+      bgLight: 'bg-gray-50',
+      border: 'border-gray-200',
+      hover: 'bg-gray-100',
+    };
   };
 
-  const levelBadgeColors = {
-    'BEGINNER': 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-green-500/25',
-    'INTERMEDIATE': 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-amber-500/25',
-    'ADVANCED': 'bg-gradient-to-r from-red-500 to-rose-500 text-white shadow-rose-500/25'
+  const getLevelBadge = (level: string) => {
+    const levels: Record<string, { bg: string; text: string }> = {
+      BEGINNER: {
+        bg: 'bg-emerald-100 text-emerald-700',
+        text: '입문',
+      },
+      ADVANCED: {
+        bg: 'bg-amber-100 text-amber-700',
+        text: '중급',
+      },
+      PROFESSIONAL: {
+        bg: 'bg-red-100 text-red-700',
+        text: '고급',
+      },
+    };
+    return levels[level] || { bg: 'bg-gray-100 text-gray-700', text: '전체' };
   };
 
-  const levelText = {
-    'BEGINNER': '초급',
-    'INTERMEDIATE': '중급',
-    'ADVANCED': '고급'
-  };
-
+  const color = getCategoryColor(course.main_category_id as MainCategoryId);
+  const levelBadge = getLevelBadge(course.level);
+  
   return (
-    <div
+    <div 
+      className="group relative h-full"
       onClick={() => navigate(`/courses/${course.id}`)}
-      className="group relative h-[460px] w-full cursor-pointer perspective-1000"
     >
-      {/* 3D 회전 효과를 위한 컨테이너 */}
-      <div className="relative w-full h-full transition-transform duration-500 transform-style-3d group-hover:rotate-y-3">
-        {/* 카드 전면 */}
-        <div className="absolute inset-0 w-full h-full rounded-2xl bg-white shadow-lg backface-hidden">
-          {/* 썸네일 컨테이너 */}
-          <div className="relative h-[200px] w-full overflow-hidden rounded-t-2xl">
-            {/* 카테고리별 그라데이션 오버레이 */}
-            <div className={`absolute inset-0 bg-gradient-to-br ${categoryColors[course.main_category_id as MainCategoryId]} opacity-80`}></div>
-            
-            {course.thumbnail_url ? (
-              <img
-                src={course.thumbnail_url}
-                alt={course.title}
-                className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
-              />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center bg-slate-100">
-                <BookOpen className="h-16 w-16 text-slate-400" />
-              </div>
-            )}
-
-            {/* 뱃지 컨테이너 */}
-            <div className="absolute top-4 left-4 flex gap-2">
-              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${categoryBadgeColors[course.main_category_id as MainCategoryId]}`}>
-                {CATEGORY_MAPPING[course.main_category_id as MainCategoryId]}
-              </span>
-              <span className={`px-3 py-1 rounded-full text-xs font-medium shadow-lg ${levelBadgeColors[course.level]}`}>
-                {levelText[course.level]}
-              </span>
-            </div>
+      {/* 카드 배경 */}
+      <div className="absolute inset-0 transition-all duration-300 rounded-2xl bg-white border border-slate-200 group-hover:border-slate-300 group-hover:shadow-lg">
+        <div className="absolute inset-0 rounded-2xl group-hover:opacity-100 opacity-0 transition-opacity shadow-xl"></div>
+      </div>
+      
+      {/* 카드 콘텐츠 */}
+      <div className="relative p-6 flex flex-col h-full">
+        {/* 카테고리와 레벨 */}
+        <div className="flex items-center justify-between mb-4">
+          <div className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-medium flex items-center gap-1.5",
+            color.bgLight
+          )}>
+            <CategoryIcon category={course.main_category_id as MainCategoryId} className="shrink-0 w-4 h-4" />
+            <span>{CATEGORY_MAPPING[course.main_category_id as MainCategoryId]}</span>
           </div>
-
-          {/* 컨텐츠 섹션 */}
-          <div className="p-6 flex flex-col h-[calc(100%-200px)]">
-            {/* 제목 */}
-            <h3 className="text-xl font-bold text-slate-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">
-              {course.title}
-            </h3>
-
-            {/* 설명 */}
-            <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-              {course.description}
-            </p>
-
-            {/* 강사 정보 */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center">
-                <User className="w-4 h-4 text-slate-600" />
-              </div>
-              <span className="text-sm text-slate-700">{course.instructor_name}</span>
-            </div>
-
-            {/* 가격 섹션 */}
-            <div className="mt-auto pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between">
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  {course.price.toLocaleString()}원
-                </div>
-                <div className="flex items-center gap-2 text-slate-500">
-                  <ChevronRight className="w-5 h-5" />
-                </div>
-              </div>
-            </div>
+          
+          <div className={cn(
+            "rounded-full px-2.5 py-1 text-xs font-medium",
+            levelBadge.bg
+          )}>
+            {levelBadge.text}
           </div>
         </div>
+        
+        {/* 과정명 */}
+        <h3 className="text-lg font-semibold text-dashboard-text-primary mb-2 line-clamp-2 group-hover:text-dashboard-primary transition-colors">
+          {course.title}
+        </h3>
+        
+        {/* 설명 */}
+        <p className="text-sm text-dashboard-text-secondary mb-3 line-clamp-2">
+          {course.description || "최신 트렌드를 반영한 전문 교육 과정입니다."}
+        </p>
+        
+        {/* 주요 키워드 */}
+        {course.description && (
+          <div className="flex flex-wrap gap-1.5 mt-1 mb-3">
+            {course.description.split(' ').slice(0, 3).map((word: string, index: number) => (
+              <span 
+                key={index}
+                className="rounded-full px-2 py-0.5 text-xs bg-dashboard-card-accent text-dashboard-text-secondary"
+              >
+                {word}
+              </span>
+            ))}
+            {course.description.split(' ').length > 3 && (
+              <span className="rounded-full px-2 py-0.5 text-xs bg-dashboard-card-accent text-dashboard-text-secondary">
+                +{course.description.split(' ').length - 3}
+              </span>
+            )}
+          </div>
+        )}
+        
+        {/* 강사 정보 */}
+        <div className="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-50 flex-shrink-0">
+              <img 
+                src={course.thumbnail_url || '/default-avatar.jpg'} 
+                alt={course.title || "강사"} 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = '/default-avatar.jpg';
+                }}
+              />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-sm font-medium text-dashboard-text-primary line-clamp-1">
+                {course.instructor_name || "전문 강사"}
+              </span>
+              <span className="text-xs text-dashboard-text-tertiary">
+                강사
+              </span>
+            </div>
+          </div>
+          
+          <span className="text-sm font-medium text-dashboard-primary">자세히 보기</span>
+        </div>
       </div>
-
-      {/* 호버 시 나타나는 그라데이션 테두리 효과 */}
-      <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-500 opacity-0 group-hover:opacity-10 transition-opacity duration-300 -z-10"></div>
     </div>
   );
 };
@@ -439,9 +485,6 @@ const StudentLanding: FC = () => {
         }
         const data = await response.json();
         setServerMessage(data.message);
-        // console.log('Current Environment:', import.meta.env.VITE_ENV || 'development');
-        // console.log('Server URL:', baseUrl);
-        // console.log('Server response:', data);
       } catch (err) {
         console.error('Error fetching server message:', err);
       }
@@ -484,410 +527,457 @@ const StudentLanding: FC = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-white to-slate-50">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
       {/* Server message display */}
       {serverMessage && (
-        <div className="bg-blue-50 border-b border-blue-100">
+        <div className="bg-dashboard-gradient-from/5 border-b border-dashboard-gradient-from/10">
           <div className="max-w-7xl mx-auto px-4 py-3">
-            <p className="text-sm text-blue-700">{serverMessage}</p>
+            <p className="text-sm text-dashboard-primary font-medium">{serverMessage}</p>
           </div>
         </div>
       )}
 
-      {/* Hero Section */}
+      {/* 리디자인된 Hero Section */}
       <div 
-        className="relative overflow-hidden min-h-[90vh] flex items-center bg-gradient-to-br from-sky-100 via-blue-100 to-indigo-100"
+        className="relative overflow-hidden min-h-[90vh] flex items-center"
         onMouseMove={handleMouseMove}
       >
-        {/* 마우스 포인터 효과 */}
+        {/* 배경 장식 요소 */}
+        <div className="absolute inset-0 z-0">
+          {/* 배경 그라데이션 */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white via-slate-50 to-slate-100"></div>
+          
+          {/* 격자 패턴 */}
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.03]"></div>
+          
+          {/* 흐릿한 그라데이션 원형 */}
+          <div className="absolute top-1/4 -left-20 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-dashboard-gradient-from/10 via-dashboard-gradient-via/10 to-dashboard-gradient-to/5 blur-3xl opacity-70"></div>
+          <div className="absolute bottom-1/4 -right-20 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-dashboard-gradient-from/5 via-dashboard-gradient-via/10 to-dashboard-gradient-to/10 blur-3xl opacity-50"></div>
+        </div>
+
+        {/* 움직이는 마우스 포인터 효과 */}
         <div
-          className="pointer-events-none absolute -inset-px transition-opacity duration-300"
+          className="pointer-events-none absolute inset-0 transition-opacity duration-300 z-10"
           style={{
-            background: `radial-gradient(400px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(56, 189, 248, 0.25), rgba(37, 99, 235, 0.25) 20%, transparent 40%)`,
+            background: `radial-gradient(600px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(63, 92, 247, 0.03), rgba(108, 78, 248, 0.03) 30%, transparent 60%)`,
             mixBlendMode: "multiply"
           }}
         />
-        
-        {/* Background Pattern & Gradient */}
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.03]"></div>
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-500/5 to-slate-500/10"></div>
-          {/* Decorative circles */}
-          <div className="absolute top-20 left-1/4 w-96 h-96 bg-blue-200/20 rounded-full filter blur-3xl"></div>
-          <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-indigo-200/20 rounded-full filter blur-3xl"></div>
-        </div>
 
-        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12 py-24">
+        {/* 메인 컨텐츠 */}
+        <div className="relative z-20 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-16 py-24">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            {/* Left Content */}
+            {/* 왼쪽 컨텐츠 */}
             <motion.div
               initial={fadeInUp.initial}
               animate={fadeInUp.animate}
               transition={fadeInUp.transition}
               className="text-left"
             >
-              <div className="inline-block mb-6 px-6 py-2 rounded-full bg-gradient-to-r from-blue-500/20 via-indigo-500/20 to-purple-500/20 backdrop-blur-sm border border-blue-300">
-                <span className="text-base font-semibold bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-700 bg-clip-text text-transparent">✨ 새로운 시작을 함께하세요</span>
+              {/* 상단 배지 */}
+              <div className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-gradient-to-r from-dashboard-gradient-from/10 via-dashboard-gradient-via/10 to-dashboard-gradient-to/10 border border-dashboard-gradient-from/20 backdrop-blur-sm">
+                <Sparkles className="w-4 h-4 text-dashboard-accent" />
+                <span className="text-sm font-medium text-dashboard-text-primary">새로운 시작을 함께하세요</span>
               </div>
-              <h1 className="text-6xl sm:text-7xl font-bold text-slate-800 mb-10 tracking-tight leading-tight">
+              
+              {/* 헤드라인 */}
+              <h1 className="text-6xl sm:text-7xl font-bold mb-10 tracking-tight leading-[1.1]">
                 {user ? (
                   <span className="flex flex-col gap-6">
-                    <span className="text-slate-700">Welcome back,</span>
-                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      {user.name}
-                    </span>
+                    <span className="text-dashboard-text-primary">환영합니다,</span>
+                    <div className="relative">
+                      <span className="bg-gradient-to-r from-dashboard-gradient-from via-dashboard-gradient-via to-dashboard-gradient-to bg-clip-text text-transparent">
+                        {user.name}
+                      </span>
+                      <div className="absolute -bottom-2 left-0 w-1/2 h-1 bg-gradient-to-r from-dashboard-gradient-from to-dashboard-gradient-via rounded-full"></div>
+                    </div>
                   </span>
                 ) : (
                   <span className="flex flex-col gap-6">
-                    <span className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                      Nation's LAB
-                    </span>
-                    <span className="text-slate-700">과 함께하는 성장</span>
+                    <div className="relative">
+                      <span className="bg-gradient-to-r from-dashboard-gradient-from via-dashboard-gradient-via to-dashboard-gradient-to bg-clip-text text-transparent">
+                        Nation's LAB
+                      </span>
+                      <div className="absolute -bottom-2 left-0 w-1/2 h-1 bg-gradient-to-r from-dashboard-gradient-from to-dashboard-gradient-via rounded-full"></div>
+                    </div>
+                    <span className="text-dashboard-text-primary">과 함께하는 성장</span>
                   </span>
                 )}
               </h1>
-              <p className="text-xl text-slate-600 mb-10 leading-relaxed max-w-2xl">
+              
+              {/* 부제목 */}
+              <p className="text-xl text-dashboard-text-secondary mb-10 leading-relaxed max-w-2xl">
                 최신 기술 트렌드와 실무 중심의 교육으로 여러분의 성장을 돕습니다.
                 지금 바로 시작하세요.
               </p>
-              <div className="flex flex-wrap gap-6">
-                <Button
+              
+              {/* 버튼 영역 */}
+              <div className="flex flex-wrap gap-5">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.98 }}
                   onClick={scrollToCourses}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-10 py-4 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200 text-xl relative overflow-hidden group"
-                  onMouseMove={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const x = e.clientX - rect.left;
-                    const y = e.clientY - rect.top;
-                    e.currentTarget.style.background = `radial-gradient(100px circle at ${x}px ${y}px, rgb(15, 23, 42), rgb(30, 41, 59))`;
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = 'rgb(15, 23, 42)';
-                  }}
+                  className="relative overflow-hidden group px-8 py-4 rounded-xl bg-gradient-to-r from-dashboard-gradient-from to-dashboard-gradient-via text-white font-medium text-lg shadow-lg shadow-dashboard-gradient-from/20 transition-all duration-300"
                 >
-                  강의 둘러보기
-                </Button>
+                  <span className="relative z-10 flex items-center gap-2">
+                    강의 둘러보기
+                    <ArrowDown className="w-5 h-5 transition-transform duration-300 group-hover:translate-y-1" />
+                  </span>
+                  <div className="absolute inset-0 bg-gradient-to-r from-dashboard-gradient-via to-dashboard-gradient-to opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </motion.button>
+
                 {!user && (
-                  <Button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => navigate('/auth')}
-                    variant="outline"
-                    className="bg-white/50 hover:bg-white/80 text-slate-900 border-slate-200 px-10 py-4 rounded-lg backdrop-blur-sm transition-all duration-200 text-xl relative overflow-hidden group"
-                    onMouseMove={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const x = e.clientX - rect.left;
-                      const y = e.clientY - rect.top;
-                      e.currentTarget.style.background = `radial-gradient(100px circle at ${x}px ${y}px, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.5))`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
-                    }}
+                    className="relative overflow-hidden group px-8 py-4 rounded-xl bg-white text-dashboard-text-primary font-medium text-lg border border-gray-200 shadow-md transition-all duration-300"
                   >
-                    시작하기
-                  </Button>
+                    <span className="relative z-10 flex items-center gap-2">
+                      시작하기
+                      <ArrowRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+                    </span>
+                    <div className="absolute inset-0 bg-dashboard-card-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </motion.button>
                 )}
+              </div>
+
+              {/* 스크롤 다운 인디케이터 */}
+              <div className="hidden lg:block mt-20 animate-bounce">
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 1.5, duration: 1 }}
+                  className="flex flex-col items-center"
+                >
+                  <span className="text-sm text-dashboard-text-secondary mb-2">스크롤하여 더 알아보기</span>
+                  <ArrowDown className="w-5 h-5 text-dashboard-text-secondary" />
+                </motion.div>
               </div>
             </motion.div>
 
-            {/* Right Content - Stats */}
+            {/* 오른쪽 - 통계 카드 */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="grid grid-cols-2 gap-8"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+              className="grid grid-cols-2 gap-6"
             >
-              {/* Stats Cards */}
-              <div 
-                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(59, 130, 246, 0.2), transparent 50%)`;
-                    gradient.style.opacity = '1';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.opacity = '0';
-                  }
-                }}
-              >
-                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-indigo-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-blue-200 shadow-sm group-hover:border-blue-300 transition-all duration-300">
-                  <h3 className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">20+</h3>
-                  <p className="text-lg text-slate-600">전문 강사진</p>
+              {/* 통계 카드 - 전문 강사진 */}
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-gradient-from to-dashboard-gradient-via rounded-2xl blur opacity-10 group-hover:opacity-25 transition-opacity duration-300"></div>
+                <div className="relative p-6 sm:p-8 rounded-2xl bg-white border border-dashboard-gradient-from/10 shadow-xl shadow-dashboard-gradient-from/5 hover:shadow-dashboard-gradient-from/10 transition-all duration-300">
+                  <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-gradient-from/10 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-dashboard-primary" />
+                  </div>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-primary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">20+</h3>
+                  <p className="text-lg text-dashboard-text-secondary">전문 강사진</p>
                 </div>
               </div>
-              <div 
-                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(168, 85, 247, 0.2), transparent 50%)`;
-                    gradient.style.opacity = '1';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.opacity = '0';
-                  }
-                }}
-              >
-                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-100 to-pink-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-purple-200 shadow-sm group-hover:border-purple-300 transition-all duration-300">
-                  <h3 className="text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">50+</h3>
-                  <p className="text-lg text-slate-600">강의 콘텐츠</p>
+
+              {/* 통계 카드 - 강의 콘텐츠 */}
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-secondary to-dashboard-accent rounded-2xl blur opacity-10 group-hover:opacity-25 transition-opacity duration-300"></div>
+                <div className="relative p-6 sm:p-8 rounded-2xl bg-white border border-dashboard-secondary/10 shadow-xl shadow-dashboard-secondary/5 hover:shadow-dashboard-secondary/10 transition-all duration-300">
+                  <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-secondary/10 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-dashboard-secondary" />
+                  </div>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-secondary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">50+</h3>
+                  <p className="text-lg text-dashboard-text-secondary">강의 콘텐츠</p>
                 </div>
               </div>
-              <div 
-                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(16, 185, 129, 0.2), transparent 50%)`;
-                    gradient.style.opacity = '1';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.opacity = '0';
-                  }
-                }}
-              >
-                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-100 to-teal-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-emerald-200 shadow-sm group-hover:border-emerald-300 transition-all duration-300">
-                  <h3 className="text-5xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">1000+</h3>
-                  <p className="text-lg text-slate-600">수강생</p>
+
+              {/* 통계 카드 - 수강생 */}
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-success to-green-400 rounded-2xl blur opacity-10 group-hover:opacity-25 transition-opacity duration-300"></div>
+                <div className="relative p-6 sm:p-8 rounded-2xl bg-white border border-dashboard-success/10 shadow-xl shadow-dashboard-success/5 hover:shadow-dashboard-success/10 transition-all duration-300">
+                  <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-success/10 flex items-center justify-center">
+                    <User className="w-6 h-6 text-dashboard-success" />
+                  </div>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-success mb-2 group-hover:scale-105 origin-left transition-transform duration-300">1000+</h3>
+                  <p className="text-lg text-dashboard-text-secondary">수강생</p>
                 </div>
               </div>
-              <div 
-                className="relative group overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg"
-                onMouseMove={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = e.clientX - rect.left;
-                  const y = e.clientY - rect.top;
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.background = `radial-gradient(400px circle at ${x}px ${y}px, rgba(245, 158, 11, 0.2), transparent 50%)`;
-                    gradient.style.opacity = '1';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  const card = e.currentTarget;
-                  const gradient = card.querySelector('.gradient-overlay') as HTMLElement;
-                  if (gradient) {
-                    gradient.style.opacity = '0';
-                  }
-                }}
-              >
-                <div className="gradient-overlay absolute inset-0 opacity-0 transition-opacity duration-300 z-10" />
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-100 to-orange-100 opacity-50 group-hover:opacity-70 transition-opacity duration-300" />
-                <div className="relative bg-white/80 backdrop-blur-sm rounded-2xl p-8 border border-amber-200 shadow-sm group-hover:border-amber-300 transition-all duration-300">
-                  <h3 className="text-5xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent mb-3 group-hover:scale-105 transition-transform duration-300">98%</h3>
-                  <p className="text-lg text-slate-600">만족도</p>
+
+              {/* 통계 카드 - 만족도 */}
+              <div className="relative group">
+                <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-warning to-amber-500 rounded-2xl blur opacity-10 group-hover:opacity-25 transition-opacity duration-300"></div>
+                <div className="relative p-6 sm:p-8 rounded-2xl bg-white border border-dashboard-warning/10 shadow-xl shadow-dashboard-warning/5 hover:shadow-dashboard-warning/10 transition-all duration-300">
+                  <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-warning/10 flex items-center justify-center">
+                    <Target className="w-6 h-6 text-dashboard-warning" />
+                  </div>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-warning mb-2 group-hover:scale-105 origin-left transition-transform duration-300">98%</h3>
+                  <p className="text-lg text-dashboard-text-secondary">만족도</p>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
+
+        {/* 하단 웨이브 디자인 */}
+        <div className="absolute bottom-0 left-0 right-0 h-16">
+          <svg className="w-full h-full fill-slate-50" viewBox="0 0 1440 54" preserveAspectRatio="none">
+            <path d="M0 22L120 16.7C240 11 480 1.00001 720 0.700012C960 1.00001 1200 11 1320 16.7L1440 22V54H1320C1200 54 960 54 720 54C480 54 240 54 120 54H0V22Z"></path>
+          </svg>
+        </div>
       </div>
 
-      {/* Course Cards Section */}
-      <section id="courses-section" className="relative py-32 bg-gradient-to-b from-sky-50 via-blue-50 to-indigo-50">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.02]"></div>
+      {/* Course Cards Section - 리디자인 */}
+      <section id="courses-section" className="relative py-24 lg:py-32 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
+        {/* 배경 패턴 및 장식 요소 */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.02]"></div>
+          {/* 장식용 그라데이션 원형 */}
+          <div className="absolute top-1/4 left-0 w-[800px] h-[800px] rounded-full bg-dashboard-gradient-to/5 blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-0 w-[800px] h-[800px] rounded-full bg-dashboard-gradient-from/5 blur-3xl"></div>
+        </div>
 
-        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
-          {/* Section Header */}
+        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-16">
+          {/* 섹션 헤더 */}
           <div className="text-center mb-20">
-            <div className="inline-block mb-4 px-4 py-1.5 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-full">
-              <span className="text-sm font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                Featured Courses
-              </span>
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-dashboard-gradient-to/10 border border-dashboard-gradient-to/20">
+              <span className="text-sm font-medium text-dashboard-primary">추천 강의</span>
             </div>
-            <h2 className="text-4xl font-bold text-slate-900 mb-4">추천 강의</h2>
-            <p className="text-xl text-slate-600 max-w-2xl mx-auto">
-              최신 트렌드를 반영한 다양한 강의를 만나보세요
+            <h2 className="text-4xl font-bold text-dashboard-text-primary mb-4">Nation's LAB의 베스트 강의</h2>
+            <p className="text-xl text-dashboard-text-secondary max-w-2xl mx-auto">
+              최신 트렌드를 반영한 다양한 강의로 여러분의 커리어를 발전시켜보세요
             </p>
           </div>
 
-          {/* Category Filter */}
-          <div className="relative mb-16 bg-white/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-100">
+          {/* 카테고리 필터 - 리디자인 */}
+          <div className="relative mb-16 bg-white/80 backdrop-blur-sm rounded-2xl p-4 lg:p-6 border border-slate-100 shadow-lg shadow-slate-200/20">
             <div className="flex items-center justify-between mb-4 px-4">
-              <h3 className="text-lg font-semibold text-gray-900">카테고리</h3>
-              <Button
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-dashboard-gradient-to/10 flex items-center justify-center">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M19.5 3.75H4.5C3.25736 3.75 2.25 4.75736 2.25 6V18C2.25 19.2426 3.25736 20.25 4.5 20.25H19.5C20.7426 20.25 21.75 19.2426 21.75 18V6C21.75 4.75736 20.7426 3.75 19.5 3.75Z" stroke="#3F5CF7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    <path d="M8.25 20.25V3.75" stroke="#3F5CF7" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+                <h3 className="text-lg font-semibold text-dashboard-text-primary">카테고리</h3>
+              </div>
+
+              <button
                 onClick={() => setSelectedMainCategory('all')}
-                variant="ghost"
-                className="text-sm text-gray-500 hover:text-blue-600"
+                className="text-sm text-dashboard-text-secondary hover:text-dashboard-primary transition-colors"
               >
                 필터 초기화
-              </Button>
+              </button>
             </div>
             
             <div className="relative">
-              {/* Gradient Overlays */}
+              {/* 그라데이션 오버레이 */}
               <div className="absolute left-0 top-0 bottom-0 w-20 bg-gradient-to-r from-white to-transparent pointer-events-none z-10"></div>
               <div className="absolute right-0 top-0 bottom-0 w-20 bg-gradient-to-l from-white to-transparent pointer-events-none z-10"></div>
               
-              {/* Scrollable Container */}
-              <div className="overflow-x-auto hide-scrollbar">
+              {/* 스크롤 가능한 컨테이너 */}
+              <div className="overflow-x-auto hide-scrollbar pb-2">
                 <div className="flex gap-3 px-4 py-2 min-w-max">
-                  <Button
+                  <button
                     onClick={() => setSelectedMainCategory('all')}
-                    variant={selectedMainCategory === 'all' ? "default" : "outline"}
                     className={cn(
-                      "rounded-full px-6 py-2 transition-all duration-300 min-w-[120px]",
+                      "rounded-full px-6 py-2.5 transition-all duration-300 min-w-[120px] font-medium text-sm border",
                       selectedMainCategory === 'all'
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 border-0'
-                        : 'hover:border-blue-200 hover:bg-blue-50'
+                        ? 'bg-gradient-to-r from-dashboard-gradient-from to-dashboard-gradient-via border-0 text-white shadow-lg shadow-dashboard-gradient-from/20'
+                        : 'border-gray-200 bg-white hover:bg-dashboard-card-accent text-dashboard-text-primary'
                     )}
                   >
                     전체 강의
-                  </Button>
+                  </button>
+
                   {Object.entries(CATEGORY_MAPPING).map(([id, name]) => (
-                    <Button
+                    <button
                       key={id}
                       onClick={() => setSelectedMainCategory(id)}
-                      variant={selectedMainCategory === id ? "default" : "outline"}
                       className={cn(
-                        "rounded-full px-6 py-2 transition-all duration-300 min-w-[120px] flex items-center justify-center gap-2",
+                        "rounded-full px-6 py-2.5 transition-all duration-300 min-w-[120px] font-medium text-sm border flex items-center justify-center gap-2",
                         selectedMainCategory === id
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25 border-0'
-                          : 'hover:border-blue-200 hover:bg-blue-50'
+                          ? 'bg-gradient-to-r from-dashboard-gradient-from to-dashboard-gradient-via border-0 text-white shadow-lg shadow-dashboard-gradient-from/20'
+                          : 'border-gray-200 bg-white hover:bg-dashboard-card-accent text-dashboard-text-primary'
                       )}
                     >
                       <CategoryIcon category={id} className="shrink-0" />
                       <span className="truncate">{name}</span>
-                    </Button>
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Course Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredCourses.map((course, index) => (
-              <motion.div
-                key={course.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group"
-              >
-                <CourseCard course={course} />
-              </motion.div>
-            ))}
+          {/* Course Grid - 리디자인된 그리드 */}
+          {loading ? (
+            <div className="flex justify-center items-center py-20">
+              <div className="animate-spin rounded-full h-16 w-16 border-4 border-dashboard-gradient-from border-t-transparent"></div>
+            </div>
+          ) : error ? (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-5xl mb-4">🔍</div>
+              <h3 className="text-xl font-medium text-dashboard-text-primary mb-2">강의를 찾을 수 없습니다</h3>
+              <p className="text-dashboard-text-secondary">다른 카테고리를 선택해 보세요</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 lg:gap-8">
+              {filteredCourses.map((course, index) => (
+                <motion.div
+                  key={course.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                >
+                  <CourseCard course={course} />
+                </motion.div>
+              ))}
+            </div>
+          )}
+
+          {/* "더 많은 강의 보기" 버튼 */}
+          <div className="mt-16 text-center">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate('/courses')}
+              className="relative overflow-hidden group px-8 py-4 rounded-xl bg-white border border-gray-200 text-dashboard-text-primary font-medium text-lg shadow-md transition-all duration-300"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                더 많은 강의 보기
+                <ChevronRight className="w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
+              </span>
+              <div className="absolute inset-0 bg-dashboard-card-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </motion.button>
           </div>
         </div>
       </section>
 
-      {/* Carousel Section */}
-      <div className="bg-slate-50 py-32 overflow-hidden">
-        <div className="max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-12">
+      {/* 캐러셀 섹션 - 리디자인 */}
+      <div className="relative py-24 lg:py-32 bg-gradient-to-b from-white to-slate-50 overflow-hidden">
+        {/* 배경 패턴 및 장식 요소 */}
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.02]"></div>
+          {/* 장식용 그라데이션 원형 */}
+          <div className="absolute top-1/4 left-0 w-[800px] h-[800px] rounded-full bg-dashboard-gradient-to/5 blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-0 w-[800px] h-[800px] rounded-full bg-dashboard-gradient-from/5 blur-3xl"></div>
+        </div>
+      
+        <div className="relative z-10 max-w-[90rem] mx-auto px-6 sm:px-8 lg:px-16">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">학습 성과</h2>
-            <p className="text-xl text-gray-600">Nation's LAB과 함께한 수강생들의 이야기</p>
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-dashboard-gradient-to/10 border border-dashboard-gradient-to/20">
+              <span className="text-sm font-medium text-dashboard-primary">학습 경험</span>
+            </div>
+            <h2 className="text-4xl font-bold text-dashboard-text-primary mb-4">학습 성과</h2>
+            <p className="text-xl text-dashboard-text-secondary max-w-2xl mx-auto">
+              Nation's LAB과 함께한 수강생들의 이야기
+            </p>
           </div>
-          <ImageCarousel />
+          
+          <div className="relative px-4">
+            {/* 그라데이션 오버레이 */}
+            <div className="absolute left-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+            <div className="absolute right-0 top-0 bottom-0 w-24 md:w-48 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
+            
+            <ImageCarousel />
+          </div>
         </div>
       </div>
 
-      {/* 학습 특징 섹션 */}
-      <section className="relative py-32 bg-gradient-to-b from-slate-100 to-white overflow-hidden">
+      {/* 학습 특징 섹션 - 리디자인 */}
+      <section className="relative py-24 lg:py-32 bg-gradient-to-b from-slate-50 to-white overflow-hidden">
         {/* 배경 패턴 */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.03]"></div>
+        <div className="absolute inset-0 z-0">
+          <div className="absolute inset-0 bg-[url('/patterns/grid.svg')] opacity-[0.02]"></div>
+          {/* 장식용 그라데이션 원형 */}
+          <div className="absolute top-1/3 left-1/4 w-[600px] h-[600px] rounded-full bg-dashboard-gradient-from/5 blur-3xl"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-[600px] h-[600px] rounded-full bg-dashboard-gradient-to/5 blur-3xl"></div>
         </div>
 
         {/* 메인 콘텐츠 */}
         <div className="relative z-10 max-w-7xl mx-auto px-6">
           <div className="text-center mb-16">
-            <div className="inline-block mb-4 px-4 py-1.5 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-full">
-              <span className="text-sm font-medium text-slate-700">Learning Experience</span>
+            <div className="inline-flex items-center gap-2 mb-4 px-4 py-1.5 rounded-full bg-dashboard-gradient-from/10 border border-dashboard-gradient-from/20">
+              <span className="text-sm font-medium text-dashboard-primary">Learning Experience</span>
             </div>
-            <h2 className="text-4xl font-bold text-slate-800 mb-4">체계적인 학습 경험</h2>
-            <p className="text-lg text-slate-600">Nation's LAB만의 차별화된 교육 시스템을 경험하세요</p>
+            <h2 className="text-4xl font-bold text-dashboard-text-primary mb-4">체계적인 학습 경험</h2>
+            <p className="text-xl text-dashboard-text-secondary max-w-2xl mx-auto">
+              Nation's LAB만의 차별화된 교육 시스템을 경험하세요
+            </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
             {/* 단계별 학습 */}
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-blue-100 group-hover:to-indigo-100"></div>
-              <div className="relative p-8 rounded-2xl border border-blue-200">
-                <div className="bg-gradient-to-br from-blue-600 to-indigo-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-blue-500/20">
+            <motion.div 
+              className="group relative"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute inset-0 bg-white rounded-2xl"></div>
+              <div className="relative p-8 rounded-2xl border border-slate-200 transition-all duration-300 group-hover:border-blue-200 group-hover:shadow-lg group-hover:shadow-blue-100/40 h-full">
+                <div className="bg-gradient-to-br from-dashboard-gradient-from to-dashboard-gradient-via w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-dashboard-gradient-from/20">
                   <code className="text-lg font-mono text-white">def</code>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">단계별 학습</h3>
-                <div className="font-mono text-sm text-blue-600 mb-4 opacity-80">def learn_step_by_step():</div>
-                <p className="text-slate-600 leading-relaxed">
+                <h3 className="text-2xl font-bold text-dashboard-text-primary mb-4">단계별 학습</h3>
+                <div className="font-mono text-sm text-dashboard-primary mb-4 opacity-80">def learn_step_by_step():</div>
+                <p className="text-dashboard-text-secondary leading-relaxed">
                   전문가가 설계한 커리큘럼으로<br />
                   단계별 학습을 경험하세요
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* 실시간 피드백 */}
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-purple-100 group-hover:to-pink-100"></div>
-              <div className="relative p-8 rounded-2xl border border-purple-200">
-                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+            <motion.div 
+              className="group relative"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute inset-0 bg-white rounded-2xl"></div>
+              <div className="relative p-8 rounded-2xl border border-slate-200 transition-all duration-300 group-hover:border-purple-200 group-hover:shadow-lg group-hover:shadow-purple-100/40 h-full">
+                <div className="bg-gradient-to-br from-purple-500 to-pink-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
                   <code className="text-lg font-mono text-white">async</code>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">실시간 피드백</h3>
-                <div className="font-mono text-sm text-purple-600 mb-4 opacity-80">async function review() {}</div>
-                <p className="text-slate-600 leading-relaxed">
+                <h3 className="text-2xl font-bold text-dashboard-text-primary mb-4">실시간 피드백</h3>
+                <div className="font-mono text-sm text-purple-500 mb-4 opacity-80">async function review() {}</div>
+                <p className="text-dashboard-text-secondary leading-relaxed">
                   강사와 동료들의 피드백으로<br />
                   더 빠른 성장을 이루세요
                 </p>
               </div>
-            </div>
+            </motion.div>
 
             {/* 학습 관리 */}
-            <div className="group relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl backdrop-blur-xl transition-all duration-300 group-hover:from-emerald-100 group-hover:to-teal-100"></div>
-              <div className="relative p-8 rounded-2xl border border-emerald-200">
-                <div className="bg-gradient-to-br from-emerald-600 to-teal-600 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
+            <motion.div 
+              className="group relative"
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              viewport={{ once: true }}
+            >
+              <div className="absolute inset-0 bg-white rounded-2xl"></div>
+              <div className="relative p-8 rounded-2xl border border-slate-200 transition-all duration-300 group-hover:border-emerald-200 group-hover:shadow-lg group-hover:shadow-emerald-100/40 h-full">
+                <div className="bg-gradient-to-br from-emerald-500 to-teal-500 w-16 h-16 rounded-xl flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/20">
                   <code className="text-lg font-mono text-white">const</code>
                 </div>
-                <h3 className="text-2xl font-bold text-slate-800 mb-4">학습 관리</h3>
-                <div className="font-mono text-sm text-emerald-600 mb-4 opacity-80">const progress = new<br />Dashboard();</div>
-                <p className="text-slate-600 leading-relaxed">
+                <h3 className="text-2xl font-bold text-dashboard-text-primary mb-4">학습 관리</h3>
+                <div className="font-mono text-sm text-emerald-500 mb-4 opacity-80">const progress = new<br />Dashboard();</div>
+                <p className="text-dashboard-text-secondary leading-relaxed">
                   대시보드를 통해 나의 학습 현황을<br />
                   한눈에 파악하세요
                 </p>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
-
-        {/* 장식용 그라데이션 원 */}
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full filter blur-3xl"></div>
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-indigo-500/20 rounded-full filter blur-3xl"></div>
       </section>
 
-      {/* Partner Logos Section */}
+      {/* 파트너사 로고 섹션 - 리디자인 */}
       <div className="relative py-20 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-[0.03]">
@@ -907,35 +997,35 @@ const StudentLanding: FC = () => {
               <div className="flex gap-12">
                 <div className="animate-scroll-left flex gap-12">
                   {['/tier_badge_dark.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
-                    <div key={`dup1-${index}`} className="relative group">
-                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
-                        <img
-                          src={logo}
-                          alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
-                          className={cn(
-                            "w-auto h-auto object-contain",
-                            index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
-                          )}
-                        />
-                      </div>
+                  <div key={`dup1-${index}`} className="relative group">
+                    <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                      <img
+                        src={logo}
+                        alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
+                        className={cn(
+                          "w-auto h-auto object-contain",
+                          index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
+                        )}
+                      />
                     </div>
-                  ))}
+                  </div>
+                ))}
                 </div>
                 <div className="animate-scroll-left flex gap-12" aria-hidden="true">
                   {['/tier_badge_dark.png', '/partner/nipa.png', '/partner/kt.png', '/partner/kitech.png', '/partner/Keti.png', '/partner/ict.png', '/partner/Incheon.png'].map((logo, index) => (
-                    <div key={`dup2-${index}`} className="relative group">
-                      <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
-                        <img
-                          src={logo}
-                          alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
-                          className={cn(
-                            "w-auto h-auto object-contain",
-                            index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
-                          )}
-                        />
-                      </div>
+                  <div key={`dup2-${index}`} className="relative group">
+                    <div className="w-[180px] h-[100px] bg-white rounded-lg p-6 flex items-center justify-center">
+                      <img
+                        src={logo}
+                        alt={index === 0 ? "AWS Partner Select Tier Badge" : "Partner Logo"}
+                        className={cn(
+                          "w-auto h-auto object-contain",
+                          index === 0 ? "max-w-[150px] max-h-[80px]" : "max-w-[120px] max-h-[60px]"
+                        )}
+                      />
                     </div>
-                  ))}
+                  </div>
+                ))}
                 </div>
               </div>
             </div>

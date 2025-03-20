@@ -33,7 +33,7 @@ const AssignmentListPage: FC = () => {
     // 상태 필터
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'completed' && item.is_completed) ||
-      (statusFilter === 'pending' && !item.is_completed && item.status === '진행중') ||
+      (statusFilter === 'pending' && !item.is_completed && item.status !== '마감됨') ||
       (statusFilter === 'overdue' && item.status === '마감됨' && !item.is_completed);
     
     // 유형 필터
@@ -41,11 +41,11 @@ const AssignmentListPage: FC = () => {
       (item.item_type.toLowerCase() === typeFilter.toLowerCase());
     
     return matchesSearch && matchesStatus && matchesType;
-  });
+  }) || [];
   
   // 상태에 따른 태그 반환
   const getStatusTag = (record: Assignment) => {
-    if (record.is_completed) {
+    if (record.is_completed || record.status === '제출완료') {
       return <Tag color="success">완료</Tag>;
     } else if (record.status === '마감됨') {
       return <Tag color="error">마감</Tag>;
@@ -87,9 +87,7 @@ const AssignmentListPage: FC = () => {
       title: '과목',
       dataIndex: 'course_title',
       key: 'course_title',
-      render: (text: string, record: Assignment) => (
-        <span>{text}</span>
-      ),
+      render: (text: string) => <span>{text}</span>,
     },
     {
       title: '마감일',
@@ -107,7 +105,7 @@ const AssignmentListPage: FC = () => {
       title: '점수',
       dataIndex: 'score',
       key: 'score',
-      render: (score: number, record: Assignment) => (
+      render: (score: string | number, record: Assignment) => (
         record.is_completed ? 
           <Text strong>{score}</Text> : 
           <Text type="secondary">-</Text>
@@ -128,6 +126,33 @@ const AssignmentListPage: FC = () => {
     },
   ];
   
+  // 과제 완료율 및 진행률 계산
+  const getCompletionStats = () => {
+    if (!assignments || assignments.length === 0) 
+      return { total: 0, completed: 0, rate: 0 };
+    
+    const total = assignments.length;
+    const completed = assignments.filter(item => item.is_completed).length;
+    const rate = Math.round((completed / total) * 100);
+    
+    return { total, completed, rate };
+  };
+
+  // 유형별 과제 통계
+  const getTypeStats = () => {
+    if (!assignments || assignments.length === 0) 
+      return { assignment: 0, exam: 0, quiz: 0 };
+    
+    const assignment = assignments.filter(item => item.item_type === 'ASSIGNMENT').length;
+    const exam = assignments.filter(item => item.item_type === 'EXAM').length;
+    const quiz = assignments.filter(item => item.item_type === 'QUIZ').length;
+    
+    return { assignment, exam, quiz };
+  };
+
+  const stats = getCompletionStats();
+  const typeStats = getTypeStats();
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -155,6 +180,48 @@ const AssignmentListPage: FC = () => {
         <div className="mb-6">
           <Title level={2} className="mb-2">과제 및 퀴즈</Title>
           <Text type="secondary">모든 과목의 과제, 퀴즈, 시험 목록입니다.</Text>
+        </div>
+        
+        {/* 과제 요약 통계 카드 추가 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card bordered={false} className="shadow-sm text-center">
+            <div className="flex items-center justify-center">
+              <CheckCircleOutlined style={{ fontSize: 24, color: '#52c41a', marginRight: 8 }} />
+              <div>
+                <div className="text-2xl font-bold">{stats.rate}%</div>
+                <div>완료율</div>
+              </div>
+            </div>
+            <div className="mt-3 text-sm text-gray-500">
+              {stats.completed}/{stats.total} 항목 완료
+            </div>
+          </Card>
+          
+          <Card bordered={false} className="shadow-sm text-center">
+            <div className="flex items-center justify-center">
+              <FileTextOutlined style={{ fontSize: 24, color: '#1677ff', marginRight: 8 }} />
+              <div>
+                <div className="text-2xl font-bold">{typeStats.assignment}</div>
+                <div>과제</div>
+              </div>
+            </div>
+            <div className="mt-3 text-sm text-gray-500">
+              {assignments?.filter(a => a.item_type === 'ASSIGNMENT' && a.is_completed).length || 0} 항목 완료
+            </div>
+          </Card>
+          
+          <Card bordered={false} className="shadow-sm text-center">
+            <div className="flex items-center justify-center">
+              <BarChartOutlined style={{ fontSize: 24, color: '#722ed1', marginRight: 8 }} />
+              <div>
+                <div className="text-2xl font-bold">{typeStats.exam + typeStats.quiz}</div>
+                <div>시험/퀴즈</div>
+              </div>
+            </div>
+            <div className="mt-3 text-sm text-gray-500">
+              {assignments?.filter(a => (a.item_type === 'EXAM' || a.item_type === 'QUIZ') && a.is_completed).length || 0} 항목 완료
+            </div>
+          </Card>
         </div>
         
         <Card className="mb-6 shadow-sm">
@@ -191,39 +258,30 @@ const AssignmentListPage: FC = () => {
           </div>
         </Card>
         
-        {!assignments || assignments.length === 0 ? (
-          <Card>
-            <Empty 
-              description="과제 목록이 없습니다" 
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-            />
-          </Card>
-        ) : (
-          <Card bordered={false} className="shadow-sm">
-            <Table 
-              columns={columns} 
-              dataSource={filteredAssignments} 
-              rowKey="item_id"
-              pagination={{
-                defaultPageSize: 10,
-                showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}개 항목`,
-              }}
-              loading={isLoading}
-              locale={{
-                emptyText: (
-                  <Empty
-                    image={Empty.PRESENTED_IMAGE_SIMPLE}
-                    description={
-                      searchText || statusFilter !== 'all' || typeFilter !== 'all'
-                        ? '검색 결과가 없습니다'
-                        : '과제 목록이 없습니다'
-                    }
-                  />
-                )
-              }}
-            />
-          </Card>
-        )}
+        <Card bordered={false} className="shadow-sm">
+          <Table 
+            columns={columns} 
+            dataSource={filteredAssignments} 
+            rowKey="item_id"
+            pagination={{
+              defaultPageSize: 10,
+              showTotal: (total, range) => `${range[0]}-${range[1]} / ${total}개 항목`,
+            }}
+            loading={isLoading}
+            locale={{
+              emptyText: (
+                <Empty
+                  image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  description={
+                    searchText || statusFilter !== 'all' || typeFilter !== 'all'
+                      ? '검색 결과가 없습니다'
+                      : '과제 목록이 없습니다'
+                  }
+                />
+              )
+            }}
+          />
+        </Card>
       </div>
     </div>
   );

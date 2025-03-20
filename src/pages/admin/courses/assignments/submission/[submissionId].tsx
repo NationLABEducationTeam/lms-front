@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { fetchUserAttributes } from 'aws-amplify/auth';
+import { fetchUserAttributes, fetchAuthSession } from 'aws-amplify/auth';
+import axios from 'axios';
+import { toast } from 'sonner';
+import { getApiUrl } from '@/config/api';
 import { 
   Card, 
   CardContent, 
@@ -185,10 +188,48 @@ const SubmissionDetailPage = () => {
   };
   
   // 파일 다운로드 핸들러
-  const handleDownloadFile = (fileKey: string) => {
-    // 새 창에서 파일 다운로드를 위한 URL 설정
-    const fileDownloadEndpoint = `/api/v1/admin/assignments/file/${fileKey}/download-url`;
-    window.open(fileDownloadEndpoint, '_blank');
+  const handleDownloadFile = async (fileKey: string, fileName: string) => {
+    try {
+      // 로딩 상태 표시
+      toast.loading('파일 다운로드 준비 중...');
+      
+      // 인증 세션 가져오기
+      const { tokens } = await fetchAuthSession();
+      const idToken = tokens?.idToken?.toString();
+      
+      if (!idToken) {
+        throw new Error('인증 토큰을 가져올 수 없습니다.');
+      }
+      
+      // API 요청으로 다운로드 URL 받아오기 (인증 헤더 포함)
+      const response = await axios.get(getApiUrl(`/admin/assignments/file/${fileKey}/download-url`), {
+        headers: {
+          Authorization: `Bearer ${idToken}`
+        }
+      });
+      
+      // 응답 데이터 구조 확인
+      console.log('파일 다운로드 URL 응답:', response.data);
+      
+      // 응답 구조가 { success: true, data: { downloadUrl: "URL" } } 형태인지 확인
+      if (response.data?.success && response.data?.data?.downloadUrl) {
+        // 로딩 토스트 숨김
+        toast.dismiss();
+        
+        // 다운로드 URL을 사용하여 파일 다운로드
+        const downloadUrl = response.data.data.downloadUrl;
+        
+        // 새 창에서 URL 열기 (파일 다운로드 시작)
+        window.open(downloadUrl, '_blank');
+        
+        toast.success('파일 다운로드가 시작되었습니다.');
+      } else {
+        throw new Error('다운로드 URL을 받아오지 못했습니다.');
+      }
+    } catch (error) {
+      console.error('파일 다운로드 오류:', error);
+      toast.error('파일 다운로드 중 오류가 발생했습니다.');
+    }
   };
   
   // 로딩 중 UI
@@ -382,7 +423,7 @@ const SubmissionDetailPage = () => {
                             variant="outline" 
                             size="sm"
                             className="flex items-center gap-1"
-                            onClick={() => handleDownloadFile(file.fileKey)}
+                            onClick={() => handleDownloadFile(file.fileKey, file.fileName)}
                           >
                             <Download className="h-4 w-4" />
                             다운로드

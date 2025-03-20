@@ -46,12 +46,23 @@ export default {
   				'0%': { transform: 'translateX(-100%)' },
   				'100%': { transform: 'translateX(0)' },
   			},
+        'float': {
+          '0%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
+          '100%': { transform: 'translateY(0px)' },
+        },
+        'pulse-soft': {
+          '0%, 100%': { opacity: 1 },
+          '50%': { opacity: 0.8 },
+        },
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
   			'accordion-up': 'accordion-up 0.2s ease-out',
   			'scroll-left': 'scroll-left 30s linear infinite',
   			'scroll-right': 'scroll-right 30s linear infinite',
+        'float': 'float 5s ease-in-out infinite',
+        'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
@@ -98,7 +109,36 @@ export default {
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
   				'5': 'hsl(var(--chart-5))'
-  			}
+  			},
+        // 대시보드 리디자인 색상 팔레트
+        dashboard: {
+          primary: '#3F5CF7',
+          secondary: '#6C4EF8',
+          accent: '#FB4E6A',
+          success: '#34D399',
+          warning: '#FBBF24',
+          error: '#F87171',
+          info: '#38BDF8',
+          // 그라데이션 배경용 색상
+          gradient: {
+            from: '#3F5CF7',
+            via: '#6C4EF8',
+            to: '#8B5CF6',
+          },
+          // 카드 배경 색상
+          card: {
+            light: '#FFFFFF',
+            dark: '#1F2937',
+            accent: 'rgba(63, 92, 247, 0.08)',
+          },
+          // 텍스트 색상
+          text: {
+            primary: '#111827',
+            secondary: '#4B5563',
+            muted: '#9CA3AF',
+            light: '#F9FAFB',
+          }
+        }
   		}
   	}
   },

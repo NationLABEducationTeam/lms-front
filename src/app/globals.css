@@ -95,4 +95,46 @@
 .hover-lift:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* 대시보드 캘린더 스타일 */
+.antd-calendar-wrapper .ant-picker-calendar-full {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.antd-calendar-wrapper .ant-picker-calendar-header {
+  padding: 8px 16px !important;
+}
+
+.antd-calendar-wrapper .ant-picker-panel {
+  border-top: none !important;
+}
+
+.antd-calendar-wrapper .ant-picker-calendar-date-today {
+  border-color: #3F5CF7 !important;
+}
+
+.antd-calendar-wrapper .ant-picker-calendar-date-value {
+  font-weight: 500;
+}
+
+.antd-calendar-wrapper .ant-picker-calendar-date-content {
+  height: 20px !important;
+}
+
+/* 대시보드 탭 스타일 */
+.dashboard-tabs .ant-tabs-tab {
+  padding: 12px 0 !important;
+  margin: 0 16px !important;
+}
+
+.dashboard-tabs .ant-tabs-tab-active {
+  font-weight: 600 !important;
+}
+
+.dashboard-tabs .ant-tabs-ink-bar {
+  background: #3F5CF7 !important;
+  height: 3px !important;
+  border-radius: 3px !important;
 } 

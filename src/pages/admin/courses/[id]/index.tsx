@@ -199,7 +199,17 @@ const CourseDetail: FC = () => {
   const handleCreateWeek = async () => {
     if (!course) return;
     
-    const nextWeekNumber = (course.weeks?.length || 0) + 1;
+    // 유효한 주차만 필터링하여 다음 주차 번호 계산
+    const validWeeks = course.weeks?.filter(
+      week => week && typeof week.weekNumber === 'number' && week.weekNumber > 0
+    ) || [];
+    
+    // 다음 주차 번호 계산 (현재 최대 주차 번호 + 1)
+    const maxWeekNumber = validWeeks.length > 0 
+      ? Math.max(...validWeeks.map(week => week.weekNumber))
+      : 0;
+    const nextWeekNumber = maxWeekNumber + 1;
+    
     try {
       const result = await createWeek({ courseId: id!, weekNumber: nextWeekNumber }).unwrap();
       if (result) {
@@ -450,6 +460,9 @@ const CourseDetail: FC = () => {
     }
 
     try {
+      // 퀴즈 파일 확인 (JSON 파일 여부)
+      const isQuizItem = evaluationFiles.some(file => file.name.endsWith('.json'));
+      
       // 파일 정보 준비
       const fileInfos = evaluationFiles.map(file => ({
         name: file.name,
@@ -457,14 +470,19 @@ const CourseDetail: FC = () => {
         size: file.size
       }));
 
+      // JSON 파일이 있으면 타입을 'EXAM'으로 변경 (QUIZ가 아닌 EXAM 사용)
+      const itemType = isQuizItem ? 'EXAM' : newEvaluationItem.type;
+
       // createGradeItem API 호출
       const response = await createGradeItem({
         courseId: id!,
-        type: newEvaluationItem.type,
+        type: itemType, // JSON 파일 있으면 EXAM으로 설정 (QUIZ가 아닌 EXAM 사용)
         title: newEvaluationItem.title,
         deadline: newEvaluationItem.deadline,
         files: fileInfos.length > 0 ? fileInfos : undefined
       }).unwrap();
+
+      console.log('성적 항목 생성 응답:', response);
 
       // 파일 업로드 처리
       if (evaluationFiles.length > 0 && response.uploadUrls && response.uploadUrls.length > 0) {
@@ -507,8 +525,8 @@ const CourseDetail: FC = () => {
         );
       }
 
-      // 성공 메시지 표시
-      toast.success('성적 항목이 추가되었습니다.');
+      // 성공 메시지 표시 (퀴즈/시험 동일 처리)
+      toast.success(`${isQuizItem ? '퀴즈/시험' : '성적 항목'}이 추가되었습니다.`);
       
       // 성적 항목 목록 새로고침
       refetchGradeItems();
@@ -927,7 +945,7 @@ const CourseDetail: FC = () => {
             {/* 성적 항목 관리 섹션 */}
             <Card className="mb-8">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-xl font-bold">성적 항목 관리</CardTitle>
+                <CardTitle className="text-xl font-bold">과제 퀴즈 추가</CardTitle>
                 <Button 
                   variant="ghost" 
                   onClick={() => setShowEvaluationItems(!showEvaluationItems)}

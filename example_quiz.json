@@ -1,0 +1,146 @@
+{
+  "quizTitle": "AWS 클라우드 컴퓨팅 기초",
+  "description": "AWS 클라우드 컴퓨팅의 기본 개념에 대한 이해도를 테스트해보세요",
+  "questions": [
+    {
+      "id": 1,
+      "question": "Amazon EC2란 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "Elastic Compute Cloud - 클라우드에서 크기 조정이 가능한 컴퓨팅 용량을 제공하는 웹 서비스",
+        "Elastic Container Cloud - 도커 컨테이너를 실행하기 위한 서비스",
+        "Enterprise Computing Cloud - 기업을 위한 프라이빗 클라우드 솔루션",
+        "External Computing Cloud - 하이브리드 클라우드 컴퓨팅 서비스"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Amazon EC2(Elastic Compute Cloud)는 AWS 클라우드에서 확장 가능한 컴퓨팅 용량을 제공하며, 사용자가 필요에 따라 가상 서버를 시작할 수 있게 해줍니다."
+    },
+    {
+      "id": 2,
+      "question": "파일과 객체를 저장하는 데 사용되는 AWS 서비스는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "Amazon RDS",
+        "Amazon S3",
+        "Amazon DynamoDB",
+        "Amazon EFS"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Amazon S3(Simple Storage Service)는 업계 최고의 확장성, 데이터 가용성, 보안 및 성능을 제공하는 객체 스토리지 서비스입니다."
+    },
+    {
+      "id": 3,
+      "question": "AWS 클라우드 사용의 이점은 무엇인가요? (해당하는 항목을 모두 선택하세요)",
+      "type": "multiple",
+      "choices": [
+        "사용한 만큼만 지불하는 요금제",
+        "글로벌 인프라스트럭처",
+        "높은 가용성",
+        "자동 하드웨어 업그레이드",
+        "무제한 스토리지 용량",
+        "즉각적인 확장성"
+      ],
+      "correctAnswer": [0, 1, 2, 5],
+      "explanation": "AWS 클라우드는 사용량 기반 요금제, 글로벌 인프라, 높은 가용성, 수요에 따른 즉각적인 확장성 등 다양한 이점을 제공합니다."
+    },
+    {
+      "id": 4,
+      "question": "관리형 관계형 데이터베이스를 제공하는 AWS 서비스는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "Amazon RedShift",
+        "Amazon DynamoDB",
+        "Amazon RDS",
+        "Amazon ElastiCache"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Amazon RDS(Relational Database Service)는 클라우드에서 관계형 데이터베이스를 쉽게 설정, 운영 및 확장할 수 있게 해줍니다."
+    },
+    {
+      "id": 5,
+      "question": "AWS Lambda는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "가상 서버 서비스",
+        "서버리스 컴퓨팅 서비스",
+        "컨테이너 오케스트레이션 서비스",
+        "데이터베이스 서비스"
+      ],
+      "correctAnswer": 1,
+      "explanation": "AWS Lambda는 이벤트에 응답하여 코드를 실행하고 기본 컴퓨팅 리소스를 자동으로 관리하는 서버리스 컴퓨팅 서비스입니다."
+    },
+    {
+      "id": 6,
+      "question": "콘텐츠 전송 및 CDN을 위해 어떤 서비스를 사용하나요?",
+      "type": "single",
+      "choices": [
+        "Amazon CloudFront",
+        "Amazon Route 53",
+        "Amazon S3",
+        "Amazon EC2"
+      ],
+      "correctAnswer": 0,
+      "explanation": "Amazon CloudFront는 데이터, 비디오, 애플리케이션 및 API를 전 세계적으로 낮은 지연 시간으로 안전하게 전송하는 빠른 콘텐츠 전송 네트워크(CDN) 서비스입니다."
+    },
+    {
+      "id": 7,
+      "question": "DNS 서비스를 제공하는 AWS 서비스는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "Amazon CloudFront",
+        "Amazon Route 53",
+        "Amazon CloudWatch",
+        "Amazon Certificate Manager"
+      ],
+      "correctAnswer": 1,
+      "explanation": "Amazon Route 53은 가용성과 확장성이 뛰어난 클라우드 도메인 이름 시스템(DNS) 웹 서비스입니다."
+    },
+    {
+      "id": 8,
+      "question": "AWS IAM의 기능에는 어떤 것들이 있나요? (해당하는 항목을 모두 선택하세요)",
+      "type": "multiple",
+      "choices": [
+        "사용자 관리",
+        "역할 기반 접근 제어",
+        "다중 인증(MFA)",
+        "정책 관리",
+        "데이터베이스 암호화",
+        "네트워크 모니터링"
+      ],
+      "correctAnswer": [0, 1, 2, 3],
+      "explanation": "AWS Identity and Access Management(IAM)는 AWS 서비스를 위한 사용자 관리, 역할 기반 접근 제어, MFA, 정책 관리를 제공합니다."
+    },
+    {
+      "id": 9,
+      "question": "리소스와 애플리케이션 모니터링에 사용되는 AWS 서비스는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "AWS Config",
+        "AWS CloudTrail",
+        "Amazon CloudWatch",
+        "AWS Systems Manager"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Amazon CloudWatch는 DevOps 엔지니어, 개발자, 사이트 신뢰성 엔지니어(SRE) 및 IT 관리자를 위해 구축된 모니터링 및 관찰 가능성 서비스입니다."
+    },
+    {
+      "id": 10,
+      "question": "NoSQL 데이터베이스 기능을 제공하는 AWS 서비스는 무엇인가요?",
+      "type": "single",
+      "choices": [
+        "Amazon RDS",
+        "Amazon RedShift",
+        "Amazon DynamoDB",
+        "Amazon Aurora"
+      ],
+      "correctAnswer": 2,
+      "explanation": "Amazon DynamoDB는 빠르고 예측 가능한 성능과 원활한 확장성을 제공하는 완전 관리형 NoSQL 데이터베이스 서비스입니다."
+    }
+  ],
+  "metadata": {
+    "totalQuestions": 10,
+    "timeLimit": 15,
+    "passingScore": 70,
+    "version": "1.0"
+  }
+}

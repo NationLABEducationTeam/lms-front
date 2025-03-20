@@ -140,11 +140,13 @@ export const courseApi = createApi({
           throw new Error(response.message || '강의 정보를 불러오는데 실패했습니다.');
         }
 
-        // weeks가 undefined인 경우 빈 배열로 처리
-        const weeks = response.data.course.weeks || [];
+        // 유효한 주차만 필터링 (주차 번호가 있고, 0보다 큰 경우)
+        const validWeeks = (response.data.course.weeks || []).filter(
+          week => week && typeof week.weekNumber === 'number' && week.weekNumber > 0
+        );
         
         // 주차별 파일을 타입별로 분류
-        const transformedWeeks = weeks.map(week => {
+        const transformedWeeks = validWeeks.map(week => {
           const categorizedMaterials: { [key: string]: WeekMaterial[] } = {
             quiz: [],
             document: [],
@@ -156,23 +158,25 @@ export const courseApi = createApi({
 
           // 파일들을 카테고리별로 분류
           Object.entries(week.materials || {}).forEach(([category, files]) => {
-            files.forEach((file: BackendMaterial) => {
-              const targetCategory = category === 'json' ? 'quiz' : category;
-              const materialWithPermission: WeekMaterial = {
-                fileName: file.fileName,
-                downloadUrl: file.downloadUrl,
-                lastModified: file.lastModified,
-                size: file.size,
-                downloadable: file.downloadable ?? true // isDownloadable 대신 downloadable 사용
-              };
-              
-              if (targetCategory in categorizedMaterials) {
-                categorizedMaterials[targetCategory].push(materialWithPermission);
-              } else {
-                console.warn(`Unknown category: ${category}, file: ${file.fileName}`);
-                categorizedMaterials.unknown.push(materialWithPermission);
-              }
-            });
+            if (Array.isArray(files)) {
+              files.forEach((file: BackendMaterial) => {
+                const targetCategory = category === 'json' ? 'quiz' : category;
+                const materialWithPermission: WeekMaterial = {
+                  fileName: file.fileName,
+                  downloadUrl: file.downloadUrl,
+                  lastModified: file.lastModified,
+                  size: file.size,
+                  downloadable: file.downloadable ?? true // isDownloadable 대신 downloadable 사용
+                };
+                
+                if (targetCategory in categorizedMaterials) {
+                  categorizedMaterials[targetCategory].push(materialWithPermission);
+                } else {
+                  console.warn(`Unknown category: ${category}, file: ${file.fileName}`);
+                  categorizedMaterials.unknown.push(materialWithPermission);
+                }
+              });
+            }
           });
 
           return {

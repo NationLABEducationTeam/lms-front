@@ -454,8 +454,38 @@ const useAssignmentHandlers = () => {
   };
   
   const handleExamClick = (item: AssignmentItem) => {
-    // 시험 응시 페이지로 이동 (item_id 사용)
-    navigate(`/assignments/${item.item_id}`);
+    // EXAM과 QUIZ 모두 퀴즈 인터페이스로 처리
+    if (item.item_type === 'EXAM' || item.item_type === 'QUIZ') {
+      // 파일 이름 생성
+      const fileName = `${item.title || 'quiz'}.json`;
+      
+      console.log('시험 응시 클릭:', item);
+      
+      // course_id가 정의되어 있는지 확인하고, 없으면 item_id를 사용
+      const courseId = item.course_id || item.item_id;
+      
+      // S3 객체 URL 직접 사용
+      navigate(`/mycourse/${courseId}/quiz/${encodeURIComponent(fileName)}`, {
+        state: {
+          // S3 버킷의 객체 URL 직접 사용
+          quizUrl: `https://nationslablmscoursebucket.s3.ap-northeast-2.amazonaws.com/assignments/${item.item_id}/example_quiz.json`,
+          title: item.title || 'Quiz',
+          courseId: courseId,
+          assignmentId: item.item_id
+        }
+      });
+      
+      // 콘솔에 디버그 정보 출력
+      console.log('퀴즈 페이지 네비게이션:', {
+        url: `/mycourse/${courseId}/quiz/${encodeURIComponent(fileName)}`,
+        courseId,
+        quizFileName: fileName,
+        assignmentId: item.item_id
+      });
+    } else {
+      // 일반 과제인 경우 기존 방식으로 이동
+      navigate(`/assignments/${item.item_id}`);
+    }
   };
   
   return { handleAssignmentClick, handleExamClick };
@@ -699,14 +729,22 @@ const StudentCoursesPage: FC = () => {
       );
     }
     
-    // 백엔드 API 결과 구조에 맞게 데이터 변환
-    const pendingAssignments = courseAssignments.filter(a => a.status === '진행중' && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
-    const overdueAssignments = courseAssignments.filter(a => a.status === '마감됨' && !a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
-    const completedAssignments = courseAssignments.filter(a => a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    // 백엔드 API 결과 구조에 맞게 데이터 변환 및 course_id 확인
+    const currentCourseId = selectedCourse?.id || '';
     
-    const pendingExams = courseAssignments.filter(a => a.status === '진행중' && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
-    const overdueExams = courseAssignments.filter(a => a.status === '마감됨' && !a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
-    const completedExams = courseAssignments.filter(a => a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
+    // 각 항목에 course_id가 없는 경우 현재 선택된 과목의 ID를 할당
+    const processedAssignments = courseAssignments.map(item => ({
+      ...item,
+      course_id: item.course_id || currentCourseId
+    }));
+    
+    const pendingAssignments = processedAssignments.filter(a => a.status === '진행중' && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    const overdueAssignments = processedAssignments.filter(a => a.status === '마감됨' && !a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    const completedAssignments = processedAssignments.filter(a => a.is_completed && a.item_type === 'ASSIGNMENT') as AssignmentItem[];
+    
+    const pendingExams = processedAssignments.filter(a => a.status === '진행중' && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
+    const overdueExams = processedAssignments.filter(a => a.status === '마감됨' && !a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
+    const completedExams = processedAssignments.filter(a => a.is_completed && (a.item_type === 'EXAM' || a.item_type === 'QUIZ')) as AssignmentItem[];
 
     // 과제 및 시험 항목 개수 계산
     const totalAssignments = pendingAssignments.length + overdueAssignments.length + completedAssignments.length;
@@ -1434,30 +1472,55 @@ const StudentCoursesPage: FC = () => {
                 activeKey={openWeeks}
                 onChange={(keys) => handleWeekToggle(keys as string[])}
               >
-                {selectedCourse?.weeks.map((week) => (
-                  <Panel
-                    key={week.weekNumber.toString()}
-                    header={
-                      <Space>
-                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                          <span className="text-lg font-semibold text-blue-600">
-                            {week.weekNumber}
-                          </span>
-                        </div>
-                        <div>
-                          <Title level={5} className="mb-0">
-                            {week.weekNumber}주차
-                          </Title>
-                          <Text type="secondary">
-                            {Object.values(week.materials).flat().length}개의 학습 자료
-                          </Text>
-                        </div>
-                      </Space>
-                    }
-                  >
-                    {renderWeekMaterials(week.materials, week.weekNumber)}
-                  </Panel>
-                ))}
+                {selectedCourse?.weeks && selectedCourse.weeks.length > 0 ? (() => {
+                  const weekMap = new Map();
+                  
+                  // 유효한 주차만 필터링
+                  selectedCourse.weeks
+                    .filter(week => week && typeof week.weekNumber === 'number' && week.weekNumber > 0)
+                    .forEach(week => {
+                      // 각 주차별 자료 개수 계산
+                      const materialsCount = Object.values(week.materials || {})
+                        .reduce((total, materials) => total + materials.length, 0);
+                      
+                      // 이미 해당 주차가 있고, 현재 주차의 자료 개수가 더 많으면 교체
+                      // 없으면 새로 추가
+                      if (!weekMap.has(week.weekNumber) || 
+                          materialsCount > weekMap.get(week.weekNumber).materialsCount) {
+                        weekMap.set(week.weekNumber, { week, materialsCount });
+                      }
+                    });
+                  
+                  // 주차 번호 순서대로 정렬하여 반환
+                  return Array.from(weekMap.values())
+                    .sort((a, b) => a.week.weekNumber - b.week.weekNumber)
+                    .map(({ week }) => (
+                      <Panel
+                        key={week.weekNumber.toString()}
+                        header={
+                          <Space>
+                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                              <span className="text-lg font-semibold text-blue-600">
+                                {week.weekNumber}
+                              </span>
+                            </div>
+                            <div>
+                              <Title level={5} className="mb-0">
+                                {week.weekNumber}주차
+                              </Title>
+                              <Text type="secondary">
+                                {Object.values(week.materials || {}).flat().length}개의 학습 자료
+                              </Text>
+                            </div>
+                          </Space>
+                        }
+                      >
+                        {renderWeekMaterials(week.materials || {}, week.weekNumber)}
+                      </Panel>
+                    ));
+                })() : (
+                  <Empty description="이용 가능한 주차 정보가 없습니다." />
+                )}
               </Collapse>
             )}
 

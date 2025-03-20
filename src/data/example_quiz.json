@@ -1,0 +1,91 @@
+{
+  "id": "quiz1",
+  "title": "테스트 퀴즈",
+  "description": "테스트용 퀴즈입니다.",
+  "metadata": {
+    "timeLimit": 30,
+    "passingScore": 70,
+    "showResults": true,
+    "shuffleQuestions": true
+  },
+  "questions": [
+    {
+      "id": "q1",
+      "text": "다음 중 JavaScript의 데이터 타입이 아닌 것은?",
+      "type": "SINGLE_CHOICE",
+      "points": 10,
+      "options": [
+        {
+          "id": "q1a1",
+          "text": "String"
+        },
+        {
+          "id": "q1a2",
+          "text": "Boolean"
+        },
+        {
+          "id": "q1a3",
+          "text": "Integer"
+        },
+        {
+          "id": "q1a4",
+          "text": "Symbol"
+        }
+      ],
+      "correctAnswerId": "q1a3",
+      "explanation": "JavaScript에는 Integer 타입이 없고 대신 Number 타입을 사용합니다."
+    },
+    {
+      "id": "q2",
+      "text": "React에서 상태(state)를 관리하는 훅(Hook)은?",
+      "type": "SINGLE_CHOICE",
+      "points": 10,
+      "options": [
+        {
+          "id": "q2a1",
+          "text": "useEffect"
+        },
+        {
+          "id": "q2a2",
+          "text": "useState"
+        },
+        {
+          "id": "q2a3",
+          "text": "useContext"
+        },
+        {
+          "id": "q2a4",
+          "text": "useReducer"
+        }
+      ],
+      "correctAnswerId": "q2a2",
+      "explanation": "useState는 함수형 컴포넌트에서 상태를 관리하는 React 훅입니다."
+    },
+    {
+      "id": "q3",
+      "text": "다음 중 옳은 설명을 모두 고르세요.",
+      "type": "MULTIPLE_CHOICE",
+      "points": 10,
+      "options": [
+        {
+          "id": "q3a1",
+          "text": "HTML은 웹 페이지의 구조를 정의합니다."
+        },
+        {
+          "id": "q3a2",
+          "text": "CSS는 웹 페이지의 동작을 정의합니다."
+        },
+        {
+          "id": "q3a3",
+          "text": "JavaScript는 웹 페이지의 스타일을 정의합니다."
+        },
+        {
+          "id": "q3a4",
+          "text": "React는 UI 컴포넌트를 만들기 위한 JavaScript 라이브러리입니다."
+        }
+      ],
+      "correctAnswerIds": ["q3a1", "q3a4"],
+      "explanation": "HTML은 구조, CSS는 스타일, JavaScript는 동작을 담당합니다. React는 UI 컴포넌트를 위한 JavaScript 라이브러리입니다."
+    }
+  ]
+} 

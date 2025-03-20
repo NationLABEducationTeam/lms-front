@@ -16,11 +16,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/common/ui/alert-dialog';
+import { useSubmitAssignmentMutation } from '@/services/api/studentApi';
+import { Spin } from 'antd';
 
 const QuizPage: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const params = useParams<{ courseId: string; weekId: string; quizFile: string }>();
+  const params = useParams<{ courseId: string; weekId?: string; quizFileName: string }>();
   const [quiz, setQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,8 @@ const QuizPage: FC = () => {
   const [showWarningDialog, setShowWarningDialog] = useState(false);
   const [pendingNavigationIndex, setPendingNavigationIndex] = useState<number | null>(null);
   const [flaggedQuestions, setFlaggedQuestions] = useState<Set<number>>(new Set());
+  const [submitAssignment, { isLoading: isSubmittingToServer }] = useSubmitAssignmentMutation();
+  const [resultSaved, setResultSaved] = useState(false);
 
   // 퀴즈 데이터 로딩 함수
   const loadQuizData = async () => {
@@ -41,15 +45,23 @@ const QuizPage: FC = () => {
       setLoading(true);
       setError(null);
 
+      // URL 파라미터와 location 상태 디버그 출력
+      console.log('퀴즈 페이지 URL 파라미터:', params);
+      console.log('퀴즈 페이지 location state:', location.state);
+
       // URL 파라미터에서 필요한 정보 추출
-      const { courseId, weekId, quizFile } = params;
-      if (!courseId || !weekId || !quizFile) {
+      const { courseId, quizFileName } = params;
+      if (!courseId || !quizFileName) {
+        console.error('필수 파라미터 누락:', { courseId, quizFileName });
         throw new Error('필수 파라미터가 누락되었습니다.');
       }
 
       // 로컬 스토리지에서 퀴즈 데이터 확인
-      const storedQuizData = localStorage.getItem(`quiz_${courseId}_${weekId}_${quizFile}`);
+      const storageKey = `quiz_${courseId}_${quizFileName}`;
+      console.log('로컬 스토리지 키:', storageKey);
+      const storedQuizData = localStorage.getItem(storageKey);
       if (storedQuizData) {
+        console.log('로컬 스토리지에서 퀴즈 데이터 로드됨');
         const { quizData } = JSON.parse(storedQuizData);
         setQuiz(quizData);
         return;
@@ -57,22 +69,38 @@ const QuizPage: FC = () => {
 
       // location.state에서 퀴즈 데이터 확인
       if (location.state?.quizUrl) {
-        const response = await fetch(location.state.quizUrl);
-        if (!response.ok) throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
-        const quizData = await response.json();
-        setQuiz(quizData);
+        console.log('S3 객체 URL에서 퀴즈 데이터 로드 시도:', location.state.quizUrl);
+        
+        try {
+          // S3 객체 URL로 직접 접근
+          const response = await fetch(location.state.quizUrl);
+          if (!response.ok) {
+            console.error('퀴즈 데이터 로드 HTTP 오류:', response.status, response.statusText);
+            throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
+          }
+          
+          // S3 객체의 JSON 데이터 가져오기
+          const quizData = await response.json();
+          console.log('S3에서 퀴즈 데이터 로드 성공:', quizData);
+          
+          // 퀴즈 데이터 설정
+          setQuiz(quizData);
 
-        // 로컬 스토리지에 저장
-        localStorage.setItem(`quiz_${courseId}_${weekId}_${quizFile}`, JSON.stringify({
-          quizData,
-          downloadUrl: location.state.quizUrl,
-          title: quizFile.replace('.json', ''),
-          courseId,
-          weekId
-        }));
-        return;
+          // 로컬 스토리지에 저장
+          localStorage.setItem(storageKey, JSON.stringify({
+            quizData,
+            downloadUrl: location.state.quizUrl,
+            title: quizFileName.replace('.json', ''),
+            courseId
+          }));
+          return;
+        } catch (error) {
+          console.error('S3 객체 로드 오류:', error);
+          throw new Error('퀴즈 데이터를 불러오는데 실패했습니다.');
+        }
       }
 
+      console.error('퀴즈 데이터 소스 없음');
       throw new Error('퀴즈 데이터를 찾을 수 없습니다.');
     } catch (error) {
       console.error('Error loading quiz:', error);
@@ -85,8 +113,9 @@ const QuizPage: FC = () => {
 
   // 컴포넌트 마운트 시 퀴즈 데이터 로딩
   useEffect(() => {
+    console.log('퀴즈 페이지 마운트/파라미터 변경', params);
     loadQuizData();
-  }, [params.courseId, params.weekId, params.quizFile]);
+  }, [params.courseId, params.quizFileName]);
 
   // 타이머 관리
   useEffect(() => {
@@ -185,6 +214,34 @@ const QuizPage: FC = () => {
         toast.warning('시간이 초과되어 자동으로 제출되었습니다.');
       } else {
         toast.success('퀴즈가 성공적으로 제출되었습니다.');
+      }
+
+      // 서버에 결과 제출 (간단한 형식으로 점수만 전송)
+      if (location.state?.assignmentId) {
+        try {
+          // 퀴즈 결과를 서버에 저장 - 간단한 형식으로 점수만 전송
+          const response = await submitAssignment({
+            assignmentId: location.state.assignmentId,
+            submissionData: {
+              score: finalScore
+            }
+          }).unwrap();
+          
+          console.log('퀴즈 제출 응답:', response);
+          
+          // grade_id와 함께 상태 업데이트 확인
+          if (response.success && response.data?.grade_id) {
+            console.log(`퀴즈 결과가 저장되었습니다. Grade ID: ${response.data.grade_id}`);
+          }
+          
+          setResultSaved(true);
+          toast.success('퀴즈 결과가 성공적으로 저장되었습니다.');
+        } catch (error) {
+          console.error('퀴즈 결과 저장 오류:', error);
+          toast.error('퀴즈 결과를 서버에 저장하는데 실패했습니다.');
+        }
+      } else {
+        console.warn('퀴즈 ID가 없어 결과를 서버에 저장할 수 없습니다.');
       }
     } catch (error) {
       console.error('Error submitting quiz:', error);
@@ -354,6 +411,12 @@ const QuizPage: FC = () => {
           <Card className="p-8 border-0 shadow-lg bg-white/80 backdrop-blur-sm">
             <div className="text-center mb-8">
               <h2 className="text-2xl font-bold text-gray-900 mb-2">퀴즈 결과</h2>
+              {isSubmittingToServer && (
+                <div className="flex justify-center mb-4">
+                  <Spin size="large" />
+                  <p className="ml-3 text-gray-600">결과를 저장하는 중...</p>
+                </div>
+              )}
               <div className={`text-5xl font-bold mb-4 ${
                 score >= quiz.metadata.passingScore 
                   ? 'text-green-600' 
@@ -373,6 +436,12 @@ const QuizPage: FC = () => {
                   <XCircle className="w-5 h-5 ml-2" />
                 )}
               </div>
+              {resultSaved && (
+                <div className="mt-2 text-green-600 flex items-center justify-center">
+                  <CheckCircle2 className="w-4 h-4 mr-1" />
+                  결과가 성공적으로 저장되었습니다.
+                </div>
+              )}
             </div>
             
             <div className="space-y-6">
