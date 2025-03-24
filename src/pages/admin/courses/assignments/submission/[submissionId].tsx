@@ -188,7 +188,7 @@ const SubmissionDetailPage = () => {
   };
   
   // 파일 다운로드 핸들러
-  const handleDownloadFile = async (fileKey: string, fileName: string) => {
+  const handleDownloadFile = async (fileKey: string, _fileName: string) => {
     try {
       // 로딩 상태 표시
       toast.loading('파일 다운로드 준비 중...');

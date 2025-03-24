@@ -6,7 +6,7 @@ export const communityApi = createApi({
   reducerPath: 'communityApi',
   baseQuery: baseQueryWithReauth,
   tagTypes: ['Community'],
-  endpoints: (builder) => ({
+  endpoints: (_builder) => ({
     // 엔드포인트는 필요할 때 추가
   }),
 }); 

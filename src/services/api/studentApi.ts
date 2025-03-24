@@ -359,7 +359,7 @@ export const studentApi = createApi({
           return { error: { status: 500, data: '성적 정보를 불러오는데 실패했습니다.' } };
         }
       },
-      providesTags: (result, error, courseId) => 
+      providesTags: (result, _error, courseId) => 
         result ? [{ type: 'StudentGrades', id: courseId }] : []
     }),
     
@@ -434,7 +434,7 @@ export const studentApi = createApi({
         
         return response.data as Assignment[];
       },
-      providesTags: (result, error, courseId) => [{ type: 'Assignment', id: courseId }]
+      providesTags: (_result, _error, courseId) => [{ type: 'Assignment', id: courseId }]
     }),
     
     // 새로 추가: 특정 과제/퀴즈 상세 정보 조회
@@ -450,7 +450,7 @@ export const studentApi = createApi({
         
         return response.data as Assignment;
       },
-      providesTags: (result, error, assignmentId) => [{ type: 'Assignment', id: assignmentId }]
+      providesTags: (_result, _error, assignmentId) => [{ type: 'Assignment', id: assignmentId }]
     }),
     
     // 새로 추가: 과제 제출 API (퀴즈 점수 제출 지원)
@@ -475,7 +475,7 @@ export const studentApi = createApi({
         }
         return response;
       },
-      invalidatesTags: (result, error, {assignmentId}) => [
+      invalidatesTags: (_result, _error, {assignmentId}) => [
         { type: 'Assignment', id: assignmentId },
         'Assignment',
         'StudentGrades'

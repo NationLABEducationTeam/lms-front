@@ -199,7 +199,7 @@ export const courseApi = createApi({
           message: response.data?.message || '강의 정보를 불러오는데 실패했습니다.'
         };
       },
-      async onQueryStarted(id: string, { queryFulfilled }: { queryFulfilled: Promise<any> }) {
+      async onQueryStarted(_id: string, { queryFulfilled }: { queryFulfilled: Promise<any> }) {
         try {
           await queryFulfilled;
         } catch (error) {
@@ -575,7 +575,7 @@ export const courseApi = createApi({
         
         return result;
       },
-      invalidatesTags: (result, error, arg) => [{ type: 'GradeItems', id: arg.courseId }]
+      invalidatesTags: (_result, _error, arg) => [{ type: 'GradeItems', id: arg.courseId }]
     }),
     
     // 성적 항목 목록 조회
