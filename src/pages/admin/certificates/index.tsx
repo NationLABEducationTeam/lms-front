@@ -16,7 +16,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/common/ui/select";
+} from "@/components/ui/select";
 
 const certificatesData = [
   {
@@ -77,6 +77,7 @@ const AdminCertificates: FC = () => {
               <Select
                 value={statusFilter}
                 onValueChange={setStatusFilter}
+                defaultValue="all"
               >
                 <SelectTrigger className="w-[180px] bg-[#2c3b4e] border-gray-700 text-white">
                   <SelectValue placeholder="상태 필터" />

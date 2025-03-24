@@ -127,6 +127,11 @@ const NoticeDetail: FC = () => {
               <Badge className="bg-blue-500/30">
                 {notice.metadata.category}
               </Badge>
+              {notice.metadata.courseName && (
+                <Badge className="bg-green-500/30">
+                  과목: {notice.metadata.courseName}
+                </Badge>
+              )}
               {notice.metadata.tags.map(tag => (
                 <Badge key={tag} className="bg-gray-500/30">
                   {tag}

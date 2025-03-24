@@ -114,15 +114,50 @@ const AssignmentListPage: FC = () => {
     {
       title: '작업',
       key: 'action',
-      render: (_, record: Assignment) => (
-        <Button 
-          type={record.is_completed ? "default" : "primary"} 
-          size="small"
-          onClick={() => navigate(`/assignments/${record.item_id}`)}
-        >
-          {record.is_completed ? '확인' : (record.status === '마감됨' ? '상세보기' : '제출')}
-        </Button>
-      ),
+      render: (_, record: Assignment) => {
+        // 시험/퀴즈인 경우 퀴즈 페이지로 이동
+        const handleAction = () => {
+          if (record.is_completed) {
+            navigate(`/assignments/${record.item_id}`);
+          } else if (record.status === '마감됨') {
+            navigate(`/assignments/${record.item_id}`);
+          } else if (record.item_type === 'QUIZ' || record.item_type === 'EXAM') {
+            // 파일 이름 생성
+            const fileName = `${record.title || 'quiz'}.json`;
+            
+            // 과목 ID 또는 대체 ID
+            const courseId = record.course_id || record.item_id;
+            
+            // 퀴즈 페이지로 이동
+            navigate(`/mycourse/${courseId}/quiz/${encodeURIComponent(fileName)}`, {
+              state: {
+                // S3 버킷의 객체 URL 직접 사용
+                quizUrl: `https://nationslablmscoursebucket.s3.ap-northeast-2.amazonaws.com/assignments/${record.item_id}/example_quiz.json`,
+                title: record.title || 'Quiz',
+                courseId: courseId,
+                assignmentId: record.item_id
+              }
+            });
+          } else {
+            navigate(`/assignments/${record.item_id}`);
+          }
+        };
+        
+        return (
+          <Button 
+            type={record.is_completed ? "default" : "primary"} 
+            size="small"
+            onClick={handleAction}
+          >
+            {record.is_completed ? '확인' : 
+              record.status === '마감됨' ? '상세보기' : 
+              (record.item_type === 'QUIZ' || record.item_type === 'EXAM') ? 
+              (record.item_type === 'QUIZ' ? '퀴즈 풀기' : '시험 응시') : 
+              '제출'
+            }
+          </Button>
+        );
+      },
     },
   ];
   

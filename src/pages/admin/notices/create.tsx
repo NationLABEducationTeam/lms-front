@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
 import { Input } from '@/components/common/ui/input';
@@ -10,7 +10,15 @@ import { createNotice } from '@/services/api/notices';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/common/editor/RichTextEditor';
 import { Badge } from '@/components/common/ui/badge';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
+import { useGetPublicCoursesQuery } from '@/services/api/courseApi';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const NOTICE_CATEGORIES: NoticeCategory[] = ['일반', '학사', '장학', '취업', '행사', '기타'];
 
@@ -23,10 +31,15 @@ const CreateNotice: FC = () => {
     category: '일반',
     tags: [],
     isImportant: false,
-    attachments: []
+    attachments: [],
+    courseId: null,
+    courseName: null
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTag, setNewTag] = useState('');
+  
+  // 강의 목록 가져오기
+  const { data: courses = [], isLoading: coursesLoading } = useGetPublicCoursesQuery();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +84,15 @@ const CreateNotice: FC = () => {
     }));
   };
 
+  const handleCourseChange = (courseId: string) => {
+    const selectedCourse = courses.find(course => course.id === courseId);
+    setFormData(prev => ({
+      ...prev,
+      courseId: courseId === 'none' ? null : courseId,
+      courseName: courseId === 'none' ? null : selectedCourse?.title || null
+    }));
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 to-black text-white p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
@@ -100,7 +122,28 @@ const CreateNotice: FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">첨테고리</label>
+              <label className="block text-sm font-medium mb-2">관련 과목 (선택사항)</label>
+              <Select onValueChange={handleCourseChange} defaultValue="none">
+                <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
+                  <SelectValue placeholder="관련 과목 선택 (선택사항)" />
+                </SelectTrigger>
+                <SelectContent className="bg-blue-900 text-white">
+                  <SelectItem value="none">관련 과목 없음</SelectItem>
+                  {coursesLoading ? (
+                    <SelectItem value="loading" disabled>로딩 중...</SelectItem>
+                  ) : (
+                    courses.map(course => (
+                      <SelectItem key={course.id} value={course.id}>
+                        {course.title}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-2">카테고리</label>
               <select
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}

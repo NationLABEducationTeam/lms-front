@@ -670,7 +670,7 @@ const StudentLanding: FC = () => {
                   <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-gradient-from/10 flex items-center justify-center">
                     <Users className="w-6 h-6 text-dashboard-primary" />
                   </div>
-                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-primary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">20+</h3>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-primary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">5+</h3>
                   <p className="text-lg text-dashboard-text-secondary">전문 강사진</p>
                 </div>
               </div>
@@ -682,7 +682,7 @@ const StudentLanding: FC = () => {
                   <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-secondary/10 flex items-center justify-center">
                     <BookOpen className="w-6 h-6 text-dashboard-secondary" />
                   </div>
-                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-secondary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">50+</h3>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-secondary mb-2 group-hover:scale-105 origin-left transition-transform duration-300">3+</h3>
                   <p className="text-lg text-dashboard-text-secondary">강의 콘텐츠</p>
                 </div>
               </div>
@@ -694,7 +694,7 @@ const StudentLanding: FC = () => {
                   <div className="mb-5 w-12 h-12 rounded-xl bg-dashboard-success/10 flex items-center justify-center">
                     <User className="w-6 h-6 text-dashboard-success" />
                   </div>
-                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-success mb-2 group-hover:scale-105 origin-left transition-transform duration-300">1000+</h3>
+                  <h3 className="text-5xl sm:text-6xl font-bold text-dashboard-success mb-2 group-hover:scale-105 origin-left transition-transform duration-300">100+</h3>
                   <p className="text-lg text-dashboard-text-secondary">수강생</p>
                 </div>
               </div>

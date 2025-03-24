@@ -88,6 +88,11 @@ const MonitoringPage: FC = () => {
                   <CardDescription>
                     시작: {format(new Date(meeting.startTime), 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
                   </CardDescription>
+                  {meeting.course_id && 
+                    <CardDescription className="mt-1">
+                      강의: {meeting.course_title || '연결된 강의 없음'}
+                    </CardDescription>
+                  }
                 </div>
                 <Badge className="bg-green-500">진행 중</Badge>
               </div>
@@ -116,19 +121,38 @@ const MonitoringPage: FC = () => {
                       <TableRow>
                         <TableHead>이름</TableHead>
                         <TableHead>이메일</TableHead>
-                        <TableHead>참여 시간</TableHead>
+                        <TableHead>참여 지속 시간</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {meeting.participants.map((participant) => (
-                        <TableRow key={participant.id}>
+                      {meeting.participants.map((participant, index) => (
+                        <TableRow key={`${meeting.id}-participant-${index}`}>
                           <TableCell>{participant.name}</TableCell>
                           <TableCell>{participant.email}</TableCell>
                           <TableCell>
-                            {formatDistanceToNow(new Date(participant.joinTime), {
-                              addSuffix: true,
-                              locale: ko,
-                            })}
+                            {(() => {
+                              const joinTime = new Date(participant.joinTime);
+                              const now = new Date();
+                              const diffMs = now.getTime() - joinTime.getTime();
+                              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                              const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                              
+                              let durationText = '';
+                              if (diffHours > 0) {
+                                durationText = `${diffHours}시간 ${diffMinutes}분 동안 참여`;
+                              } else {
+                                durationText = `${diffMinutes}분 동안 참여`;
+                              }
+                              
+                              const joinTimeText = format(joinTime, 'HH:mm', { locale: ko });
+                              
+                              return (
+                                <div>
+                                  <div className="font-medium">{durationText}</div>
+                                  <div className="text-xs text-gray-500">{joinTimeText}부터 참여</div>
+                                </div>
+                              );
+                            })()}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -211,7 +235,7 @@ const MonitoringPage: FC = () => {
                 <span>소요 시간: {meeting.duration}분</span>
               </div>
               <a 
-                href={`https://zoom.us/j/${meeting.id}`} 
+                href={meeting.join_url || `https://zoom.us/j/${meeting.id}`}
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
@@ -295,91 +319,6 @@ const MonitoringPage: FC = () => {
     );
   };
 
-  const renderCourseMeetings = () => {
-    if (isLoading) {
-      return (
-        <div className="space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      );
-    }
-
-    if (error) {
-      return (
-        <Card className="bg-red-50">
-          <CardHeader>
-            <CardTitle className="text-red-600">오류 발생</CardTitle>
-            <CardDescription>데이터를 불러오는 중 오류가 발생했습니다.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={handleRefresh}>다시 시도</Button>
-          </CardContent>
-        </Card>
-      );
-    }
-
-    if (!data?.courseMeetings?.length) {
-      return (
-        <Card className="bg-gray-50">
-          <CardHeader>
-            <CardTitle>강의 연결 미팅 없음</CardTitle>
-            <CardDescription>강의와 연결된 Zoom 미팅이 없습니다.</CardDescription>
-          </CardHeader>
-        </Card>
-      );
-    }
-
-    return (
-      <div className="rounded-md border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>강의명</TableHead>
-              <TableHead>미팅 주제</TableHead>
-              <TableHead>시작 시간</TableHead>
-              <TableHead>상태</TableHead>
-              <TableHead>링크</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {data.courseMeetings.map((meeting) => (
-              <TableRow key={meeting.id}>
-                <TableCell>{meeting.courseName}</TableCell>
-                <TableCell>{meeting.topic}</TableCell>
-                <TableCell>
-                  {format(new Date(meeting.startTime), 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
-                </TableCell>
-                <TableCell>
-                  {meeting.status === 'started' && (
-                    <Badge className="bg-green-500">진행 중</Badge>
-                  )}
-                  {meeting.status === 'waiting' && (
-                    <Badge className="bg-blue-500">예정됨</Badge>
-                  )}
-                  {meeting.status === 'finished' && (
-                    <Badge variant="outline">종료됨</Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <a 
-                    href={`https://zoom.us/j/${meeting.id}`} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-blue-600 hover:underline"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    Zoom
-                  </a>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-    );
-  };
-
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -399,28 +338,8 @@ const MonitoringPage: FC = () => {
         </div>
       ) : (
         <>
-          {data?.accountInfo && (
-            <Card className="mb-6">
-              <CardHeader>
-                <CardTitle>계정 정보</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-500">이메일</p>
-                    <p>{data.accountInfo.email}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">이름</p>
-                    <p>{data.accountInfo.name}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-            <TabsList className="grid grid-cols-4 w-full">
+            <TabsList className="grid grid-cols-3 w-full">
               <TabsTrigger value="active" className="flex items-center gap-2">
                 <Video className="h-4 w-4" />
                 <span>진행 중인 수업</span>
@@ -438,10 +357,9 @@ const MonitoringPage: FC = () => {
               <TabsTrigger value="recent" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span>최근 종료된 수업</span>
-              </TabsTrigger>
-              <TabsTrigger value="courses" className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4" />
-                <span>강의 연결 미팅</span>
+                {data?.recentMeetings && data.recentMeetings.length > 0 && (
+                  <Badge className="ml-2" variant="outline">{data.recentMeetings.length}</Badge>
+                )}
               </TabsTrigger>
             </TabsList>
 
@@ -460,12 +378,6 @@ const MonitoringPage: FC = () => {
             {activeTab === 'recent' && (
               <div className="space-y-4">
                 {renderRecentMeetings()}
-              </div>
-            )}
-
-            {activeTab === 'courses' && (
-              <div className="space-y-4">
-                {renderCourseMeetings()}
               </div>
             )}
           </Tabs>

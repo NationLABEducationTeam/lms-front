@@ -2,25 +2,42 @@ import { FC, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
 import { Badge } from '@/components/common/ui/badge';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Search } from 'lucide-react';
 import { Notice } from '@/types/notice';
 import { getNotices } from '@/services/api/notices';
 import { toast } from 'sonner';
+import { Input } from '@/components/common/ui/input';
+import { useGetPublicCoursesQuery } from '@/services/api/courseApi';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const NoticeList: FC = () => {
   const navigate = useNavigate();
   const [notices, setNotices] = useState<Notice[]>([]);
+  const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+
+  // 강의 목록 가져오기
+  const { data: courses = [] } = useGetPublicCoursesQuery();
 
   useEffect(() => {
     const fetchNotices = async () => {
       try {
         const noticeList = await getNotices();
         setNotices(noticeList || []);
+        setFilteredNotices(noticeList || []);
       } catch (error) {
         console.error('공지사항 목록 조회 실패:', error);
         toast.error('공지사항 목록을 불러오는데 실패했습니다.');
         setNotices([]);
+        setFilteredNotices([]);
       } finally {
         setLoading(false);
       }
@@ -28,6 +45,32 @@ const NoticeList: FC = () => {
 
     fetchNotices();
   }, []);
+
+  // 검색어와 과목 필터에 따라 공지사항을 필터링
+  useEffect(() => {
+    let filtered = [...notices];
+    
+    // 검색어로 필터링
+    if (searchTerm) {
+      filtered = filtered.filter(notice => 
+        notice.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        notice.content.summary?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // 과목으로 필터링
+    if (selectedCourseId) {
+      filtered = filtered.filter(notice => 
+        notice.metadata.courseId === selectedCourseId
+      );
+    }
+    
+    setFilteredNotices(filtered);
+  }, [notices, searchTerm, selectedCourseId]);
+
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourseId(courseId === 'all' ? null : courseId);
+  };
 
   return (
     <div className="p-4 sm:p-6 md:p-8">
@@ -43,16 +86,46 @@ const NoticeList: FC = () => {
           </Button>
         </div>
 
+        {/* 검색 및 필터링 UI */}
+        <div className="bg-white/5 p-4 rounded-lg mb-6 flex flex-col sm:flex-row gap-4">
+          <div className="relative flex-1">
+            <Input
+              type="text"
+              placeholder="제목 또는 내용으로 검색"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 bg-white/5 border-white/10 text-white w-full"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          </div>
+          
+          <div className="min-w-[200px]">
+            <Select onValueChange={handleCourseChange} defaultValue="all">
+              <SelectTrigger className="bg-white/5 border-white/10 text-white">
+                <SelectValue placeholder="모든 과목" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 text-white">
+                <SelectItem value="all">모든 과목</SelectItem>
+                {courses.map(course => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.title}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
         <div className="bg-white rounded-xl p-6 shadow-lg">
           {loading ? (
             <div className="text-center py-4">로딩 중...</div>
-          ) : notices.length === 0 ? (
+          ) : filteredNotices.length === 0 ? (
             <div className="text-center py-4 text-gray-400">
-              등록된 공지사항이 없습니다.
+              {searchTerm || selectedCourseId ? '검색 결과가 없습니다.' : '등록된 공지사항이 없습니다.'}
             </div>
           ) : (
             <div className="space-y-4">
-              {notices.map((notice) => (
+              {filteredNotices.map((notice) => (
                 <div
                   key={notice.metadata.id}
                   className="p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
@@ -73,6 +146,11 @@ const NoticeList: FC = () => {
                         <Badge className="bg-blue-500/30">
                           {notice.metadata.category}
                         </Badge>
+                        {notice.metadata.courseName && (
+                          <Badge className="bg-green-500/30">
+                            과목: {notice.metadata.courseName}
+                          </Badge>
+                        )}
                         {notice.metadata.tags.map(tag => (
                           <Badge key={tag} className="bg-gray-500/30">
                             {tag}

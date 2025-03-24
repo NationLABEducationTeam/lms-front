@@ -18,6 +18,8 @@ export const createNotice = async (formData: NoticeFormData): Promise<string> =>
         category: formData.category || '일반',
         tags: formData.tags || [],
         isImportant: formData.isImportant || false,
+        courseId: formData.courseId || null,
+        courseName: formData.courseName || null,
         attachments: formData.attachments?.map(file => ({
           name: file.name,
           type: file.type,
@@ -82,7 +84,16 @@ export const getNotices = async (params?: { courseId?: string }): Promise<Notice
     }
 
     // 유효한 데이터만 필터링
-    return notices.filter(notice => notice && notice.metadata && notice.content);
+    let filteredNotices = notices.filter(notice => notice && notice.metadata && notice.content);
+    
+    // 클라이언트 측에서 과목 ID로 추가 필터링 (백엔드가 필터링을 지원하지 않을 경우)
+    if (params?.courseId) {
+      filteredNotices = filteredNotices.filter(notice => 
+        notice.metadata.courseId === params.courseId
+      );
+    }
+    
+    return filteredNotices;
   } catch (error) {
     console.error('공지사항 목록 조회 실패:', error);
     return [];

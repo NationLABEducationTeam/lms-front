@@ -19,15 +19,33 @@ interface ZoomMeeting {
 
 // 라이브 미팅은 구조가 다름
 interface ZoomLiveMeeting {
-  meeting: ZoomMeeting;
+  id: number;
+  topic: string;
+  start_time: string;
+  duration: number;
+  course_id: string | null;
+  course_title: string | null;
+  participant_count: number;
   participants: Array<{
-    id: string;
     name: string;
     email: string;
     join_time: string;
   }>;
-  participant_count: number;
-  error?: string;
+}
+
+interface ZoomUpcomingMeeting {
+  id: number;
+  topic: string;
+  start_time: string;
+  duration: number;
+  join_url: string;
+}
+
+interface ZoomRecentPastMeeting {
+  id: number;
+  topic: string;
+  start_time: string;
+  duration: number;
 }
 
 interface ZoomAccountInfo {
@@ -49,15 +67,23 @@ interface ZoomLiveMeetingsGroup {
   meetings: ZoomLiveMeeting[];
 }
 
+interface ZoomUpcomingMeetingsGroup {
+  count: number;
+  meetings: ZoomUpcomingMeeting[];
+}
+
+interface ZoomRecentPastMeetingsGroup {
+  count: number;
+  meetings: ZoomRecentPastMeeting[];
+}
+
 interface ZoomDashboardSummaryResponse {
   success: boolean;
   message: string;
   data: {
-    account_info: ZoomAccountInfo;
     live_meetings: ZoomLiveMeetingsGroup;
-    upcoming_meetings: ZoomMeetingsGroup;
-    recent_past_meetings: ZoomMeetingsGroup;
-    course_meetings: ZoomMeetingsGroup;
+    upcoming_meetings: ZoomUpcomingMeetingsGroup;
+    recent_past_meetings: ZoomRecentPastMeetingsGroup;
     timestamp: string;
   };
 }
@@ -72,6 +98,8 @@ export interface ZoomDashboardSummary {
     id: string;
     topic: string;
     startTime: string;
+    course_id: string | null;
+    course_title: string | null;
     participants: {
       id: string;
       name: string;
@@ -84,6 +112,7 @@ export interface ZoomDashboardSummary {
     topic: string;
     startTime: string;
     duration: number;
+    join_url?: string;
   }[];
   recentMeetings: {
     id: string;
@@ -115,16 +144,15 @@ export const zoomApi = createApi({
         
         // 백엔드 응답을 프론트엔드 형식으로 변환
         return {
-          accountInfo: {
-            email: data.account_info.email,
-            name: `${data.account_info.first_name} ${data.account_info.last_name}`,
-          },
+          accountInfo: { email: '', name: '' }, // 새 API에는 account_info가 없으므로 빈 객체 반환
           activeMeetings: data.live_meetings.meetings.map(liveMeeting => ({
-            id: liveMeeting.meeting.id.toString(),
-            topic: liveMeeting.meeting.topic,
-            startTime: liveMeeting.meeting.start_time,
+            id: liveMeeting.id.toString(),
+            topic: liveMeeting.topic,
+            startTime: liveMeeting.start_time,
+            course_id: liveMeeting.course_id,
+            course_title: liveMeeting.course_title,
             participants: liveMeeting.participants.map(participant => ({
-              id: participant.id || '',
+              id: '', // 새 API에는 참가자 ID가 없음
               name: participant.name || '',
               email: participant.email || '',
               joinTime: participant.join_time || new Date().toISOString(),
@@ -135,6 +163,7 @@ export const zoomApi = createApi({
             topic: meeting.topic,
             startTime: meeting.start_time,
             duration: meeting.duration,
+            join_url: meeting.join_url,
           })),
           recentMeetings: data.recent_past_meetings.meetings.map(meeting => ({
             id: meeting.id.toString(),
@@ -144,14 +173,7 @@ export const zoomApi = createApi({
             endTime: new Date(new Date(meeting.start_time).getTime() + meeting.duration * 60000).toISOString(),
             participants: 0, // 백엔드에서 참가자 수를 제공하지 않음
           })),
-          courseMeetings: data.course_meetings.meetings.map(meeting => ({
-            id: meeting.id.toString(),
-            courseId: meeting.host_id, // 임시로 host_id를 courseId로 사용
-            courseName: meeting.topic,
-            topic: meeting.topic,
-            startTime: meeting.start_time,
-            status: new Date(meeting.start_time) > new Date() ? 'waiting' : 'finished',
-          })),
+          courseMeetings: [], // 새 API에는 course_meetings가 없으므로 빈 배열 반환
         };
       },
       providesTags: ['ZoomDashboard'],

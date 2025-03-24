@@ -32,7 +32,8 @@ import {
   InboxOutlined,
   LoadingOutlined,
   FileDoneOutlined,
-  UploadOutlined
+  UploadOutlined,
+  ExperimentOutlined
 } from '@ant-design/icons';
 import axios from 'axios';
 
@@ -62,6 +63,9 @@ const AssignmentDetailPage: FC = () => {
   const { data: assignment, isLoading, error } = useGetAssignmentDetailQuery(id as string);
   const [submitAssignment] = useSubmitAssignmentMutation();
   const [getUploadUrls] = useGetAssignmentUploadUrlsMutation();
+  
+  // 퀴즈/시험인지 확인
+  const isQuizOrExam = assignment?.item_type === 'QUIZ' || assignment?.item_type === 'EXAM';
   
   // 파일 업로드 속성
   const uploadProps: UploadProps = {
@@ -98,6 +102,38 @@ const AssignmentDetailPage: FC = () => {
     const hasFiles = fileList.length > 0;
     
     return hasContent || hasFiles;
+  };
+  
+  // 퀴즈/시험 응시 처리
+  const handleTakeQuiz = () => {
+    if (!assignment || !id) return;
+
+    // 과목 ID 추출 (courseId)
+    const courseId = assignment.course_id;
+    
+    // 퀴즈 파일 이름 생성 (과제 제목 또는 ID 기반)
+    const fileName = `${assignment.title || 'quiz'}.json`;
+    
+    console.log('시험 응시 클릭:', assignment);
+    
+    // S3 객체 URL 직접 사용
+    navigate(`/mycourse/${courseId}/quiz/${encodeURIComponent(fileName)}`, {
+      state: {
+        // S3 버킷의 객체 URL 직접 사용
+        quizUrl: `https://nationslablmscoursebucket.s3.ap-northeast-2.amazonaws.com/assignments/${id}/example_quiz.json`,
+        title: assignment.title || 'Quiz',
+        courseId: courseId,
+        assignmentId: id
+      }
+    });
+    
+    // 콘솔에 디버그 정보 출력
+    console.log('퀴즈 페이지 네비게이션:', {
+      url: `/mycourse/${courseId}/quiz/${encodeURIComponent(fileName)}`,
+      courseId,
+      quizFileName: fileName,
+      assignmentId: id
+    });
   };
   
   // 과제 제출 처리
@@ -357,39 +393,86 @@ const AssignmentDetailPage: FC = () => {
         {/* 과제 제출 폼 - 마감되지 않고 아직 제출하지 않은 경우에만 표시 */}
         {!assignment.is_completed && assignment.status !== '마감됨' && (
           <Card className="mb-6 shadow-sm" title="과제 제출">
-            <div className="mb-4">
-              <Text>내용 작성</Text>
-              <TextArea 
-                rows={6} 
-                placeholder="과제 내용을 작성하세요..." 
-                value={submissionText}
-                onChange={e => setSubmissionText(e.target.value)}
-                className="mt-2"
-              />
-            </div>
-            
-            <div className="mb-4">
-              <Text>파일 업로드</Text>
-              <Dragger {...uploadProps} className="mt-2">
-                <p className="ant-upload-drag-icon">
-                  <InboxOutlined />
-                </p>
-                <p className="ant-upload-text">클릭하거나 파일을 이 영역으로 드래그하세요</p>
-                <p className="ant-upload-hint">
-                  여러 파일을 한 번에 업로드할 수 있습니다
-                </p>
-              </Dragger>
-            </div>
-            
-            <div className="text-right">
-              <Button 
-                type="primary" 
-                disabled={!canSubmit()} 
-                onClick={() => setSubmitModalVisible(true)}
-              >
-                과제 제출
-              </Button>
-            </div>
+            {isQuizOrExam ? (
+              // 시험/퀴즈인 경우 다른 UI 표시
+              <div className="mt-4">
+                <Alert
+                  message="온라인 시험 안내"
+                  description={`이 ${assignment.item_type === 'EXAM' ? '시험' : '퀴즈'}은 온라인으로 응시하는 방식입니다. 아래 버튼을 클릭하여 시험을 시작하세요.`}
+                  type="info"
+                  showIcon
+                  style={{ marginBottom: 16 }}
+                />
+                
+                <Button
+                  type="primary"
+                  size="large"
+                  icon={<ExperimentOutlined />}
+                  onClick={handleTakeQuiz}
+                >
+                  {assignment.item_type === 'EXAM' ? '시험 응시' : '퀴즈 풀기'}
+                </Button>
+                
+                <div className="mt-4 text-gray-500">
+                  <ul className="list-disc pl-5">
+                    <li>시험 시작 후에는 페이지를 벗어날 수 없습니다.</li>
+                    <li>제한 시간 내에 답변을 완료하고 제출해야 합니다.</li>
+                    <li>응시는 한 번만 가능하며, 제출 후에는 수정할 수 없습니다.</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="mb-4">
+                  <Text>내용 작성</Text>
+                  <TextArea 
+                    rows={6} 
+                    placeholder="과제 내용을 작성하세요..." 
+                    value={submissionText}
+                    onChange={e => setSubmissionText(e.target.value)}
+                    className="mt-2"
+                  />
+                </div>
+                
+                <div className="mb-4">
+                  <Text>파일 업로드</Text>
+                  <Dragger {...uploadProps} className="mt-2">
+                    <p className="ant-upload-drag-icon">
+                      <InboxOutlined />
+                    </p>
+                    <p className="ant-upload-text">클릭하거나 파일을 이 영역으로 드래그하세요</p>
+                    <p className="ant-upload-hint">
+                      여러 파일을 한 번에 업로드할 수 있습니다
+                    </p>
+                  </Dragger>
+                </div>
+                
+                {/* 업로드 진행 상태 표시 */}
+                {uploading && Object.keys(uploadProgress).length > 0 && (
+                  <div className="mt-4 space-y-2">
+                    {Object.entries(uploadProgress).map(([fileName, progress]) => (
+                      <div key={fileName}>
+                        <div className="flex justify-between mb-1">
+                          <span>{fileName}</span>
+                          <span>{progress}%</span>
+                        </div>
+                        <Progress percent={progress} status="active" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                <div className="text-right">
+                  <Button 
+                    type="primary" 
+                    disabled={!canSubmit()} 
+                    onClick={() => setSubmitModalVisible(true)}
+                  >
+                    과제 제출
+                  </Button>
+                </div>
+              </>
+            )}
           </Card>
         )}
         

@@ -8,6 +8,8 @@ export interface NoticeMetadata {
   status: 'active' | 'inactive';
   viewCount: number;
   isImportant: boolean;
+  courseId?: string | null;
+  courseName?: string | null;
 }
 
 export interface NoticeContent {
@@ -38,6 +40,8 @@ export interface NoticeFormData {
   tags?: string[];
   isImportant?: boolean;
   attachments?: File[];
+  courseId?: string | null;
+  courseName?: string | null;
 }
 
 // 공지사항 카테고리 타입
