@@ -14,7 +14,7 @@ import {
   Bell, FileText, HelpCircle, PlayCircle, BookOpen, Download, Calendar, Video, User,
   PenLine, MessageSquare, Award, BarChart, ChevronDown, BrainCircuit,
   Film, Image as ImageIcon, FileIcon, File, Play, Lock, AlertCircle,
-  BarChart2, Edit2, Trash2, Search, Upload, Clock, ChevronRight, Plus
+  BarChart2, Edit2, Trash2, Search, Upload, Clock, ChevronRight, Plus, AlertTriangle
 } from 'lucide-react';
 import { fetchAuthSession } from 'aws-amplify/auth';
 import { 
@@ -36,9 +36,11 @@ import {
   Tabs,
   Select,
   Statistic,
-  Divider
+  Divider,
+  Alert
 } from 'antd';
-import { toast } from 'sonner';
+import { toast as sonnerToast } from 'sonner';
+import { toast, ToastContainer } from 'react-toastify';
 import VideoModal from '@/components/video/VideoModal';
 import FileDownloader from '@/components/common/FileDownloader';
 import { cn } from '@/lib/utils';
@@ -208,7 +210,7 @@ const NotesPanel: FC = () => {
   const handleVideoClick = (courseId: string, videoId: string, weekNumber: number, timestamp: number) => {
     if (!weekNumber) {
       console.error('주차 정보가 없습니다:', { courseId, videoId, weekNumber, timestamp });
-      toast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
+      sonnerToast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
       return;
     }
 
@@ -519,6 +521,11 @@ const StudentCoursesPage: FC = () => {
   );
   const { handleAssignmentClick, handleExamClick } = useAssignmentHandlers();
 
+  // 사용자의 등록 상태가 "DROPPED"인지 확인
+  const isEnrollmentDropped = useMemo(() => {
+    return selectedCourse?.enrollment_status === "DROPPED";
+  }, [selectedCourse]);
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -591,7 +598,7 @@ const StudentCoursesPage: FC = () => {
   const handleFileClick = async (downloadUrl: string | null, fileName: string, streamingUrl?: string | null, weekNumber?: number) => {
     // 주차 정보가 없는 경우 처리
     if (!weekNumber) {
-      toast.error('주차 정보를 찾을 수 없습니다.');
+      sonnerToast.error('주차 정보를 찾을 수 없습니다.');
       return;
     }
 
@@ -612,7 +619,7 @@ const StudentCoursesPage: FC = () => {
     if (fileName.endsWith('.m3u8')) {
       const videoUrl = streamingUrl || downloadUrl;
       if (!videoUrl) {
-        toast.error('비디오 URL이 유효하지 않습니다.');
+        sonnerToast.error('비디오 URL이 유효하지 않습니다.');
         return;
       }
       navigate(`/mycourse/${selectedCourse?.id}/week/${weekNumber}/video/${encodeURIComponent(fileName)}`, {
@@ -629,7 +636,7 @@ const StudentCoursesPage: FC = () => {
 
     // 일반 파일은 다운로드
     if (!downloadUrl) {
-      toast.error('다운로드 URL이 유효하지 않습니다.');
+      sonnerToast.error('다운로드 URL이 유효하지 않습니다.');
       return;
     }
 
@@ -649,7 +656,7 @@ const StudentCoursesPage: FC = () => {
       document.body.removeChild(a);
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('파일 다운로드에 실패했습니다.');
+      sonnerToast.error('파일 다운로드에 실패했습니다.');
       // 다운로드 실패 시 downloadUrl이 있다면 새 탭에서 열기 시도
       if (downloadUrl) {
         window.open(downloadUrl, '_blank');
@@ -676,7 +683,7 @@ const StudentCoursesPage: FC = () => {
         setQnaPosts(qnaList);
       } catch (error) {
         console.error('게시판 데이터 로딩 실패:', error);
-        toast.error('게시판 데이터를 불러오는데 실패했습니다.');
+        sonnerToast.error('게시판 데이터를 불러오는데 실패했습니다.');
       } finally {
         setBoardLoading(false);
       }
@@ -690,7 +697,7 @@ const StudentCoursesPage: FC = () => {
   const handleVideoClick = (courseId: string, videoId: string, weekNumber: number, timestamp: number) => {
     if (!weekNumber) {
       console.error('주차 정보가 없습니다:', { courseId, videoId, weekNumber, timestamp });
-      toast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
+      sonnerToast.error('동영상을 재생할 수 없습니다. 주차 정보가 없습니다.');
       return;
     }
 
@@ -1305,495 +1312,565 @@ const StudentCoursesPage: FC = () => {
   return (
     <Layout className="min-h-screen bg-gray-50">
       <Content className="max-w-7xl mx-auto px-6 py-10">
-        {/* 강의 선택 헤더 */}
-        <Card className="mb-8 shadow-sm hover:shadow-md transition-all">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6">
-            <Space size="large" className="flex-1">
-              <Select
-                style={{ width: 300 }}
-                value={selectedCourse?.id}
-                onChange={handleCourseSelect}
-                optionLabelProp="label"
-                dropdownRender={(menu) => (
-                  <div>
-                    {menu}
-                    <Divider style={{ margin: '8px 0' }} />
-                    <Space style={{ padding: '0 8px 4px' }}>
-                      <Button type="text" icon={<Search className="w-4 h-4" />}>
-                        다른 강의 찾기
-                      </Button>
-                    </Space>
-                  </div>
-                )}
-              >
-                {courses.map((course) => (
-                  <Select.Option 
-                    key={course.id} 
-                    value={course.id}
-                    label={course.title}
-                  >
-                    <Space>
-                      {course.thumbnail_url ? (
-                        <Avatar 
-                          size={40} 
-                          src={course.thumbnail_url} 
-                          shape="square"
-                          className="rounded-lg"
-                        />
-                      ) : (
-                        <Avatar 
-                          size={40} 
-                          icon={<BookOpen className="w-5 h-5" />} 
-                          shape="square"
-                          className="bg-gray-100"
-                        />
-                      )}
-                      <div>
-                        <div className="font-medium text-base">{course.title}</div>
-                        <div className="text-sm text-gray-500 flex items-center gap-2">
-                          <User className="w-3 h-3" />
-                          {course.instructor_name}
-                        </div>
-                      </div>
-                    </Space>
-                  </Select.Option>
-                ))}
-              </Select>
-
-              <Space className="ml-4">
-                <Tag color="blue" className="px-3 py-1 text-sm">
-                  {CATEGORY_MAPPING[selectedCourse?.main_category_id as MainCategoryId]}
-                </Tag>
-                <Tag color={selectedCourse?.classmode === 'ONLINE' ? 'green' : 'orange'} className="px-3 py-1 text-sm">
-                  {selectedCourse?.classmode === 'ONLINE' ? '실시간 강의' : 'VOD 강의'}
-                </Tag>
-                <Tag color="purple" className="px-3 py-1 text-sm">
-                  {selectedCourse?.level === 'BEGINNER' ? '입문' : 
-                   selectedCourse?.level === 'INTERMEDIATE' ? '중급' : '고급'}
-                </Tag>
-              </Space>
-            </Space>
-
-            {selectedCourse?.classmode === 'ONLINE' && selectedCourse?.zoom_link && (
-              <Button 
-                type="primary" 
-                size="large"
-                icon={<PlayCircle className="w-5 h-5" />}
-                href={selectedCourse.zoom_link}
-                target="_blank"
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg hover:shadow-xl transition-all"
-              >
-                실시간 수업 입장
-              </Button>
-            )}
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Spin size="large" />
           </div>
-
-          <Divider className="my-0" />
-
-          <div className="px-6 py-4 bg-gray-50/50">
-            <Space size="large" className="text-gray-600">
-              <Space>
-                <User className="w-4 h-4" />
-                <Text>{selectedCourse?.instructor_name}</Text>
-              </Space>
-              <Space>
-                <Calendar className="w-4 h-4" />
-                <Text>{new Date(selectedCourse?.created_at || '').toLocaleDateString('ko-KR', {
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}</Text>
-              </Space>
-              <Space>
-                <BookOpen className="w-4 h-4" />
-                <Text>{selectedCourse?.weeks?.length || 0}주차</Text>
-              </Space>
-              <Space>
-                <BarChart className="w-4 h-4" />
-                <Text>전체 진도율: {selectedCourse?.progress || 0}%</Text>
-              </Space>
-            </Space>
-          </div>
-        </Card>
-
-        <div className="flex gap-8">
-          {/* 왼쪽 사이드바 */}
-          <Sider width={240} theme="light" className="rounded-xl">
-            <Menu
-              mode="vertical"
-              selectedKeys={[activeTab]}
-              onClick={({ key }) => setActiveTab(key as any)}
-              items={[
-                {
-                  key: 'curriculum',
-                  icon: <BookOpen className="w-5 h-5" />,
-                  label: '커리큘럼'
-                },
-                {
-                  key: 'progress',
-                  icon: <BarChart className="w-5 h-5" />,
-                  label: '학습 현황'
-                },
-                {
-                  key: 'notes',
-                  icon: <PenLine className="w-5 h-5" />,
-                  label: '강의 노트'
-                },
-                {
-                  key: 'posts',
-                  icon: <MessageSquare className="w-5 h-5" />,
-                  label: '게시글'
-                },
-                {
-                  key: 'notices',
-                  icon: <Bell className="w-5 h-5" />,
-                  label: <Badge count="N" offset={[10, 0]}>공지사항</Badge>
-                },
-                {
-                  key: 'assignments',
-                  icon: <FileText className="w-5 h-5" />,
-                  label: <Badge count={2} offset={[10, 0]}>과제</Badge>
-                },
-                {
-                  key: 'qna',
-                  icon: <HelpCircle className="w-5 h-5" />,
-                  label: <Badge count={1} offset={[10, 0]}>질의응답</Badge>
-                }
-              ]}
-            />
-          </Sider>
-
-          {/* 메인 콘텐츠 */}
-          <Content className="flex-1">
-            {activeTab === 'curriculum' && (
-              <Collapse 
-                className="bg-white rounded-xl"
-                expandIconPosition="end"
-                activeKey={openWeeks}
-                onChange={(keys) => handleWeekToggle(keys as string[])}
-              >
-                {selectedCourse?.weeks && selectedCourse.weeks.length > 0 ? (() => {
-                  const weekMap = new Map();
-                  
-                  // 유효한 주차만 필터링
-                  selectedCourse.weeks
-                    .filter(week => week && typeof week.weekNumber === 'number' && week.weekNumber > 0)
-                    .forEach(week => {
-                      // 각 주차별 자료 개수 계산
-                      const materialsCount = Object.values(week.materials || {})
-                        .reduce((total, materials) => total + materials.length, 0);
-                      
-                      // 이미 해당 주차가 있고, 현재 주차의 자료 개수가 더 많으면 교체
-                      // 없으면 새로 추가
-                      if (!weekMap.has(week.weekNumber) || 
-                          materialsCount > weekMap.get(week.weekNumber).materialsCount) {
-                        weekMap.set(week.weekNumber, { week, materialsCount });
-                      }
-                    });
-                  
-                  // 주차 번호 순서대로 정렬하여 반환
-                  return Array.from(weekMap.values())
-                    .sort((a, b) => a.week.weekNumber - b.week.weekNumber)
-                    .map(({ week }) => (
-                      <Panel
-                        key={week.weekNumber.toString()}
-                        header={
-                          <Space>
-                            <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                              <span className="text-lg font-semibold text-blue-600">
-                                {week.weekNumber}
-                              </span>
-                            </div>
-                            <div>
-                              <Title level={5} className="mb-0">
-                                {week.weekNumber}주차
-                              </Title>
-                              <Text type="secondary">
-                                {Object.values(week.materials || {}).flat().length}개의 학습 자료
-                              </Text>
-                            </div>
-                          </Space>
-                        }
-                      >
-                        {renderWeekMaterials(week.materials || {}, week.weekNumber)}
-                      </Panel>
-                    ));
-                })() : (
-                  <Empty description="이용 가능한 주차 정보가 없습니다." />
-                )}
-              </Collapse>
-            )}
-
-            {activeTab === 'notices' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <Title level={4} className="mb-0">공지사항</Title>
-                </div>
-                {boardLoading ? (
-                  <div className="text-center py-8">
-                    <Spin size="large" />
-                  </div>
-                ) : notices.length === 0 ? (
-                  <Empty
-                    image={<Bell className="w-12 h-12 text-gray-300" />}
-                    description="등록된 공지사항이 없습니다."
-                  />
-                ) : (
-                  <List
-                    dataSource={notices}
-                    renderItem={(notice) => (
-                      <List.Item
-                        key={notice.metadata.id}
-                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
-                        onClick={() => navigate(`/notices/${notice.metadata.id}`)}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <Space>
-                              {notice.metadata.isImportant && (
-                                <Tag color="red">중요</Tag>
-                              )}
-                              <Text strong>{notice.content.title}</Text>
-                            </Space>
-                          }
-                          description={
-                            <div>
-                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
-                                {notice.content.summary}
-                              </Paragraph>
-                              <Space className="text-gray-500">
-                                <Text>{notice.metadata.author}</Text>
-                                <Text>
-                                  {new Date(notice.metadata.createdAt).toLocaleDateString('ko-KR')}
-                                </Text>
-                              </Space>
-                            </div>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
-                )}
-              </Card>
-            )}
-
-            {activeTab === 'progress' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-6">
-                  <Title level={4} className="mb-0">학습 현황</Title>
-                  <Space>
-                    <Button icon={<Download className="w-4 h-4" />}>
-                      학습 리포트 다운로드
-                    </Button>
-                    <Button type="primary" icon={<BarChart2 className="w-4 h-4" />}>
-                      상세 분석
-                    </Button>
-                  </Space>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
-                    <Statistic
-                      title={<span className="text-blue-600 font-medium">전체 진도율</span>}
-                      value={75}
-                      suffix="%"
-                      prefix={<BarChart2 className="w-4 h-4 text-blue-600" />}
-                      valueStyle={{ color: '#2563eb' }}
-                    />
-                    <Progress percent={75} status="active" strokeColor="#2563eb" />
-                    <Text className="text-sm text-blue-600 mt-2">
-                      최근 학습: 2주차 - AWS EC2 인스턴스 생성
-                    </Text>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
-                    <Statistic
-                      title={<span className="text-green-600 font-medium">과제 완료율</span>}
-                      value={80}
-                      suffix="%"
-                      prefix={<FileText className="w-4 h-4 text-green-600" />}
-                      valueStyle={{ color: '#16a34a' }}
-                    />
-                    <Progress percent={80} status="success" strokeColor="#16a34a" />
-                    <Text className="text-sm text-green-600 mt-2">
-                      8/10 과제 완료
-                    </Text>
-                  </Card>
-                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50">
-                    <Statistic
-                      title={<span className="text-purple-600 font-medium">퀴즈 평균</span>}
-                      value={92}
-                      suffix="점"
-                      prefix={<BrainCircuit className="w-4 h-4 text-purple-600" />}
-                      valueStyle={{ color: '#9333ea' }}
-                    />
-                    <Progress percent={92} status="active" strokeColor="#9333ea" />
-                    <Text className="text-sm text-purple-600 mt-2">
-                      총 5개 퀴즈 완료
-                    </Text>
-                  </Card>
-                </div>
-
-                <Divider orientation="left">주차별 학습 현황</Divider>
-                <List
-                  dataSource={selectedCourse?.weeks || []}
-                  renderItem={(week) => (
-                    <List.Item>
-                      <List.Item.Meta
-                        avatar={
-                          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                            <span className="text-lg font-semibold text-blue-600">
-                              {week.weekNumber}
-                            </span>
-                          </div>
-                        }
-                        title={`${week.weekNumber}주차`}
-                        description={
-                          <Space direction="vertical" className="w-full">
-                            <Progress percent={85} size="small" />
-                            <Space className="text-xs text-gray-500">
-                              <span>동영상 3/4</span>
-                              <span>퀴즈 2/2</span>
-                              <span>과제 1/1</span>
-                            </Space>
-                          </Space>
-                        }
-                      />
-                    </List.Item>
-                  )}
-                />
-              </Card>
-            )}
-
-            {activeTab === 'notes' && (
-              <div className="p-6">
-                {renderNotesPanel()}
+        ) : error ? (
+          <Alert
+            message="오류 발생"
+            description={error}
+            type="error"
+            showIcon
+            className="mb-8"
+          />
+        ) : isEnrollmentDropped ? (
+          <>
+            {(() => {
+              // 컴포넌트 첫 렌더링 시에만 토스트 표시
+              if (!toast.isActive("enrollment-dropped")) {
+                toast.error(
+                  <div className="flex flex-col">
+                    <div className="text-xl font-bold mb-2">수강 정지됨</div>
+                    <div className="text-base leading-6 whitespace-pre-line">
+                      이 강의에 대한 수강이 중단되었습니다.
+                      자세한 내용은 관리자에게 문의하세요.
+                    </div>
+                  </div>, 
+                  {
+                    autoClose: false,
+                    position: "top-center",
+                    toastId: "enrollment-dropped",
+                    className: "enrollment-dropped-toast",
+                    style: { 
+                      background: '#fff',
+                      color: '#333',
+                      borderLeft: '5px solid #ef4444',
+                      padding: '20px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+                      minWidth: '360px'
+                    },
+                    icon: <AlertCircle className="w-8 h-8 text-red-500" />
+                  }
+                );
+              }
+              return null;
+            })()}
+            <div className="min-h-[300px] flex items-center justify-center">
+              <div className="text-center p-10 bg-white rounded-xl shadow-lg max-w-md border border-gray-100">
+                <AlertTriangle className="w-24 h-24 mx-auto text-yellow-500 mb-8" />
+                <h2 className="text-2xl font-bold text-gray-800 mb-6">수강 정지됨</h2>
+                <p className="text-lg text-gray-600 mb-8 leading-7 whitespace-pre-line">
+                  이 강의에 대한 수강이 중단되었습니다.
+                  자세한 내용은 관리자에게 문의하세요.
+                </p>
+                <Button 
+                  type="primary" 
+                  size="large"
+                  className="px-10 h-12 text-base"
+                  onClick={() => {
+                    toast.dismiss("enrollment-dropped");
+                    navigate('/');
+                  }}
+                >
+                  홈으로 돌아가기
+                </Button>
               </div>
-            )}
+            </div>
+          </>
+        ) : (
+          <>
+            {/* 강의 선택 헤더 */}
+            <Card className="mb-8 shadow-sm hover:shadow-md transition-all">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6">
+                <Space size="large" className="flex-1">
+                  <Select
+                    style={{ width: 300 }}
+                    value={selectedCourse?.id}
+                    onChange={handleCourseSelect}
+                    optionLabelProp="label"
+                    dropdownRender={(menu) => (
+                      <div>
+                        {menu}
+                        <Divider style={{ margin: '8px 0' }} />
+                        <Space style={{ padding: '0 8px 4px' }}>
+                          <Button type="text" icon={<Search className="w-4 h-4" />}>
+                            다른 강의 찾기
+                          </Button>
+                        </Space>
+                      </div>
+                    )}
+                  >
+                    {courses.map((course) => (
+                      <Select.Option 
+                        key={course.id} 
+                        value={course.id}
+                        label={course.title}
+                      >
+                        <Space>
+                          {course.thumbnail_url ? (
+                            <Avatar 
+                              size={40} 
+                              src={course.thumbnail_url} 
+                              shape="square"
+                              className="rounded-lg"
+                            />
+                          ) : (
+                            <Avatar 
+                              size={40} 
+                              icon={<BookOpen className="w-5 h-5" />} 
+                              shape="square"
+                              className="bg-gray-100"
+                            />
+                          )}
+                          <div>
+                            <div className="font-medium text-base">{course.title}</div>
+                            <div className="text-sm text-gray-500 flex items-center gap-2">
+                              <User className="w-3 h-3" />
+                              {course.instructor_name}
+                            </div>
+                          </div>
+                        </Space>
+                      </Select.Option>
+                    ))}
+                  </Select>
 
-            {activeTab === 'assignments' && (
-              renderAssignmentsTab()
-            )}
+                  <Space className="ml-4">
+                    <Tag color="blue" className="px-3 py-1 text-sm">
+                      {CATEGORY_MAPPING[selectedCourse?.main_category_id as MainCategoryId]}
+                    </Tag>
+                    <Tag color={selectedCourse?.classmode === 'ONLINE' ? 'green' : 'orange'} className="px-3 py-1 text-sm">
+                      {selectedCourse?.classmode === 'ONLINE' ? '실시간 강의' : 'VOD 강의'}
+                    </Tag>
+                    <Tag color="purple" className="px-3 py-1 text-sm">
+                      {selectedCourse?.level === 'BEGINNER' ? '입문' : 
+                       selectedCourse?.level === 'INTERMEDIATE' ? '중급' : '고급'}
+                    </Tag>
+                  </Space>
+                </Space>
 
-            {activeTab === 'posts' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <Title level={4} className="mb-0">게시글</Title>
+                {selectedCourse?.classmode === 'ONLINE' && selectedCourse?.zoom_link && (
                   <Button 
                     type="primary" 
-                    icon={<PenLine className="w-4 h-4" />}
-                    onClick={() => navigate('/community/create')}
+                    size="large"
+                    icon={<PlayCircle className="w-5 h-5" />}
+                    href={selectedCourse.zoom_link}
+                    target="_blank"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-0 shadow-lg hover:shadow-xl transition-all"
                   >
-                    글쓰기
+                    실시간 수업 입장
                   </Button>
-                </div>
-                {boardLoading ? (
-                  <div className="text-center py-8">
-                    <Spin size="large" />
-                  </div>
-                ) : communityPosts.length === 0 ? (
-                  <Empty
-                    image={<MessageSquare className="w-12 h-12 text-gray-300" />}
-                    description="등록된 게시글이 없습니다."
-                  />
-                ) : (
-                  <List
-                    dataSource={communityPosts}
-                    renderItem={(post) => (
-                      <List.Item
-                        key={post.metadata.id}
-                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
-                        onClick={() => navigate(`/community/${post.metadata.id}`)}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <Space>
-                              <Text strong>{post.content.title}</Text>
-                            </Space>
-                          }
-                          description={
-                            <div>
-                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
-                                {post.content.summary}
-                              </Paragraph>
-                              <Space className="text-gray-500">
-                                <Text>{post.metadata.author}</Text>
-                                <Text>
-                                  {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
-                                </Text>
-                                <Text>댓글 {post.metadata.commentCount}</Text>
-                              </Space>
-                            </div>
-                          }
-                        />
-                      </List.Item>
-                    )}
-                  />
                 )}
-              </Card>
-            )}
+              </div>
 
-            {activeTab === 'qna' && (
-              <Card className="rounded-xl">
-                <div className="flex justify-between items-center mb-4">
-                  <Title level={4} className="mb-0">질의응답</Title>
-                  <Button 
-                    type="primary" 
-                    icon={<PenLine className="w-4 h-4" />}
-                    onClick={() => navigate('/qna/create')}
+              <Divider className="my-0" />
+
+              <div className="px-6 py-4 bg-gray-50/50">
+                <Space size="large" className="text-gray-600">
+                  <Space>
+                    <User className="w-4 h-4" />
+                    <Text>{selectedCourse?.instructor_name}</Text>
+                  </Space>
+                  <Space>
+                    <Calendar className="w-4 h-4" />
+                    <Text>{new Date(selectedCourse?.created_at || '').toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}</Text>
+                  </Space>
+                  <Space>
+                    <BookOpen className="w-4 h-4" />
+                    <Text>{selectedCourse?.weeks?.length || 0}주차</Text>
+                  </Space>
+                  <Space>
+                    <BarChart className="w-4 h-4" />
+                    <Text>전체 진도율: {selectedCourse?.progress || 0}%</Text>
+                  </Space>
+                </Space>
+              </div>
+            </Card>
+
+            <div className="flex gap-8">
+              {/* 왼쪽 사이드바 */}
+              <Sider width={240} theme="light" className="rounded-xl">
+                <Menu
+                  mode="vertical"
+                  selectedKeys={[activeTab]}
+                  onClick={({ key }) => setActiveTab(key as any)}
+                  items={[
+                    {
+                      key: 'curriculum',
+                      icon: <BookOpen className="w-5 h-5" />,
+                      label: '커리큘럼'
+                    },
+                    {
+                      key: 'progress',
+                      icon: <BarChart className="w-5 h-5" />,
+                      label: '학습 현황'
+                    },
+                    {
+                      key: 'notes',
+                      icon: <PenLine className="w-5 h-5" />,
+                      label: '강의 노트'
+                    },
+                    {
+                      key: 'posts',
+                      icon: <MessageSquare className="w-5 h-5" />,
+                      label: '게시글'
+                    },
+                    {
+                      key: 'notices',
+                      icon: <Bell className="w-5 h-5" />,
+                      label: <Badge count="N" offset={[10, 0]}>공지사항</Badge>
+                    },
+                    {
+                      key: 'assignments',
+                      icon: <FileText className="w-5 h-5" />,
+                      label: <Badge count={2} offset={[10, 0]}>과제</Badge>
+                    },
+                    {
+                      key: 'qna',
+                      icon: <HelpCircle className="w-5 h-5" />,
+                      label: <Badge count={1} offset={[10, 0]}>질의응답</Badge>
+                    }
+                  ]}
+                />
+              </Sider>
+
+              {/* 메인 콘텐츠 */}
+              <Content className="flex-1">
+                {activeTab === 'curriculum' && (
+                  <Collapse 
+                    className="bg-white rounded-xl"
+                    expandIconPosition="end"
+                    activeKey={openWeeks}
+                    onChange={(keys) => handleWeekToggle(keys as string[])}
                   >
-                    질문하기
-                  </Button>
-                </div>
-                {boardLoading ? (
-                  <div className="text-center py-8">
-                    <Spin size="large" />
-                  </div>
-                ) : qnaPosts.length === 0 ? (
-                  <Empty
-                    image={<HelpCircle className="w-12 h-12 text-gray-300" />}
-                    description="등록된 질문이 없습니다."
-                  />
-                ) : (
-                  <List
-                    dataSource={qnaPosts}
-                    renderItem={(post) => (
-                      <List.Item
-                        key={post.metadata.id}
-                        className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
-                        onClick={() => navigate(`/qna/${post.metadata.id}`)}
-                      >
-                        <List.Item.Meta
-                          title={
-                            <Space>
-                              <Tag color={post.metadata.status === 'resolved' ? 'success' : 'warning'}>
-                                {post.metadata.status === 'resolved' ? '답변완료' : '답변대기'}
-                              </Tag>
-                              <Text strong>{post.content.title}</Text>
-                            </Space>
+                    {selectedCourse?.weeks && selectedCourse.weeks.length > 0 ? (() => {
+                      const weekMap = new Map();
+                      
+                      // 유효한 주차만 필터링
+                      selectedCourse.weeks
+                        .filter(week => week && typeof week.weekNumber === 'number' && week.weekNumber > 0)
+                        .forEach(week => {
+                          // 각 주차별 자료 개수 계산
+                          const materialsCount = Object.values(week.materials || {})
+                            .reduce((total, materials) => total + materials.length, 0);
+                            
+                          // 이미 해당 주차가 있고, 현재 주차의 자료 개수가 더 많으면 교체
+                          // 없으면 새로 추가
+                          if (!weekMap.has(week.weekNumber) || 
+                              materialsCount > weekMap.get(week.weekNumber).materialsCount) {
+                            weekMap.set(week.weekNumber, { week, materialsCount });
                           }
-                          description={
-                            <div>
-                              <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
-                                {post.content.summary}
-                              </Paragraph>
-                              <Space className="text-gray-500">
-                                <Text>{post.metadata.author}</Text>
-                                <Text>
-                                  {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
-                                </Text>
-                                <Text>답변 {post.metadata.commentCount}</Text>
+                        });
+                      
+                      // 주차 번호 순서대로 정렬하여 반환
+                      return Array.from(weekMap.values())
+                        .sort((a, b) => a.week.weekNumber - b.week.weekNumber)
+                        .map(({ week }) => (
+                          <Panel
+                            key={week.weekNumber.toString()}
+                            header={
+                              <Space>
+                                <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                  <span className="text-lg font-semibold text-blue-600">
+                                    {week.weekNumber}
+                                  </span>
+                                </div>
+                                <div>
+                                  <Title level={5} className="mb-0">
+                                    {week.weekNumber}주차
+                                  </Title>
+                                  <Text type="secondary">
+                                    {Object.values(week.materials || {}).flat().length}개의 학습 자료
+                                  </Text>
+                                </div>
                               </Space>
-                            </div>
-                          }
-                        />
-                      </List.Item>
+                            }
+                          >
+                            {renderWeekMaterials(week.materials || {}, week.weekNumber)}
+                          </Panel>
+                        ));
+                    })() : (
+                      <Empty description="이용 가능한 주차 정보가 없습니다." />
                     )}
-                  />
+                  </Collapse>
                 )}
-              </Card>
-            )}
-          </Content>
-        </div>
+
+                {activeTab === 'notices' && (
+                  <Card className="rounded-xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <Title level={4} className="mb-0">공지사항</Title>
+                    </div>
+                    {boardLoading ? (
+                      <div className="text-center py-8">
+                        <Spin size="large" />
+                      </div>
+                    ) : notices.length === 0 ? (
+                      <Empty
+                        image={<Bell className="w-12 h-12 text-gray-300" />}
+                        description="등록된 공지사항이 없습니다."
+                      />
+                    ) : (
+                      <List
+                        dataSource={notices}
+                        renderItem={(notice) => (
+                          <List.Item
+                            key={notice.metadata.id}
+                            className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                            onClick={() => navigate(`/notices/${notice.metadata.id}`)}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <Space>
+                                  {notice.metadata.isImportant && (
+                                    <Tag color="red">중요</Tag>
+                                  )}
+                                  <Text strong>{notice.content.title}</Text>
+                                </Space>
+                              }
+                              description={
+                                <div>
+                                  <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                    {notice.content.summary}
+                                  </Paragraph>
+                                  <Space className="text-gray-500">
+                                    <Text>{notice.metadata.author}</Text>
+                                    <Text>
+                                      {new Date(notice.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                    </Text>
+                                  </Space>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                )}
+
+                {activeTab === 'progress' && (
+                  <Card className="rounded-xl">
+                    <div className="flex justify-between items-center mb-6">
+                      <Title level={4} className="mb-0">학습 현황</Title>
+                      <Space>
+                        <Button icon={<Download className="w-4 h-4" />}>
+                          학습 리포트 다운로드
+                        </Button>
+                        <Button type="primary" icon={<BarChart2 className="w-4 h-4" />}>
+                          상세 분석
+                        </Button>
+                      </Space>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                      <Card className="bg-gradient-to-br from-blue-50 to-blue-100/50">
+                        <Statistic
+                          title={<span className="text-blue-600 font-medium">전체 진도율</span>}
+                          value={75}
+                          suffix="%"
+                          prefix={<BarChart2 className="w-4 h-4 text-blue-600" />}
+                          valueStyle={{ color: '#2563eb' }}
+                        />
+                        <Progress percent={75} status="active" strokeColor="#2563eb" />
+                        <Text className="text-sm text-blue-600 mt-2">
+                          최근 학습: 2주차 - AWS EC2 인스턴스 생성
+                        </Text>
+                      </Card>
+                      <Card className="bg-gradient-to-br from-green-50 to-green-100/50">
+                        <Statistic
+                          title={<span className="text-green-600 font-medium">과제 완료율</span>}
+                          value={80}
+                          suffix="%"
+                          prefix={<FileText className="w-4 h-4 text-green-600" />}
+                          valueStyle={{ color: '#16a34a' }}
+                        />
+                        <Progress percent={80} status="success" strokeColor="#16a34a" />
+                        <Text className="text-sm text-green-600 mt-2">
+                          8/10 과제 완료
+                        </Text>
+                      </Card>
+                      <Card className="bg-gradient-to-br from-purple-50 to-purple-100/50">
+                        <Statistic
+                          title={<span className="text-purple-600 font-medium">퀴즈 평균</span>}
+                          value={92}
+                          suffix="점"
+                          prefix={<BrainCircuit className="w-4 h-4 text-purple-600" />}
+                          valueStyle={{ color: '#9333ea' }}
+                        />
+                        <Progress percent={92} status="active" strokeColor="#9333ea" />
+                        <Text className="text-sm text-purple-600 mt-2">
+                          총 5개 퀴즈 완료
+                        </Text>
+                      </Card>
+                    </div>
+
+                    <Divider orientation="left">주차별 학습 현황</Divider>
+                    <List
+                      dataSource={selectedCourse?.weeks || []}
+                      renderItem={(week) => (
+                        <List.Item>
+                          <List.Item.Meta
+                            avatar={
+                              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                                <span className="text-lg font-semibold text-blue-600">
+                                  {week.weekNumber}
+                                </span>
+                              </div>
+                            }
+                            title={`${week.weekNumber}주차`}
+                            description={
+                              <Space direction="vertical" className="w-full">
+                                <Progress percent={85} size="small" />
+                                <Space className="text-xs text-gray-500">
+                                  <span>동영상 3/4</span>
+                                  <span>퀴즈 2/2</span>
+                                  <span>과제 1/1</span>
+                                </Space>
+                              </Space>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </Card>
+                )}
+
+                {activeTab === 'notes' && (
+                  <div className="p-6">
+                    {renderNotesPanel()}
+                  </div>
+                )}
+
+                {activeTab === 'assignments' && (
+                  renderAssignmentsTab()
+                )}
+
+                {activeTab === 'posts' && (
+                  <Card className="rounded-xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <Title level={4} className="mb-0">게시글</Title>
+                      <Button 
+                        type="primary" 
+                        icon={<PenLine className="w-4 h-4" />}
+                        onClick={() => navigate('/community/create')}
+                      >
+                        글쓰기
+                      </Button>
+                    </div>
+                    {boardLoading ? (
+                      <div className="text-center py-8">
+                        <Spin size="large" />
+                      </div>
+                    ) : communityPosts.length === 0 ? (
+                      <Empty
+                        image={<MessageSquare className="w-12 h-12 text-gray-300" />}
+                        description="등록된 게시글이 없습니다."
+                      />
+                    ) : (
+                      <List
+                        dataSource={communityPosts}
+                        renderItem={(post) => (
+                          <List.Item
+                            key={post.metadata.id}
+                            className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                            onClick={() => navigate(`/community/${post.metadata.id}`)}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <Space>
+                                  <Text strong>{post.content.title}</Text>
+                                </Space>
+                              }
+                              description={
+                                <div>
+                                  <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                    {post.content.summary}
+                                  </Paragraph>
+                                  <Space className="text-gray-500">
+                                    <Text>{post.metadata.author}</Text>
+                                    <Text>
+                                      {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                    </Text>
+                                    <Text>댓글 {post.metadata.commentCount}</Text>
+                                  </Space>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                )}
+
+                {activeTab === 'qna' && (
+                  <Card className="rounded-xl">
+                    <div className="flex justify-between items-center mb-4">
+                      <Title level={4} className="mb-0">질의응답</Title>
+                      <Button 
+                        type="primary" 
+                        icon={<PenLine className="w-4 h-4" />}
+                        onClick={() => navigate('/qna/create')}
+                      >
+                        질문하기
+                      </Button>
+                    </div>
+                    {boardLoading ? (
+                      <div className="text-center py-8">
+                        <Spin size="large" />
+                      </div>
+                    ) : qnaPosts.length === 0 ? (
+                      <Empty
+                        image={<HelpCircle className="w-12 h-12 text-gray-300" />}
+                        description="등록된 질문이 없습니다."
+                      />
+                    ) : (
+                      <List
+                        dataSource={qnaPosts}
+                        renderItem={(post) => (
+                          <List.Item
+                            key={post.metadata.id}
+                            className="cursor-pointer hover:bg-gray-50 rounded-lg p-4"
+                            onClick={() => navigate(`/qna/${post.metadata.id}`)}
+                          >
+                            <List.Item.Meta
+                              title={
+                                <Space>
+                                  <Tag color={post.metadata.status === 'resolved' ? 'success' : 'warning'}>
+                                    {post.metadata.status === 'resolved' ? '답변완료' : '답변대기'}
+                                  </Tag>
+                                  <Text strong>{post.content.title}</Text>
+                                </Space>
+                              }
+                              description={
+                                <div>
+                                  <Paragraph className="mb-2" ellipsis={{ rows: 2 }}>
+                                    {post.content.summary}
+                                  </Paragraph>
+                                  <Space className="text-gray-500">
+                                    <Text>{post.metadata.author}</Text>
+                                    <Text>
+                                      {new Date(post.metadata.createdAt).toLocaleDateString('ko-KR')}
+                                    </Text>
+                                    <Text>답변 {post.metadata.commentCount}</Text>
+                                  </Space>
+                                </div>
+                              }
+                            />
+                          </List.Item>
+                        )}
+                      />
+                    )}
+                  </Card>
+                )}
+              </Content>
+            </div>
+          </>
+        )}
       </Content>
     </Layout>
   );

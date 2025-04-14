@@ -32,13 +32,16 @@ import {
   X,
   Video,
   FileSpreadsheet,
-  FileCode
+  FileCode,
+  ClipboardList,
+  GraduationCap,
+  Trash
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
-import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation, useCreateGradeItemMutation, useGetGradeItemsQuery, useGetGradeItemUploadUrlsMutation } from '@/services/api/courseApi';
+import { useGetCourseByIdQuery, useCreateWeekMutation, useGetUploadUrlsMutation, useGetDownloadUrlMutation, useUpdateMaterialPermissionMutation, useCreateGradeItemMutation, useGetGradeItemsQuery, useGetGradeItemUploadUrlsMutation, useToggleCourseStatusMutation, useGetGradeItemFilesQuery, useDeleteGradeItemMutation } from '@/services/api/courseApi';
 import { toast } from 'sonner';
 import { Progress } from '@/components/common/ui/progress';
-import type { WeekMaterial, Course, GradeItem } from '@/types/course';
+import { WeekMaterial, Course, GradeItem, CourseStatus } from '@/types/course';
 import { cn } from '@/lib/utils';
 import VideoModal from '@/components/video/VideoModal';
 import { CATEGORY_MAPPING, MainCategoryId } from '@/types/course';
@@ -48,6 +51,26 @@ import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/ko';
 import locale from 'antd/es/date-picker/locale/ko_KR';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/common/ui/alert-dialog';
+
+// GradeItemFile 인터페이스 정의
+interface GradeItemFile {
+  name: string;
+  url: string;
+  size: number;
+  type: string;
+  lastModified?: string;
+}
 
 // 파일 타입별 아이콘 매핑
 const getFileIcon = (fileName: string) => {
@@ -142,6 +165,11 @@ const CourseDetail: FC = () => {
   const [gradeItemFiles, setGradeItemFiles] = useState<File[]>([]);
   const [gradeItemFileUploadProgress, setGradeItemFileUploadProgress] = useState<{ [key: string]: number }>({});
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [createGradeItemLoading, setCreateGradeItemLoading] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState<string | null>(null);
+  const [alertDialogOpen, setAlertDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
 
   const { data: course, isLoading, error, refetch } = useGetCourseByIdQuery(id || '');
   const [createWeek] = useCreateWeekMutation();
@@ -150,18 +178,34 @@ const CourseDetail: FC = () => {
   const [updateMaterialPermission] = useUpdateMaterialPermissionMutation();
   const [createGradeItem] = useCreateGradeItemMutation();
   const [getGradeItemUploadUrls] = useGetGradeItemUploadUrlsMutation();
-  
-  // 성적 항목 조회 - skip 옵션 추가 및 refetchOnMountOrArgChange 설정
-  const { 
-    data: gradeItems, 
-    isLoading: isLoadingGradeItems,
-    refetch: refetchGradeItems
-  } = useGetGradeItemsQuery(id || '', {
+  const [toggleCourseStatus] = useToggleCourseStatusMutation();
+  const { data: gradeItems = [], refetch: refetchGradeItems, isLoading: isLoadingGradeItems } = useGetGradeItemsQuery(id || '', {
     skip: !id || !showEvaluationItems,
-    refetchOnMountOrArgChange: false, // 마운트 시 자동 리페치 비활성화
-    refetchOnFocus: false, // 포커스 시 리페치 비활성화
-    refetchOnReconnect: false // 재연결 시 리페치 비활성화
+    refetchOnMountOrArgChange: false,
+    refetchOnFocus: false,
+    refetchOnReconnect: false
   });
+  const { refetch: refetchGradeItemFiles } = useGetGradeItemFilesQuery(selectedGradeItem || '', { skip: !selectedGradeItem });
+  const [deleteGradeItem, { isLoading: isDeleting }] = useDeleteGradeItemMutation();
+  
+  // 성적 항목 삭제 처리
+  const handleDeleteGradeItem = async () => {
+    if (!itemToDelete) return;
+    
+    try {
+      const result = await deleteGradeItem(itemToDelete).unwrap();
+      toast.success(result.message || '성적 항목이 삭제되었습니다.');
+      setIsDeleteDialogOpen(false);
+      setItemToDelete(null);
+    } catch (error: any) {
+      toast.error(error.message || '성적 항목 삭제에 실패했습니다.');
+    }
+  };
+
+  const openDeleteDialog = (itemId: string) => {
+    setItemToDelete(itemId);
+    setIsDeleteDialogOpen(true);
+  };
 
   // 해시 변경 감지하여 주차 선택
   useEffect(() => {
@@ -229,6 +273,23 @@ const CourseDetail: FC = () => {
       }
     } catch (error: any) {
       toast.error(error.message || '주차 생성에 실패했습니다.');
+    }
+  };
+
+  // 수강생 관리 페이지로 이동
+  const handleNavigateToEnrollments = () => {
+    navigate(`/admin/courses/${id}/enrollments`);
+  };
+
+  // 강의 상태 전환
+  const handleToggleStatus = async (courseId: string) => {
+    try {
+      await toggleCourseStatus(courseId).unwrap();
+      toast.success('강의 상태가 변경되었습니다.');
+      refetch();
+    } catch (error) {
+      console.error('강의 상태 변경 오류:', error);
+      toast.error('강의 상태 변경에 실패했습니다.');
     }
   };
 
@@ -698,7 +759,7 @@ const CourseDetail: FC = () => {
           <div className="space-y-4 mt-4">
             <div className="flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-blue-600" />
-              <span className="text-gray-600">카테고리: {CATEGORY_MAPPING[course.main_category_id as MainCategoryId]} - {course.sub_category_id}</span>
+              <span className="text-gray-600">카테고리: {course.main_category_id && CATEGORY_MAPPING[course.main_category_id as keyof typeof CATEGORY_MAPPING] || course.main_category_id} - {course.sub_category_id}</span>
             </div>
             <div className="flex items-center gap-2">
               <Users className="w-5 h-5 text-green-600" />
@@ -1151,6 +1212,15 @@ const CourseDetail: FC = () => {
                                       <Upload className="w-4 h-4 mr-1" />
                                       파일 추가
                                     </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => openDeleteDialog(item.id || item.item_id!)}
+                                      className="text-red-600 border-red-200 hover:bg-red-50"
+                                    >
+                                      <Trash className="w-4 h-4 mr-1" />
+                                      삭제
+                                    </Button>
                                   </div>
                                 </td>
                               </tr>
@@ -1405,6 +1475,67 @@ const CourseDetail: FC = () => {
                 </div>
               </div>
             )}
+
+            {/* 수강생 관리 및 강의 상태 섹션 */}
+            <div 
+              className={cn(
+                "flex flex-col md:flex-row justify-between items-center w-full gap-4 mb-8",
+                course.status === CourseStatus.PUBLISHED ? 'bg-emerald-50 p-4 rounded-lg' : 'bg-amber-50 p-4 rounded-lg'
+              )}>
+              <div className="flex items-center gap-2">
+                {course.status === CourseStatus.PUBLISHED ? (
+                  <Unlock className="h-5 w-5 text-emerald-600" />
+                ) : (
+                  <Lock className="h-5 w-5 text-amber-600" />
+                )}
+                <span className="font-medium">
+                  {course.status === CourseStatus.PUBLISHED ? '활성화된 강의' : '비활성화된 강의'}
+                </span>
+                <span className="text-sm text-slate-500">
+                  ({course.status === CourseStatus.PUBLISHED ? '학생들이 볼 수 있습니다' : '학생들에게 표시되지 않습니다'})
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNavigateToEnrollments}
+                  className="flex items-center gap-1"
+                >
+                  <Users className="h-4 w-4" />
+                  수강생 관리
+                </Button>
+                <Button 
+                  variant={course.status === CourseStatus.PUBLISHED ? 'destructive' : 'default'}
+                  size="sm"
+                  onClick={() => handleToggleStatus(course.id)}
+                >
+                  {course.status === CourseStatus.PUBLISHED ? '비활성화' : '활성화'}
+                </Button>
+              </div>
+            </div>
+
+            {/* 성적 항목 삭제 대화상자 */}
+            <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>성적 항목 삭제</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    정말로 이 성적 항목을 삭제하시겠습니까? 이 작업은 되돌릴 수 없으며, 관련된 학생 제출물도 모두 삭제됩니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction 
+                    onClick={handleDeleteGradeItem} 
+                    disabled={isDeleting}
+                    className="bg-red-600 text-white hover:bg-red-700"
+                  >
+                    {isDeleting ? '삭제 중...' : '삭제'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </>
         )}
       </div>

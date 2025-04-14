@@ -203,10 +203,37 @@ export const emptyStudentGrades: NewStudentGrades = {
   }
 };
 
+// 학생 정보 인터페이스
+interface Student {
+  cognito_user_id: string;
+  student_name: string;
+  student_email: string;
+  enrolled_courses: Array<{
+    course_id: string | null;
+    course_title: string | null;
+    enrollment_status: string | null;
+    enrolled_at: string | null;
+    progress_status: string | null;
+    last_accessed_at: string | null;
+    completion_date: string | null;
+    main_category_id: string | null;
+    sub_category_id: string | null;
+  }>;
+}
+
+// API 응답 인터페이스
+interface StudentsResponse {
+  success: boolean;
+  data: {
+    students: Student[];
+    total: number;
+  };
+}
+
 export const studentApi = createApi({
   reducerPath: 'studentApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['StudentAssignments', 'StudentGrades', 'Assignment'],
+  tagTypes: ['StudentAssignments', 'StudentGrades', 'Assignment', 'Students'],
   endpoints: (builder) => ({
     // 학생의 과제 및 시험 목록 조회
     getStudentAssignments: builder.query<StudentAssignmentsResponse['data'], void>({
@@ -274,7 +301,7 @@ export const studentApi = createApi({
                 exam_weight: 30,
                 weeks_count: 8,
                 assignment_count: 4,
-                exam_count: 3
+                exam_count: 0 // 시험이 없는 경우로 변경
               },
               grades: {
                 attendance: {
@@ -294,21 +321,11 @@ export const studentApi = createApi({
                     status: 'completed'
                   }
                 ],
-                exams: [
-                  {
-                    id: '62',
-                    title: 'AWS 네트워크 기초 퀴즈',
-                    type: 'EXAM',
-                    maxScore: 100,
-                    score: 70,
-                    dueDate: '2025-03-15',
-                    status: 'completed'
-                  }
-                ],
+                exams: [], // 시험 배열 비움
                 assignment_score: 42.5,
-                exam_score: 21,
+                exam_score: 0, // 시험 점수 0
                 assignment_completion_rate: 25,
-                exam_completion_rate: 33,
+                exam_completion_rate: 0, // 시험 완료율 0
                 progress_rate: 28,
                 total_score: 81.5
               }
@@ -353,7 +370,17 @@ export const studentApi = createApi({
             return { data: emptyData };
           }
           
-          return { data: response.data as NewStudentGrades };
+          // API 응답 데이터 전처리: exam_count가 0이면 exams 배열을 비웁니다
+          const processedData = {...response.data} as NewStudentGrades;
+          if (processedData.course && processedData.course.exam_count === 0) {
+            if (processedData.grades) {
+              processedData.grades.exams = [];
+              processedData.grades.exam_score = 0;
+              processedData.grades.exam_completion_rate = 0;
+            }
+          }
+          
+          return { data: processedData };
         } catch (error) {
           console.error('성적 조회 중 오류 발생:', error);
           return { error: { status: 500, data: '성적 정보를 불러오는데 실패했습니다.' } };
@@ -535,7 +562,13 @@ export const studentApi = createApi({
         }
       },
       invalidatesTags: ['StudentAssignments', 'Assignment']
-    })
+    }),
+
+    // 학생 목록 조회
+    getStudents: builder.query<StudentsResponse, void>({
+      query: () => '/admin/students',
+      providesTags: ['Students']
+    }),
   })
 });
 
@@ -547,7 +580,8 @@ export const {
   useGetAssignmentDetailQuery,
   useSubmitAssignmentMutation,
   useGetAssignmentUploadUrlsMutation,
-  useSubmitAssignmentLegacyMutation
+  useSubmitAssignmentLegacyMutation,
+  useGetStudentsQuery
 } = studentApi;
 
 export const getStudentGrades = async (courseId: string): Promise<NewStudentGrades> => {
@@ -555,8 +589,16 @@ export const getStudentGrades = async (courseId: string): Promise<NewStudentGrad
     const response = await axios.get(getApiUrl(`/student/grade/${courseId}`));
     
     if (response.status === 200 && response.data) {
-      // 실제 API 응답 데이터를 반환
-      return response.data;
+      // API 응답 데이터 전처리: exam_count가 0이면 exams 배열을 비우고 관련 점수를 0으로 설정
+      const processedData = {...response.data} as NewStudentGrades;
+      if (processedData.course && processedData.course.exam_count === 0) {
+        if (processedData.grades) {
+          processedData.grades.exams = [];
+          processedData.grades.exam_score = 0;
+          processedData.grades.exam_completion_rate = 0;
+        }
+      }
+      return processedData;
     } else {
       throw new Error('성적 정보 조회 실패');
     }

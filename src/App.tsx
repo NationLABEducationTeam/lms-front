@@ -1,6 +1,9 @@
 import React, { FC } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import './styles/toast-custom.css';
 import RootLayout from './components/common/layout/RootLayout';
 import StudentDashboard from './pages/student/dashboard';
 import StudentLanding from './pages/student';
@@ -48,6 +51,10 @@ import AssignmentDetailPage from '@/pages/student/assignments/detail';
 import CourseAssignmentsPage from '@/pages/admin/courses/assignments';
 import SubmissionsPage from '@/pages/admin/courses/assignments/submissions/[assignmentId]';
 import SubmissionDetailPage from '@/pages/admin/courses/assignments/submission/[submissionId]';
+import WishlistPage from './pages/student/wishlist';
+import CartPage from './pages/student/cart';
+import PendingCoursesPage from './pages/student/pending-courses';
+import CourseEnrollmentsPage from './pages/admin/courses/[id]/enrollments';
 
 // Vite 환경 변수 타입 확장
 declare global {
@@ -94,6 +101,7 @@ const App = () => {
               <Route path="/admin/courses/create" element={<CreateCourse />} />
               <Route path="/admin/courses/:id" element={<CourseDetail />} />
               <Route path="/admin/courses/:id/edit" element={<EditCourse />} />
+              <Route path="/admin/courses/:id/enrollments" element={<CourseEnrollmentsPage />} />
               <Route path="/admin/courses/:courseId/quiz/:quizId/results" element={<QuizResults />} />
               <Route path="/admin/courses/:courseId/assignments" element={<CourseAssignmentsPage />} />
               <Route path="/admin/courses/assignments/submissions/:assignmentId" element={<SubmissionsPage />} />
@@ -123,6 +131,8 @@ const App = () => {
               <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
               <Route path="/mycourse/:courseId/quiz/:quizFileName" element={<QuizPage />} />
               <Route path="/mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
+              <Route path="/student/wishlist" element={<WishlistPage />} />
+              <Route path="/student/cart" element={<CartPage />} />
               <Route path="/notices" element={<NoticeList />} />
               <Route path="/notices/:id" element={<NoticeDetail />} />
               <Route path="/community" element={<CommunityList />} />
@@ -133,6 +143,7 @@ const App = () => {
               <Route path="/qna/:id" element={<QnaDetail />} />
               <Route path="/assignments" element={<AssignmentListPage />} />
               <Route path="/assignments/:id" element={<AssignmentDetailPage />} />
+              <Route path="/pending-courses" element={<PendingCoursesPage />} />
             </Route>
 
             {/* Protected Instructor Routes */}
@@ -141,6 +152,18 @@ const App = () => {
             </Route>
           </Route>
         </Routes>
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="colored"
+        />
       </BrowserRouter>
     </HelmetProvider>
   );

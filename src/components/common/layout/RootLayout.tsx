@@ -13,7 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { User, CreditCard, History, Settings, LogOut, ChevronDown, Briefcase, BookOpen, Code } from 'lucide-react';
+import { User, CreditCard, History, Settings, LogOut, ChevronDown, Briefcase, BookOpen, Code, Heart, ShoppingCart } from 'lucide-react';
 import Header from './Header';
 import Footer from './Footer';
 
@@ -139,6 +139,7 @@ const RootLayout: FC = () => {
                 {[
                   { path: '/dashboard', label: '대시보드' },
                   { path: '/mycourse', label: '강의실' },
+                  { path: '/pending-courses', label: '결제 대기 과목' },
                   { path: '/community', label: '커뮤니티' }
                 ].map(({ path, label }) => (
                   <button 
@@ -189,6 +190,8 @@ const RootLayout: FC = () => {
                     <DropdownMenuGroup>
                       {[
                         { path: '/my-courses', label: '내 강의 보기', icon: User },
+                        { path: '/student/wishlist', label: '관심 목록', icon: Heart },
+                        { path: '/student/cart', label: '장바구니', icon: ShoppingCart },
                         { path: '/pending-courses', label: '결제 대기 강의', icon: CreditCard },
                         { path: '/transactions', label: '거래 내역', icon: History },
                         { path: '/settings', label: '설정', icon: Settings }

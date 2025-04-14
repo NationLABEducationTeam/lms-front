@@ -45,6 +45,25 @@ export interface CreateCourseRequest {
     exam_weight: number;
     min_attendance_rate: number;
   };
+  zoom_meeting?: {
+    meeting_name: string;
+    start_date: string;
+    start_time: string;
+    end_time: string;
+    is_recurring: boolean;
+    recurring_type?: string;
+    recurring_days?: string[];
+    recurring_end_type?: string;
+    recurring_end_count?: string;
+    recurring_end_date?: string | null;
+    auto_recording?: boolean;
+    mute_participants?: boolean;
+    host_video?: boolean;
+    participant_video?: boolean;
+    waiting_room?: boolean;
+    join_before_host?: boolean;
+    alternative_hosts?: string[];
+  } | null;
 }
 
 export interface UpdateCourseRequest {
@@ -96,6 +115,62 @@ export interface CreateGradeItemRequest {
   weight?: number;
   deadline?: string;
   files?: { name: string; type: string; size: number }[];
+}
+
+// Zoom 세션 생성 인터페이스
+export interface CreateZoomSessionRequest {
+  // 기본 필드 (필수)
+  sessionName: string;
+  courseId: string;
+  
+  // 간단 모드 설정 (선택)
+  simple?: boolean;
+  
+  // 날짜 및 시간 설정 (선택)
+  startDate?: string;
+  startTime?: string;
+  endTime?: string;
+  timezone?: string;
+  
+  // 반복 설정 (선택)
+  isRecurring?: boolean;
+  recurringType?: string;
+  recurringInterval?: number;
+  recurringDays?: number[];
+  recurringDay?: string;
+  recurringEndType?: string;
+  recurringEndCount?: number;
+  recurringEndDate?: string;
+  
+  // 보안 설정 (선택)
+  passcode?: string;
+  enableWaitingRoom?: boolean;
+  requireAuthentication?: boolean;
+  
+  // 추가 설정 (선택)
+  hostVideo?: boolean;
+  participantVideo?: boolean;
+  muteUponEntry?: boolean;
+  autoRecording?: string;
+  alternativeHosts?: string;
+}
+
+// Zoom 세션 생성 응답 인터페이스
+export interface CreateZoomSessionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    meeting: {
+      id: string;
+      join_url: string;
+      password: string;
+      start_time: string;
+      duration: number;
+      recurrence?: any;
+    };
+    course_updated: boolean;
+    simple_mode: boolean;
+  };
 }
 
 export const courseApi = createApi({
@@ -243,25 +318,33 @@ export const courseApi = createApi({
             });
           }
 
+          // 요청 데이터 구성
+          const requestData = {
+            title: body.title,
+            description: body.description,
+            instructor_id: instructorId,
+            main_category_id: body.main_category_id,
+            sub_category_id: body.sub_category_id,
+            thumbnail_url: thumbnailBase64,
+            price: body.price,
+            level: body.level,
+            classmode: body.classmode,
+            zoom_link: body.zoom_link,
+            weeks_count: body.weeks_count,
+            assignment_count: body.assignment_count,
+            exam_count: body.exam_count,
+            gradeRules: body.gradeRules
+          };
+
+          // Zoom 미팅 설정이 있는 경우 추가
+          if (body.zoom_meeting && body.classmode === 'ONLINE') {
+            Object.assign(requestData, { zoom_meeting: body.zoom_meeting });
+          }
+
           // API 호출
           const response = await axios.post(
             getApiUrl('/admin/courses'),
-            {
-              title: body.title,
-              description: body.description,
-              instructor_id: instructorId,
-              main_category_id: body.main_category_id,
-              sub_category_id: body.sub_category_id,
-              thumbnail_url: thumbnailBase64,
-              price: body.price,
-              level: body.level,
-              classmode: body.classmode,
-              zoom_link: body.zoom_link,
-              weeks_count: body.weeks_count,
-              assignment_count: body.assignment_count,
-              exam_count: body.exam_count,
-              gradeRules: body.gradeRules
-            },
+            requestData,
             {
               headers: {
                 Authorization: `Bearer ${token}`,
@@ -650,6 +733,51 @@ export const courseApi = createApi({
       },
       providesTags: (_result, _error, itemId) => [{ type: 'GradeItemFiles', id: itemId }]
     }),
+
+    // 성적 항목 삭제
+    // TODO: 삭제 버튼 만들기
+    deleteGradeItem: builder.mutation<{ success: boolean; message: string }, string>({
+      query: (itemId) => ({
+        url: `/admin/grades/items/${itemId}`,
+        method: 'DELETE',
+      }),
+      transformResponse: (response: ApiResponse<any>) => {
+        console.log('성적 항목 삭제 응답:', response);
+        if (!response.success) {
+          throw new Error(response.message || '성적 항목 삭제에 실패했습니다.');
+        }
+        return { 
+          success: response.success, 
+          message: response.message || '성적 항목이 성공적으로 삭제되었습니다.' 
+        };
+      },
+      invalidatesTags: (_result, _error, itemId) => [
+        { type: 'GradeItemFiles', id: itemId },
+        { type: 'GradeItems', id: 'LIST' }
+      ],
+    }),
+
+    // Zoom 세션 생성
+    createZoomSession: builder.mutation<CreateZoomSessionResponse, CreateZoomSessionRequest>({
+      query: (body) => ({
+        url: `/admin/courses/create-zoom-session`,
+        method: 'POST',
+        body
+      }),
+      transformResponse: (response: CreateZoomSessionResponse) => {
+        if (!response.success) {
+          throw new Error(response.message || 'Zoom 세션 생성에 실패했습니다.');
+        }
+        return response;
+      },
+      transformErrorResponse: (response: { status: number; data: any }) => {
+        return {
+          status: response.status,
+          message: response.data?.message || 'Zoom 세션 생성에 실패했습니다.'
+        };
+      },
+      invalidatesTags: (_result, _error, { courseId }) => [{ type: 'Course', id: courseId }]
+    }),
   }),
 });
 
@@ -677,4 +805,6 @@ export const {
   useGetGradeItemsQuery,
   useGetGradeItemUploadUrlsMutation,
   useGetGradeItemFilesQuery,
+  useDeleteGradeItemMutation,
+  useCreateZoomSessionMutation,
 } = courseApi; 

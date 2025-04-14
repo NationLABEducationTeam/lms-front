@@ -55,6 +55,13 @@ export default {
           '0%, 100%': { opacity: 1 },
           '50%': { opacity: 0.8 },
         },
+        'heartbeat': {
+          '0%': { transform: 'scale(1)' },
+          '25%': { transform: 'scale(1.1)' },
+          '50%': { transform: 'scale(1)' },
+          '75%': { transform: 'scale(1.1)' },
+          '100%': { transform: 'scale(1)' },
+        },
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
@@ -63,6 +70,7 @@ export default {
   			'scroll-right': 'scroll-right 30s linear infinite',
         'float': 'float 5s ease-in-out infinite',
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'heartbeat': 'heartbeat 1.5s ease-in-out infinite',
   		},
   		borderRadius: {
   			lg: 'var(--radius)',

@@ -8,7 +8,7 @@ export const CATEGORY_MAPPING = {
   'CodeingTest': '코딩테스트'
 } as const;
 
-export type MainCategoryId = keyof typeof CATEGORY_MAPPING;
+export type MainCategoryId = keyof typeof CATEGORY_MAPPING | 'custom' | string;
 
 export enum CourseLevel {
   BEGINNER = 'BEGINNER',

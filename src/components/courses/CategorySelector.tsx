@@ -24,6 +24,46 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
   onSubChange,
   className,
 }) => {
+  const [isCustomMain, setIsCustomMain] = useState(false);
+  const [customMainName, setCustomMainName] = useState('');
+
+  const handleMainCategoryChange = (value: string) => {
+    if (value === 'all') {
+      onMainChange(null);
+      setIsCustomMain(false);
+    } else if (value === 'custom') {
+      setIsCustomMain(true);
+      // 커스텀 입력 모드로 전환했을 때 기존에 입력된 값이 있으면 그대로 유지
+      if (customMainName) {
+        onMainChange({
+          id: 'custom' as MainCategoryId,
+          name: customMainName,
+          sub_categories: []
+        });
+      } else {
+        onMainChange(null);
+      }
+    } else {
+      setIsCustomMain(false);
+      const categoryId = value as MainCategoryId;
+      onMainChange({
+        id: categoryId,
+        name: CATEGORY_MAPPING[categoryId],
+        sub_categories: []
+      });
+    }
+  };
+
+  const handleCustomMainChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setCustomMainName(value);
+    onMainChange({
+      id: 'custom' as MainCategoryId,
+      name: value,
+      sub_categories: []
+    });
+  };
+
   return (
     <div className={`space-y-4 ${className}`}>
       <div>
@@ -31,19 +71,8 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
           대분류
         </label>
         <SelectPrimitive.Root 
-          value={selectedMain?.id || 'all'} 
-          onValueChange={(value: string) => {
-            if (value === 'all') {
-              onMainChange(null);
-            } else {
-              const categoryId = value as MainCategoryId;
-              onMainChange({
-                id: categoryId,
-                name: CATEGORY_MAPPING[categoryId],
-                sub_categories: []
-              });
-            }
-          }}
+          value={isCustomMain ? 'custom' : (selectedMain?.id || 'all')} 
+          onValueChange={handleMainCategoryChange}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="대분류 선택" />
@@ -55,8 +84,21 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
                 {value}
               </SelectItem>
             ))}
+            <SelectItem value="custom">직접 입력</SelectItem>
           </SelectContent>
         </SelectPrimitive.Root>
+        
+        {isCustomMain && (
+          <div className="mt-2">
+            <Input
+              type="text"
+              value={customMainName}
+              onChange={handleCustomMainChange}
+              placeholder="대분류명 직접 입력"
+              className="w-full"
+            />
+          </div>
+        )}
       </div>
       
       <div>

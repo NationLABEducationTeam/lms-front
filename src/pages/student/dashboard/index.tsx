@@ -692,7 +692,7 @@ const StudentDashboard: FC = () => {
                           </div>
                         </div>
                         
-                        <div className="grid grid-cols-3 gap-3">
+                        <div className={`grid ${(gradeData?.course?.exam_count || 0) > 0 ? 'grid-cols-3' : 'grid-cols-2'} gap-3`}>
                           <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
                             <div className="text-xs text-dashboard-text-secondary mb-1">출석 반영</div>
                             <div className="font-bold text-dashboard-primary">
@@ -705,12 +705,14 @@ const StudentDashboard: FC = () => {
                               {gradeData.course?.assignment_weight || 0}%
                             </div>
                           </div>
-                          <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
-                            <div className="text-xs text-dashboard-text-secondary mb-1">시험 반영</div>
-                            <div className="font-bold text-dashboard-primary">
-                              {gradeData.course?.exam_weight || 0}%
+                          {(gradeData?.course?.exam_count || 0) > 0 && (
+                            <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
+                              <div className="text-xs text-dashboard-text-secondary mb-1">시험 반영</div>
+                              <div className="font-bold text-dashboard-primary">
+                                {gradeData.course?.exam_weight || 0}%
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
 
@@ -794,35 +796,37 @@ const StudentDashboard: FC = () => {
                           </div>
                         </div>
 
-                        {/* 시험 */}
-                        <div className="p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-sm transition-all">
-                          <div className="flex items-center space-x-2 mb-3">
-                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                              <BulbOutlined className="text-dashboard-secondary" />
+                        {/* 시험 - exam_count가 0인 경우에만 숨김 */}
+                        {(gradeData?.course?.exam_count || 0) > 0 && (
+                          <div className="p-4 rounded-xl border border-gray-100 hover:border-purple-200 hover:shadow-sm transition-all">
+                            <div className="flex items-center space-x-2 mb-3">
+                              <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                <BulbOutlined className="text-dashboard-secondary" />
+                              </div>
+                              <h4 className="font-semibold text-dashboard-text-primary">시험</h4>
                             </div>
-                            <h4 className="font-semibold text-dashboard-text-primary">시험</h4>
-                          </div>
-                          
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <div className="text-sm text-dashboard-text-secondary mb-1">시험 점수</div>
-                              <div className="text-xl font-semibold text-dashboard-secondary">
-                                {gradeData?.grades?.exam_score || 0}점
+                            
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <div className="text-sm text-dashboard-text-secondary mb-1">시험 점수</div>
+                                <div className="text-xl font-semibold text-dashboard-secondary">
+                                  {gradeData?.grades?.exam_score || 0}점
+                                </div>
+                              </div>
+                              <div>
+                                <div className="text-sm text-dashboard-text-secondary mb-1">완료율</div>
+                                <div className="text-xl font-semibold text-dashboard-text-primary">
+                                  {gradeData?.grades?.exam_completion_rate || 0}%
+                                </div>
                               </div>
                             </div>
-                            <div>
-                              <div className="text-sm text-dashboard-text-secondary mb-1">완료율</div>
-                              <div className="text-xl font-semibold text-dashboard-text-primary">
-                                {gradeData?.grades?.exam_completion_rate || 0}%
-                              </div>
+                            
+                            <div className="mt-3 text-xs text-dashboard-text-secondary">
+                              진행 상황: {gradeData?.grades?.exams ? 
+                                gradeData.grades.exams.filter(e => e.isCompleted === true).length : 0}/{gradeData?.course?.exam_count || 0} 완료
                             </div>
                           </div>
-                          
-                          <div className="mt-3 text-xs text-dashboard-text-secondary">
-                            진행 상황: {gradeData?.grades?.exams ? 
-                              gradeData.grades.exams.filter(e => e.isCompleted === true).length : 0}/{gradeData?.course?.exam_count || 0} 완료
-                          </div>
-                        </div>
+                        )}
                       </div>
 
                       {/* 전체 진행률 */}
@@ -853,7 +857,8 @@ const StudentDashboard: FC = () => {
                           </button>
                         </div>
 
-                        {(!gradeData?.grades?.assignments?.length && !gradeData?.grades?.exams?.length) ? (
+                        {(!gradeData?.grades?.assignments?.length && 
+                          ((gradeData?.course?.exam_count || 0) === 0 || !gradeData?.grades?.exams?.length)) ? (
                           <Empty 
                             image={Empty.PRESENTED_IMAGE_SIMPLE} 
                             description="성적 항목이 없습니다"
@@ -864,9 +869,10 @@ const StudentDashboard: FC = () => {
                             {/* 과제 및 시험 목록 */}
                             {[
                               ...(gradeData?.grades?.assignments || []),
-                              ...(gradeData?.grades?.exams || [])
+                              ...((gradeData?.course?.exam_count || 0) > 0 && (gradeData?.grades?.exams?.length || 0) > 0 ? (gradeData?.grades?.exams || []) : [])
                             ]
                               .filter(item => item) // 항목이 유효한 경우만 포함
+                              .filter(item => !(item.type === 'EXAM' && (gradeData?.course?.exam_count || 0) === 0)) // exam_count가 0인 경우 시험 항목 제외
                               .sort((a, b) => {
                                 const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
                                 const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;

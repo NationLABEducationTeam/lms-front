@@ -3,9 +3,11 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import type { Course } from '@/types/course';
 import { getCourseDetail } from '@/services/api/courses';
 import { enrollInCourse } from '@/services/api/enrollments';
-import { PlayCircle, Book, User, Gift, HelpCircle, Clock, Target } from 'lucide-react';
+import { PlayCircle, Book, User, Gift, HelpCircle, Clock, Target, ShoppingCart, Heart, CheckCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/common/ui/button';
+import { toast } from 'sonner';
+import { addToCart, addToWishlist, isInCart, isInWishlist } from '@/services/api/courseInteractions';
 
 interface Section {
   id: string;
@@ -21,8 +23,16 @@ const CourseDetailPage: FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
+  const [cartLoading, setCartLoading] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [inCart, setInCart] = useState(false);
+  const [inWishlist, setInWishlist] = useState(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const [cartAnimating, setCartAnimating] = useState(false);
+  const [wishlistAnimating, setWishlistAnimating] = useState(false);
+  const cartButtonRef = useRef<HTMLButtonElement>(null);
+  const wishlistButtonRef = useRef<HTMLButtonElement>(null);
 
   // Refs for each section
   const introductionRef = useRef<HTMLDivElement>(null);
@@ -59,6 +69,31 @@ const CourseDetailPage: FC = () => {
 
     loadCourseDetails();
   }, [id]);
+  
+  // 장바구니, 위시리스트 상태 확인
+  useEffect(() => {
+    const checkUserInteractions = async () => {
+      if (!id || !user?.cognito_user_id) return;
+      
+      try {
+        // 장바구니 확인
+        const cartResult = await isInCart(user.cognito_user_id, id);
+        if (cartResult.success) {
+          setInCart(cartResult.exists);
+        }
+        
+        // 위시리스트 확인
+        const wishlistResult = await isInWishlist(user.cognito_user_id, id);
+        if (wishlistResult.success) {
+          setInWishlist(wishlistResult.exists);
+        }
+      } catch (error) {
+        console.error('Error checking user interactions:', error);
+      }
+    };
+    
+    checkUserInteractions();
+  }, [id, user]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -103,6 +138,168 @@ const CourseDetailPage: FC = () => {
       alert(error instanceof Error ? error.message : "수강신청 중 오류가 발생했습니다.");
     } finally {
       setEnrolling(false);
+    }
+  };
+  
+  // 장바구니 추가 핸들러
+  const handleAddToCart = async () => {
+    console.log("장바구니 버튼 눌러짐", new Date().toISOString());
+    console.log("학생 ID:", user?.cognito_user_id, "과목 ID:", id);
+    
+    if (!id || !user?.cognito_user_id || !course) {
+      console.log("사용자 인증 정보 없음", user);
+      toast('로그인이 필요합니다', {
+        description: '로그인 후 이용해주세요'
+      });
+      return;
+    }
+    
+    if (inCart) {
+      console.log("이미 장바구니에 있음");
+      // 이미 장바구니에 있어도 애니메이션 효과 제공
+      setCartAnimating(true);
+      if (cartButtonRef.current) {
+        cartButtonRef.current.classList.add('animate-bounce');
+        setTimeout(() => {
+          if (cartButtonRef.current) {
+            cartButtonRef.current.classList.remove('animate-bounce');
+          }
+          setCartAnimating(false);
+        }, 1000);
+      }
+      
+      toast('이미 장바구니에 있습니다', {
+        description: '장바구니에서 확인해주세요'
+      });
+      return;
+    }
+    
+    try {
+      console.log("장바구니 추가 시작 - 학생:", user.cognito_user_id, "과목:", id);
+      setCartLoading(true);
+      
+      // ID만 가져와서 요청 - 불필요한 데이터 전송 방지
+      const simpleCourse = {
+        id: course.id,
+        title: course.title,
+        price: course.price
+      };
+      
+      console.log("장바구니에 추가하는 단순화된 데이터:", simpleCourse);
+      
+      const result = await addToCart(user.cognito_user_id, simpleCourse);
+      
+      if (result.success) {
+        setInCart(true);
+        
+        // 성공 애니메이션
+        setCartAnimating(true);
+        if (cartButtonRef.current) {
+          cartButtonRef.current.classList.add('animate-bounce');
+          setTimeout(() => {
+            if (cartButtonRef.current) {
+              cartButtonRef.current.classList.remove('animate-bounce');
+            }
+            setCartAnimating(false);
+          }, 1000);
+        }
+        
+        toast('장바구니에 추가되었습니다', {
+          description: '장바구니에서 확인해보세요'
+        });
+      } else {
+        toast('장바구니 추가 실패', {
+          description: '잠시 후 다시 시도해주세요'
+        });
+      }
+    } catch (error) {
+      console.error('장바구니 추가 오류:', error);
+      toast('장바구니 추가 실패', {
+        description: '잠시 후 다시 시도해주세요'
+      });
+    } finally {
+      setCartLoading(false);
+    }
+  };
+
+  // 관심목록 추가 핸들러
+  const handleAddToWishlist = async () => {
+    console.log("위시리스트 버튼 눌러짐", new Date().toISOString());
+    console.log("학생 ID:", user?.cognito_user_id, "과목 ID:", id);
+    
+    if (!id || !user?.cognito_user_id || !course) {
+      console.log("사용자 인증 정보 없음", user);
+      toast('로그인이 필요합니다', {
+        description: '로그인 후 이용해주세요'
+      });
+      return;
+    }
+    
+    if (inWishlist) {
+      console.log("이미 위시리스트에 있음");
+      // 이미 관심목록에 있어도 애니메이션 효과 제공
+      setWishlistAnimating(true);
+      if (wishlistButtonRef.current) {
+        wishlistButtonRef.current.classList.add('animate-heartbeat');
+        setTimeout(() => {
+          if (wishlistButtonRef.current) {
+            wishlistButtonRef.current.classList.remove('animate-heartbeat');
+          }
+          setWishlistAnimating(false);
+        }, 1500);
+      }
+      
+      toast('이미 관심목록에 있습니다', {
+        description: '관심목록에서 확인해주세요'
+      });
+      return;
+    }
+    
+    try {
+      console.log("위시리스트 추가 시작 - 학생:", user.cognito_user_id, "과목:", id);
+      setWishlistLoading(true);
+      
+      // ID만 가져와서 요청 - 불필요한 데이터 전송 방지
+      const simpleCourse = {
+        id: course.id,
+        title: course.title,
+        price: course.price
+      };
+      
+      console.log("관심목록에 추가하는 단순화된 데이터:", simpleCourse);
+      
+      const result = await addToWishlist(user.cognito_user_id, simpleCourse);
+      
+      if (result.success) {
+        setInWishlist(true);
+        
+        // 성공 애니메이션
+        setWishlistAnimating(true);
+        if (wishlistButtonRef.current) {
+          wishlistButtonRef.current.classList.add('animate-heartbeat');
+          setTimeout(() => {
+            if (wishlistButtonRef.current) {
+              wishlistButtonRef.current.classList.remove('animate-heartbeat');
+            }
+            setWishlistAnimating(false);
+          }, 1500);
+        }
+        
+        toast('관심목록에 추가되었습니다', {
+          description: '관심목록에서 확인해보세요'
+        });
+      } else {
+        toast('관심목록 추가 실패', {
+          description: '잠시 후 다시 시도해주세요'
+        });
+      }
+    } catch (error) {
+      console.error('관심목록 추가 오류:', error);
+      toast('관심목록 추가 실패', {
+        description: '잠시 후 다시 시도해주세요'
+      });
+    } finally {
+      setWishlistLoading(false);
     }
   };
 
@@ -243,7 +440,7 @@ const CourseDetailPage: FC = () => {
               <div>
                 <h3 className="text-xl font-medium mb-4">{course.instructor_name}</h3>
                 <p className="text-gray-600 leading-relaxed">
-                  {course.instructor_bio || '강사 소개가 준비중입니다.'}
+                  {course.instructor_bio || '강사 소개가 준비중입니다!!!!!!.'}
                 </p>
               </div>
             </div>
@@ -296,20 +493,91 @@ const CourseDetailPage: FC = () => {
                 : '무료'}
             </span>
           </div>
-          <button 
-            onClick={handleEnrollment}
-            disabled={enrolling || course.status !== 'PUBLISHED'}
-            className={`
-              px-8 py-3 rounded-xl font-medium text-base
-              ${enrolling || course.status !== 'PUBLISHED'
-                ? 'bg-blue-400 text-blue-100 cursor-not-allowed'
-                : 'bg-white text-blue-600 hover:bg-blue-50 transition-colors'}
-            `}
-          >
-            {enrolling ? '처리중...' : 
-             course.status !== 'PUBLISHED' ? '준비중' : 
-             '수강신청하기'}
-          </button>
+          <div className="flex space-x-2">
+            <button 
+              onClick={handleEnrollment}
+              disabled={enrolling || course.status !== 'PUBLISHED'}
+              className={`
+                px-8 py-3 rounded-xl font-medium text-base
+                ${enrolling || course.status !== 'PUBLISHED'
+                  ? 'bg-blue-400 text-blue-100 cursor-not-allowed'
+                  : 'bg-white text-blue-600 hover:bg-blue-50 transition-colors'}
+              `}
+            >
+              {enrolling ? '처리중...' : 
+              course.status !== 'PUBLISHED' ? '준비중' : 
+              '수강신청하기'}
+            </button>
+            
+            {/* 장바구니 버튼 */}
+            <button
+              ref={cartButtonRef}
+              onClick={() => {
+                console.log("장바구니 버튼 클릭 직접 이벤트");
+                handleAddToCart();
+              }}
+              disabled={cartLoading}
+              className={`
+                px-4 py-2 rounded-xl flex items-center justify-center
+                transform hover:scale-105 active:scale-95
+                transition-all duration-200 ease-in-out
+                ${inCart 
+                  ? 'bg-green-600 text-white hover:bg-green-700' 
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700'}
+                ${cartLoading ? 'animate-pulse' : ''}
+                relative
+              `}
+            >
+              {cartLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : inCart ? (
+                <div className="flex items-center gap-1">
+                  <CheckCircle className="w-5 h-5" />
+                  <span className="text-xs font-semibold">추가됨</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <ShoppingCart className="w-5 h-5" />
+                  <span className="text-xs font-semibold">장바구니</span>
+                </div>
+              )}
+              {cartAnimating && (
+                <span className="absolute inset-0 rounded-xl border-2 border-indigo-400 animate-ping opacity-75"></span>
+              )}
+            </button>
+            
+            {/* 관심목록 버튼 */}
+            <button
+              ref={wishlistButtonRef}
+              onClick={() => {
+                console.log("위시리스트 버튼 클릭 직접 이벤트");
+                handleAddToWishlist();
+              }}
+              disabled={wishlistLoading}
+              className={`
+                px-4 py-2 rounded-xl flex items-center justify-center
+                transform hover:scale-105 active:scale-95
+                transition-all duration-200 ease-in-out
+                ${inWishlist 
+                  ? 'bg-red-600 text-white hover:bg-red-700' 
+                  : 'bg-pink-600 text-white hover:bg-pink-700'}
+                ${wishlistLoading ? 'animate-pulse' : ''}
+                relative
+              `}
+            >
+              {wishlistLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <div className="flex items-center gap-1">
+                  <Heart className={`w-5 h-5 ${inWishlist ? 'fill-white' : ''}`} />
+                  <span className="text-xs font-semibold">{inWishlist ? '저장됨' : '관심목록'}</span>
+                </div>
+              )}
+              {wishlistAnimating && (
+                <span className="absolute inset-0 rounded-xl border-2 border-pink-400 animate-ping opacity-75"></span>
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
