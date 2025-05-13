@@ -138,7 +138,6 @@ const RootLayout: FC = () => {
               <div className="hidden md:flex items-center gap-8">
                 {[
                   { path: '/dashboard', label: '대시보드' },
-                  { path: '/mycourse', label: '강의실' },
                   { path: '/pending-courses', label: '결제 대기 과목' },
                   { path: '/community', label: '커뮤니티' }
                 ].map(({ path, label }) => (

@@ -1,4 +1,5 @@
 import { FC, useState, useEffect, useMemo } from 'react';
+import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { getEnrolledCourses, getDownloadUrl } from '@/services/api/courses';
 import { CATEGORY_MAPPING } from '@/types/course';
@@ -499,6 +500,15 @@ const StudentCoursesPage: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  
+  // 오프라인 출석 시간 측정 훅 사용
+  const {
+    isTimerRunning,
+    courseId: timerCourseId,
+    formattedTime,
+    startTimer,
+    resumeTimer
+  } = useAttendanceTimer();
   const [activeTab, setActiveTab] = useState<'curriculum' | 'notices' | 'assignments' | 'qna' | 'notes' | 'posts' | 'progress'>('curriculum');
   const [selectedWeek, setSelectedWeek] = useState<number>(1);
   const [openWeeks, setOpenWeeks] = useState<string[]>([]);
@@ -1135,8 +1145,19 @@ const StudentCoursesPage: FC = () => {
     const course = courses.find(c => c.id === courseId);
     if (course) {
       setSelectedCourse(course);
-      // URL 업데이트
-      navigate(`/mycourse/${courseId}`);
+      navigate(`/mycourse/${courseId}`, { replace: true });
+      
+      // 오프라인 수업일 경우 타이머 시작
+      if (course.classmode === 'OFFLINE') {
+        // 이미 동일한 과목에 대한 타이머가 실행 중이면 재개
+        if (isTimerRunning && timerCourseId === courseId) {
+          resumeTimer();
+        } else {
+          // 새로운 타이머 시작
+          startTimer(courseId);
+        }
+      }
+      
       console.log(`과목 선택: ${course.title} (ID: ${course.id})`);
     }
   };
@@ -1392,55 +1413,49 @@ const StudentCoursesPage: FC = () => {
                     dropdownRender={(menu) => (
                       <div>
                         {menu}
-                        <Divider style={{ margin: '8px 0' }} />
-                        <Space style={{ padding: '0 8px 4px' }}>
-                          <Button type="text" icon={<Search className="w-4 h-4" />}>
-                            다른 강의 찾기
-                          </Button>
-                        </Space>
                       </div>
                     )}
-                  >
-                    {courses.map((course) => (
-                      <Select.Option 
-                        key={course.id} 
-                        value={course.id}
-                        label={course.title}
-                      >
-                        <Space>
-                          {course.thumbnail_url ? (
-                            <Avatar 
-                              size={40} 
-                              src={course.thumbnail_url} 
-                              shape="square"
-                              className="rounded-lg"
-                            />
-                          ) : (
-                            <Avatar 
-                              size={40} 
-                              icon={<BookOpen className="w-5 h-5" />} 
-                              shape="square"
-                              className="bg-gray-100"
-                            />
-                          )}
-                          <div>
-                            <div className="font-medium text-base">{course.title}</div>
-                            <div className="text-sm text-gray-500 flex items-center gap-2">
-                              <User className="w-3 h-3" />
-                              {course.instructor_name}
-                            </div>
-                          </div>
-                        </Space>
-                      </Select.Option>
-                    ))}
+                  onDropdownVisibleChange={(visible: boolean) => setIsDropdownOpen(visible)}
+                >
+                  <Button type="primary" className="mr-2">
+                    <Space>
+                      {selectedCourse?.title || '과목 선택'}
+                      <ChevronDown className="w-4 h-4" />
+                    </Space>
+                  </Button>
+                    
+                  {courses.map(course => (
+                    <Select.Option key={course.id} value={course.id} label={course.title}>
+                      <Space>
+                        <div>
+                          {course.title}
+                        </div>
+                      </Space>
+                    </Select.Option>
+                  ))}
                   </Select>
 
                   <Space className="ml-4">
                     <Tag color="blue" className="px-3 py-1 text-sm">
-                      {CATEGORY_MAPPING[selectedCourse?.main_category_id as MainCategoryId]}
+                      {selectedCourse?.main_category_id && Object.keys(CATEGORY_MAPPING).includes(selectedCourse.main_category_id) 
+                      ? CATEGORY_MAPPING[selectedCourse.main_category_id as keyof typeof CATEGORY_MAPPING] 
+                      : '지정되지 않음'}
                     </Tag>
-                    <Tag color={selectedCourse?.classmode === 'ONLINE' ? 'green' : 'orange'} className="px-3 py-1 text-sm">
-                      {selectedCourse?.classmode === 'ONLINE' ? '실시간 강의' : 'VOD 강의'}
+                    <Tag
+                      color={
+                        selectedCourse?.classmode === 'ONLINE'
+                          ? 'green'
+                          : selectedCourse?.classmode === 'VOD'
+                          ? 'orange'
+                          : 'default'
+                      }
+                      className="px-3 py-1 text-sm"
+                    >
+                      {selectedCourse?.classmode === 'ONLINE'
+                        ? '실시간 강의'
+                        : selectedCourse?.classmode === 'VOD'
+                        ? 'VOD 강의'
+                        : '오프라인 강의'}
                     </Tag>
                     <Tag color="purple" className="px-3 py-1 text-sm">
                       {selectedCourse?.level === 'BEGINNER' ? '입문' : 

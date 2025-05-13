@@ -1,8 +1,11 @@
 import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { message } from 'antd';
 import { useAuth } from '@/hooks/useAuth';
 import { getEnrolledCourses } from '@/services/api/courses';
-import { attendanceApi } from '@/services/api/attendance';
+import { attendanceApi, getOfflineCode } from '@/services/api/attendance';
+import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
+import AttendanceTimerDisplay from '@/components/common/AttendanceTimerDisplay';
 import { getQnaPosts } from '@/services/api/qna';
 import { getNotices } from '@/services/api/notices';
 import { getCommunityPosts } from '@/services/api/community';
@@ -11,7 +14,7 @@ import { Course } from '@/types/course';
 import { QnaPost } from '@/types/qna';
 import { Notice } from '@/types/notice';
 import { CommunityPost } from '@/types/community';
-import { Card, Row, Col, Button, Calendar, Statistic, List, Tag, Typography, Space, Badge, Progress, Avatar, Tabs, Select, Empty, Spin, Alert } from 'antd';
+import { Card, Row, Col, Button, Calendar, Statistic, List, Tag, Typography, Space, Badge, Progress, Avatar, Tabs, Select, Empty, Spin, Alert, Dropdown, Menu, Modal, Input } from 'antd';
 import {
   BookOutlined,
   FileTextOutlined,
@@ -71,6 +74,18 @@ const StudentDashboard: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [offlineModalVisible, setOfflineModalVisible] = useState(false);
+  const [offlineCode, setOfflineCode] = useState('');
+  const [offlineError, setOfflineError] = useState('');
+  const [pendingCourseId, setPendingCourseId] = useState<string>('');
+  
+  // 오프라인 출석 시간 추적 훅
+  const { 
+    startTimer, 
+    formattedTime,
+    isTimerRunning,
+    courseId: timerCourseId
+  } = useAttendanceTimer();
 
   // 성적 데이터 불러오기
   const { data: gradeData, isLoading: isGradeLoading, error: gradeError } = useGetStudentGradesQuery(selectedCourseId, {
@@ -215,6 +230,42 @@ const StudentDashboard: FC = () => {
 
   const listItemHoverClass = 'hover:bg-gray-50';
 
+  const handleEnterCourse = (courseId: string) => {
+    const course = courses.find(c => c.id === courseId);
+    if (course?.classmode === 'OFFLINE') {
+      setPendingCourseId(courseId);
+      setOfflineModalVisible(true);
+    } else {
+      navigate(`/mycourse/${courseId}`);
+    }
+  };
+
+  const handleVerifyOffline = async () => {
+    try {
+      const response = await getOfflineCode();
+      console.log('Retrieved code:', response);
+      if (response && response.code === offlineCode) {
+        message.success('출석 코드가 확인되었습니다.');
+        
+        // 타이머 시작 - 코드 확인 성공 시
+        startTimer(pendingCourseId);
+        
+        // 코스 페이지로 이동
+        navigate(`/mycourse/${pendingCourseId}`);
+        
+        // 모달 상태 초기화
+        setOfflineModalVisible(false);
+        setOfflineCode('');
+        setOfflineError('');
+      } else {
+        setOfflineError('입력하신 코드가 일치하지 않습니다.');
+      }
+    } catch (error) {
+      console.error('Error verifying offline code:', error);
+      setOfflineError('코드 확인 중 오류가 발생했습니다.');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -234,6 +285,11 @@ const StudentDashboard: FC = () => {
           <div className="flex flex-col md:flex-row justify-between gap-8">
             {/* 프로필 및 인사말 */}
             <div className="flex items-start gap-6">
+              {/* 오프라인 출석 타이머 표시 */}
+              <div className="mb-4 bg-white shadow-sm rounded-full px-4 py-2">
+                <AttendanceTimerDisplay />
+              </div>
+              
               <div className="relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-gradient-from to-dashboard-gradient-to rounded-full blur opacity-30"></div>
                 <Avatar 
@@ -254,14 +310,26 @@ const StudentDashboard: FC = () => {
                   오늘도 즐거운 학습 되세요.
                 </p>
                 <div className="flex gap-3 flex-wrap">
-                  <Button 
-                    type="primary" 
-                    icon={<BookOutlined />} 
-                    onClick={() => navigate('/mycourse')}
-                    className="bg-dashboard-primary hover:bg-dashboard-secondary shadow-md hover:shadow-lg transition-all"
+                  <Dropdown
+                    overlay={
+                      <Menu onClick={({ key }) => handleEnterCourse(key)}>
+                        {courses.map(course => (
+                          <Menu.Item key={course.id}>
+                            {course.title}
+                          </Menu.Item>
+                        ))}
+                      </Menu>
+                    }
+                    trigger={[ 'click' ]}
                   >
-                    강의실 입장
-                  </Button>
+                    <Button 
+                      type="primary" 
+                      icon={<BookOutlined />} 
+                      className="bg-dashboard-primary hover:bg-dashboard-secondary shadow-md hover:shadow-lg transition-all"
+                    >
+                      강의실 입장
+                    </Button>
+                  </Dropdown>
                   <Button 
                     icon={<MessageOutlined />} 
                     onClick={() => navigate('/community')}
@@ -283,7 +351,7 @@ const StudentDashboard: FC = () => {
                   </div>
                   <span className="text-dashboard-text-secondary font-medium">학습 진행률</span>
                 </div>
-                <div className="text-2xl font-bold text-dashboard-primary">75%</div>
+                <div className="text-2xl font-bold text-dashboard-primary">0%</div>
               </div>
               
               {/* 출석률 카드 */}
@@ -292,7 +360,7 @@ const StudentDashboard: FC = () => {
                   <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
                     <TrophyOutlined className="text-dashboard-success text-lg" />
                   </div>
-                  <span className="text-dashboard-text-secondary font-medium">출석률</span>
+                  <span className="text-dashboard-text-secondary font-medium">진도율</span>
                 </div>
                 <div className="text-2xl font-bold text-dashboard-success">{getAttendanceRate()}%</div>
               </div>
@@ -571,7 +639,10 @@ const StudentDashboard: FC = () => {
                 {/* 커뮤니티 탭 */}
                 <TabPane 
                   tab={
-                    <div className="flex items-center space-x-2 px-1">
+                    <div className="flex items-center space-x-4">
+                      <div className="mr-4">
+                        <AttendanceTimerDisplay />
+                      </div>
                       <div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center">
                         <TeamOutlined className="text-dashboard-info" />
                       </div>
@@ -743,18 +814,19 @@ const StudentDashboard: FC = () => {
                             <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                               <CheckCircleOutlined className="text-dashboard-success" />
                             </div>
-                            <h4 className="font-semibold text-dashboard-text-primary">출석</h4>
+                            <h4 className="font-semibold text-dashboard-text-primary">진도</h4>
                           </div>
                           
+                          {/*TODO: 출석 점수 추가*/}
                           <div className="grid grid-cols-2 gap-3">
                             <div>
-                              <div className="text-sm text-dashboard-text-secondary mb-1">출석률</div>
+                              <div className="text-sm text-dashboard-text-secondary mb-1">진도률</div>
                               <div className="text-xl font-semibold text-dashboard-success">
                                 {gradeData.grades?.attendance?.rate || 0}%
                               </div>
                             </div>
                             <div>
-                              <div className="text-sm text-dashboard-text-secondary mb-1">출석 점수</div>
+                              <div className="text-sm text-dashboard-text-secondary mb-1">진도 점수</div>
                               <div className="text-xl font-semibold text-dashboard-text-primary">
                                 {gradeData.grades?.attendance?.score || 0}점
                               </div>
@@ -850,7 +922,7 @@ const StudentDashboard: FC = () => {
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="font-semibold text-dashboard-text-primary">최근 성적 항목</h4>
                           <button 
-                            onClick={() => navigate(`/student/courses/${selectedCourseId}/grades`)}
+                            onClick={() => navigate(`/courses/${selectedCourseId}/grades`)}
                             className="text-dashboard-primary hover:text-dashboard-secondary text-sm transition-colors"
                           >
                             모두 보기
@@ -882,38 +954,32 @@ const StudentDashboard: FC = () => {
                               .map((item, idx) => (
                                 <div 
                                   key={idx}
-                                  className="p-3 rounded-lg border border-gray-100 hover:border-dashboard-primary hover:shadow-sm transition-all"
+                                  className="p-3 rounded-lg border border-gray-100 hover:border-dashboard-primary rounded-xl flex items-center space-x-3 cursor-pointer transition-all hover:shadow-md"
                                 >
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center
-                                      ${item.type === 'ASSIGNMENT' ? 'bg-blue-50' : 'bg-purple-50'}`}
-                                    >
-                                      {item.type === 'ASSIGNMENT' ? (
-                                        <FileTextOutlined className="text-dashboard-primary text-xs" />
-                                      ) : (
-                                        <BulbOutlined className="text-dashboard-secondary text-xs" />
-                                      )}
-                                    </div>
-                                    <div className="text-sm font-medium text-dashboard-text-primary truncate">
-                                      {item.title}
-                                    </div>
+                                  {/* 과제 아이콘 */}
+                                  <div className={`w-6 h-6 rounded-full flex-shrink-0 
+                                    ${item.type === 'ASSIGNMENT' ? 'bg-blue-50' : 'bg-purple-50'}`}
+                                  >
+                                    {item.type === 'ASSIGNMENT' ? (
+                                      <FileTextOutlined className="text-dashboard-primary text-xs" />
+                                    ) : (
+                                      <BulbOutlined className="text-dashboard-secondary text-xs" />
+                                    )}
                                   </div>
                                   
-                                  <div className="flex justify-between">
-                                    <div className={`text-xs px-2 py-0.5 rounded-full
-                                      ${item.isCompleted ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'}`}
-                                    >
-                                      {item.isCompleted ? '완료' : '미완료'}
+                                  {/* 과제 정보 */}
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="font-medium text-dashboard-text-primary truncate group-hover:text-dashboard-primary transition-colors">
+                                      {item.title}
+                                    </h4>
+                                    <div className="text-sm text-dashboard-text-secondary truncate">
+                                      {item.course_title}
                                     </div>
-                                    
-                                    {item.score !== undefined && (
-                                      <div className={`text-xs font-medium
-                                        ${((item.score || 0) / (item.maxScore || 100) * 100) >= 70 ? 
-                                          'text-green-600' : 'text-red-500'}`}
-                                      >
-                                        {item.score}/{item.maxScore || 100}점
-                                      </div>
-                                    )}
+                                    <div className={`text-sm mt-1
+                                      ${item.isCompleted ? 'text-green-600' : 'text-dashboard-text-secondary'}`}
+                                    >
+                                      {item.dueDate ? formatDate(item.dueDate) : '마감일 없음'}
+                                    </div>
                                   </div>
                                 </div>
                               ))
@@ -1023,6 +1089,22 @@ const StudentDashboard: FC = () => {
           </Col>
         </Row>
       </div>
+      <Modal
+        title="오프라인 출석 인증"
+        visible={offlineModalVisible}
+        onOk={handleVerifyOffline}
+        onCancel={() => { setOfflineModalVisible(false); setOfflineCode(''); setOfflineError(''); }}
+        okText="확인"
+        cancelText="취소"
+      >
+        <p>오늘의 인증 코드를 입력해주세요.</p>
+        <Input
+          value={offlineCode}
+          onChange={(e) => setOfflineCode(e.target.value)}
+          placeholder="인증 코드"
+        />
+        {offlineError && <p style={{ color: 'red', marginTop: '0.5rem' }}>{offlineError}</p>}
+      </Modal>
     </div>
   );
 };

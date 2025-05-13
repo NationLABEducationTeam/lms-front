@@ -34,7 +34,7 @@ export interface CreateCourseRequest {
   thumbnail?: File | null;
   level: CourseLevel;
   price: number;
-  classmode: 'ONLINE' | 'VOD';
+  classmode: 'ONLINE' | 'VOD' | 'OFFLINE';
   zoom_link?: string | null;
   weeks_count?: number;
   assignment_count?: number;
@@ -98,7 +98,7 @@ interface Week {
 interface CourseWithWeeks extends Course {
   weeks: Week[];
   zoom_link?: string;
-  classmode: 'ONLINE' | 'VOD';
+  classmode: 'ONLINE' | 'VOD' | 'OFFLINE';
   gradeRules?: {
     attendance_weight: number;
     assignment_weight: number;

@@ -767,7 +767,7 @@ const CourseDetail: FC = () => {
             </div>
             <div className="flex items-center gap-2">
               <Calendar className="w-5 h-5 text-purple-600" />
-              <span className="text-gray-600">수업 방식: {course.classmode}</span>
+              <span className="text-gray-600">수업 방식: {course.classmode === 'ONLINE' ? '실시간 강의' : course.classmode === 'VOD' ? '동영상 강의' : '오프라인 강의'}</span>
             </div>
             <div className="flex items-center gap-2">
               <AlertCircle className="w-5 h-5 text-yellow-600" />

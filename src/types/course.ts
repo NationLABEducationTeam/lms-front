@@ -31,7 +31,7 @@ export interface MainCategory {
   }[];
 }
 
-export type CourseType = 'ONLINE' | 'VOD';
+export type CourseType = 'ONLINE' | 'VOD' | 'OFFLINE';
 
 export interface GradeRules {
   attendance_weight: number;  // 출석 반영 비율
@@ -79,7 +79,7 @@ export interface Course {
   level: CourseLevel;
   status: CourseStatus;
   type: CourseType;
-  classmode: 'ONLINE' | 'VOD';
+  classmode: CourseType;
   gradeRules?: GradeRules;  // 성적 산출 규칙
   grade_items?: GradeItem[];  // 성적 항목들
   created_at: string;

@@ -5,7 +5,7 @@ import { Card } from '@/components/common/ui/card';
 import { Input } from '@/components/common/ui/input';
 import { Label } from '@/components/common/ui/label';
 import { Textarea } from '@/components/common/ui/textarea';
-import { Select } from '@/components/common/ui/select';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/common/ui/select';
 import { useCreateCourseMutation } from '@/services/api/courseApi';
 import { CourseLevel, CATEGORY_MAPPING } from '@/types/course';
 import { toast } from 'sonner';
@@ -39,7 +39,8 @@ import {
   CalendarCheck,
   ChevronRight,
   ChevronsRight,
-  ArrowRight
+  ArrowRight,
+  MapPin
 } from 'lucide-react';
 import { Progress } from '@/components/common/ui/progress';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/common/ui/dialog';
@@ -75,7 +76,7 @@ const CreateCourse: FC = () => {
   const [subCategory, setSubCategory] = useState('');
   const [level, setLevel] = useState<CourseLevel>(CourseLevel.BEGINNER);
   const [price, setPrice] = useState('');
-  const [classmode, setClassmode] = useState<'ONLINE' | 'VOD'>('ONLINE');
+  const [classmode, setClassmode] = useState<'ONLINE' | 'VOD' | 'OFFLINE'>('ONLINE');
   const [thumbnail, setThumbnail] = useState<File | null>(null);
   const [zoomLink, setZoomLink] = useState('');
   
@@ -456,7 +457,6 @@ const CreateCourse: FC = () => {
                 <Label htmlFor="mainCategory" className="text-base">메인 카테고리</Label>
                 <div className="space-y-2 mt-1.5">
                   <Select
-                    id="mainCategory"
                     value={mainCategory}
                     onValueChange={(value) => {
                       if (value === 'custom') {
@@ -468,11 +468,15 @@ const CreateCourse: FC = () => {
                       }
                     }}
                   >
-                    <option value="">카테고리 선택</option>
-                    {Object.entries(CATEGORY_MAPPING).map(([id, name]) => (
-                      id !== 'custom' ? <option key={id} value={id}>{name}</option> : null
-                    ))}
-                    <option value="custom">직접 입력</option>
+                    <SelectTrigger id="mainCategory" className="bg-white h-10 border-gray-200">
+                      <SelectValue placeholder="카테고리 선택" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {Object.entries(CATEGORY_MAPPING).map(([id, name]) => (
+                        id !== 'custom' ? <SelectItem key={id} value={id}>{name}</SelectItem> : null
+                      ))}
+                      <SelectItem value="custom">직접 입력</SelectItem>
+                    </SelectContent>
                   </Select>
 
                   {mainCategory === 'custom' && (
@@ -626,7 +630,7 @@ const CreateCourse: FC = () => {
               <div className="md:col-span-2">
                 <Label htmlFor="classmode" className="text-base">수업 방식</Label>
                 <div className="grid grid-cols-2 gap-3 mt-1.5">
-                  {(['VOD', 'ONLINE'] as const).map((mode) => (
+                  {(['VOD', 'ONLINE', 'OFFLINE'] as const).map((mode) => (
                     <button
                       key={mode}
                       type="button"
@@ -647,7 +651,7 @@ const CreateCourse: FC = () => {
                             학생들이 언제든 수강할 수 있는 녹화된 강의 콘텐츠를 제공합니다.
                           </p>
                         </div>
-                      ) : (
+                      ) : mode === 'ONLINE' ? (
                         <div className="flex flex-col items-center gap-2">
                           <Users className={`w-6 h-6 ${
                             classmode === mode ? 'text-blue-600' : 'text-gray-500'
@@ -655,6 +659,16 @@ const CreateCourse: FC = () => {
                           <span className="text-sm font-medium">실시간 강의</span>
                           <p className="text-xs text-gray-500 max-w-sm text-center">
                             줌을 통한 실시간 화상 수업으로 직접적인 소통이 가능합니다.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="flex flex-col items-center gap-2">
+                          <MapPin className={`w-6 h-6 ${
+                            classmode === mode ? 'text-blue-600' : 'text-gray-500'
+                          }`} />
+                          <span className="text-sm font-medium">오프라인 강의</span>
+                          <p className="text-xs text-gray-500 max-w-sm text-center">
+                            오프라인 강의실에서 진행되는 수업입니다.
                           </p>
                         </div>
                       )}
@@ -692,56 +706,302 @@ const CreateCourse: FC = () => {
                     </div>
                     
                     <div className="pt-4 border-t">
-                      <Label htmlFor="zoomStartDate" className="text-base font-medium text-gray-800 block mb-2">
-                        미팅 일정 <span className="text-red-500">*</span>
-                      </Label>
-
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <Label htmlFor="zoomStartDate" className="text-sm text-gray-700 mb-1.5 block">
-                            미팅 날짜
-                          </Label>
-                          <Input
-                            id="zoomStartDate"
-                            type="date"
-                            value={zoomStartDate ? format(zoomStartDate, 'yyyy-MM-dd') : ''}
-                            onChange={(e) => {
-                              const date = e.target.value ? new Date(e.target.value) : null;
-                              setZoomStartDate(date);
-                            }}
-                            className="w-full"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="zoomStartTime" className="text-sm text-gray-700 mb-1.5 block">
-                            시작 시간
-                          </Label>
-                          <Input
-                            id="zoomStartTime"
-                            type="time"
-                            value={zoomStartTime}
-                            onChange={(e) => setZoomStartTime(e.target.value)}
-                            className="w-full"
-                            required
-                          />
-                        </div>
-
-                        <div>
-                          <Label htmlFor="zoomEndTime" className="text-sm text-gray-700 mb-1.5 block">
-                            종료 시간
-                          </Label>
-                          <Input
-                            id="zoomEndTime"
-                            type="time"
-                            value={zoomEndTime}
-                            onChange={(e) => setZoomEndTime(e.target.value)}
-                            className="w-full"
-                            required
-                          />
-                        </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <Label htmlFor="zoomStartDate" className="text-base font-medium text-gray-800">
+                          미팅 일정 <span className="text-red-500">*</span>
+                        </Label>
                       </div>
+
+                      <Tabs 
+                        defaultValue="simple" 
+                        value={zoomSimpleMode ? "simple" : "advanced"}
+                        onValueChange={handleTabChange}
+                        className="w-full"
+                      >
+                        <div className="mb-4 flex justify-end">
+                          <TabsList className="grid grid-cols-2 w-full max-w-[300px]">
+                            <TabsTrigger value="simple">간편 설정</TabsTrigger>
+                            <TabsTrigger value="advanced">상세 설정</TabsTrigger>
+                          </TabsList>
+                        </div>
+
+                        <TabsContent value="simple" className="mt-0">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                              <Label htmlFor="zoomStartDateSimple" className="text-sm text-gray-700 mb-1.5 block">
+                                미팅 날짜
+                              </Label>
+                              <Input
+                                id="zoomStartDateSimple"
+                                type="date"
+                                value={zoomStartDate ? format(zoomStartDate, 'yyyy-MM-dd') : ''}
+                                onChange={(e) => {
+                                  const date = e.target.value ? new Date(e.target.value) : null;
+                                  setZoomStartDate(date);
+                                }}
+                                className="w-full"
+                                required
+                              />
+                              <p className="text-xs text-gray-500 mt-1">
+                                설정한 날짜에 해당하는 요일로 매주 수업이 진행됩니다.
+                              </p>
+                            </div>
+
+                            <div>
+                              <Label htmlFor="zoomStartTimeSimple" className="text-sm text-gray-700 mb-1.5 block">
+                                시작 시간
+                              </Label>
+                              <Input
+                                id="zoomStartTimeSimple"
+                                type="time"
+                                value={zoomStartTime}
+                                onChange={(e) => setZoomStartTime(e.target.value)}
+                                className="w-full"
+                                required
+                              />
+                            </div>
+
+                            <div>
+                              <Label htmlFor="zoomEndTimeSimple" className="text-sm text-gray-700 mb-1.5 block">
+                                종료 시간
+                              </Label>
+                              <Input
+                                id="zoomEndTimeSimple"
+                                type="time"
+                                value={zoomEndTime}
+                                onChange={(e) => setZoomEndTime(e.target.value)}
+                                className="w-full"
+                                required
+                              />
+                            </div>
+                          </div>
+                        </TabsContent>
+                        
+                        <TabsContent value="advanced" className="mt-0">
+                          <div className="space-y-6 border p-4 rounded-lg bg-white">
+                            <div className="space-y-4">
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="md:col-span-3">
+                                  <Label htmlFor="zoomStartDateAdv" className="text-sm text-gray-700 mb-1.5 block">
+                                    시작 날짜
+                                  </Label>
+                                  <Input
+                                    id="zoomStartDateAdv"
+                                    type="date"
+                                    value={zoomStartDate ? format(zoomStartDate, 'yyyy-MM-dd') : ''}
+                                    onChange={(e) => {
+                                      const date = e.target.value ? new Date(e.target.value) : null;
+                                      setZoomStartDate(date);
+                                    }}
+                                    className="w-full md:w-1/3"
+                                    required
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="zoomStartTimeAdv" className="text-sm text-gray-700 mb-1.5 block">
+                                    시작 시간
+                                  </Label>
+                                  <Input
+                                    id="zoomStartTimeAdv"
+                                    type="time"
+                                    value={zoomStartTime}
+                                    onChange={(e) => setZoomStartTime(e.target.value)}
+                                    className="w-full"
+                                    required
+                                  />
+                                </div>
+                                
+                                <div>
+                                  <Label htmlFor="zoomEndTimeAdv" className="text-sm text-gray-700 mb-1.5 block">
+                                    종료 시간
+                                  </Label>
+                                  <Input
+                                    id="zoomEndTimeAdv"
+                                    type="time"
+                                    value={zoomEndTime}
+                                    onChange={(e) => setZoomEndTime(e.target.value)}
+                                    className="w-full"
+                                    required
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="mt-4 space-y-2">
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id="zoomIsRecurring"
+                                    checked={zoomIsRecurring}
+                                    onCheckedChange={(checked: boolean) => setZoomIsRecurring(checked)}
+                                  />
+                                  <Label
+                                    htmlFor="zoomIsRecurring"
+                                    className="text-sm font-medium leading-none"
+                                  >
+                                    반복 일정 설정
+                                  </Label>
+                                </div>
+                                
+                                {zoomIsRecurring && (
+                                  <div className="pl-6 pt-3 space-y-4 border-l-2 border-blue-100">
+                                    <div>
+                                      <Label className="text-sm text-gray-700 mb-2 block">
+                                        반복 유형
+                                      </Label>
+                                      <div className="grid grid-cols-3 gap-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setZoomRecurringType('daily')}
+                                          className={`p-2 rounded-lg border ${
+                                            zoomRecurringType === 'daily'
+                                              ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                              : 'border-gray-200 hover:border-blue-200'
+                                          }`}
+                                        >
+                                          <CalendarCheck className="w-4 h-4 mx-auto mb-1" />
+                                          <span className="text-xs">매일</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setZoomRecurringType('weekly')}
+                                          className={`p-2 rounded-lg border ${
+                                            zoomRecurringType === 'weekly'
+                                              ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                              : 'border-gray-200 hover:border-blue-200'
+                                          }`}
+                                        >
+                                          <Calendar className="w-4 h-4 mx-auto mb-1" />
+                                          <span className="text-xs">매주</span>
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={() => setZoomRecurringType('monthly')}
+                                          className={`p-2 rounded-lg border ${
+                                            zoomRecurringType === 'monthly'
+                                              ? 'border-blue-600 bg-blue-50 text-blue-600'
+                                              : 'border-gray-200 hover:border-blue-200'
+                                          }`}
+                                        >
+                                          <Calendar className="w-4 h-4 mx-auto mb-1" />
+                                          <span className="text-xs">매월</span>
+                                        </button>
+                                      </div>
+                                    </div>
+                                    
+                                    {zoomRecurringType === 'weekly' && (
+                                      <div>
+                                        <Label className="text-sm text-gray-700 mb-2 block">
+                                          반복할 요일
+                                        </Label>
+                                        <div className="grid grid-cols-7 gap-1">
+                                          {dayNames.map((day, idx) => (
+                                            <button
+                                              key={idx}
+                                              type="button"
+                                              onClick={() => {
+                                                const newDays = [...zoomRecurringDays];
+                                                const idxStr = idx.toString();
+                                                const dayIndex = newDays.indexOf(idxStr);
+                                                
+                                                if (dayIndex !== -1) {
+                                                  newDays.splice(dayIndex, 1);
+                                                } else {
+                                                  newDays.push(idxStr);
+                                                }
+                                                
+                                                setZoomRecurringDays(newDays);
+                                              }}
+                                              className={`p-2 rounded-lg ${
+                                                zoomRecurringDays.includes(idx.toString())
+                                                  ? 'bg-blue-600 text-white'
+                                                  : 'bg-gray-100 hover:bg-gray-200'
+                                              }`}
+                                            >
+                                              {day}
+                                            </button>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    <div>
+                                      <Label className="text-sm text-gray-700 mb-2 block">
+                                        반복 종료
+                                      </Label>
+                                      <div className="space-y-2">
+                                        <div className="flex items-center space-x-2">
+                                          <input
+                                            type="radio"
+                                            id="noEndDate"
+                                            name="recurringEndType"
+                                            checked={!zoomRecurringEndType}
+                                            onChange={() => setZoomRecurringEndType('')}
+                                            className="w-4 h-4 text-blue-600"
+                                          />
+                                          <Label htmlFor="noEndDate" className="text-sm">종료일 없음</Label>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                          <input
+                                            type="radio"
+                                            id="endAfter"
+                                            name="recurringEndType"
+                                            checked={zoomRecurringEndType === 'after'}
+                                            onChange={() => setZoomRecurringEndType('after')}
+                                            className="w-4 h-4 text-blue-600"
+                                          />
+                                          <Label htmlFor="endAfter" className="text-sm">다음 횟수 후 종료:</Label>
+                                          <Input
+                                            type="number"
+                                            min="1"
+                                            max="50"
+                                            value={zoomRecurringEndCount}
+                                            onChange={(e) => setZoomRecurringEndCount(e.target.value)}
+                                            className="w-20 h-8 text-sm"
+                                            disabled={zoomRecurringEndType !== 'after'}
+                                          />
+                                          <span className="text-sm">회</span>
+                                        </div>
+                                        
+                                        <div className="flex items-center space-x-2">
+                                          <input
+                                            type="radio"
+                                            id="endBy"
+                                            name="recurringEndType"
+                                            checked={zoomRecurringEndType === 'until'}
+                                            onChange={() => setZoomRecurringEndType('until')}
+                                            className="w-4 h-4 text-blue-600"
+                                          />
+                                          <Label htmlFor="endBy" className="text-sm">다음 날짜에 종료:</Label>
+                                          <Input
+                                            type="date"
+                                            value={zoomRecurringEndDate ? format(zoomRecurringEndDate, 'yyyy-MM-dd') : ''}
+                                            onChange={(e) => {
+                                              const date = e.target.value ? new Date(e.target.value) : null;
+                                              setZoomRecurringEndDate(date);
+                                            }}
+                                            className="w-40 h-8 text-sm"
+                                            disabled={zoomRecurringEndType !== 'until'}
+                                          />
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </TabsContent>
+                      </Tabs>
+                      
+                      {zoomStartDate && zoomStartTime && (
+                        <div className="mt-3 p-3 bg-white rounded-lg border">
+                          <p className="text-sm text-blue-800 font-medium">
+                            <span className="mr-2">📅</span> 
+                            {getZoomSettingSummary()}
+                          </p>
+                        </div>
+                      )}
                     </div>
                     
                     <div className="pt-4 border-t">
@@ -1077,7 +1337,7 @@ const CreateCourse: FC = () => {
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">강의 방식</p>
-                  <p className="font-medium">{classmode === 'ONLINE' ? '실시간 강의' : '동영상 강의'}</p>
+                  <p className="font-medium">{classmode === 'ONLINE' ? '실시간 강의' : classmode === 'VOD' ? '동영상 강의' : '오프라인 강의'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">난이도</p>
