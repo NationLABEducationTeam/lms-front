@@ -15,6 +15,8 @@ import {
 } from '@ant-design/icons';
 import { listCategories, getDownloadUrl } from '@/services/api/courses';
 import { S3Structure } from '@/types/s3';
+import AttendanceTimerDisplay from '@/components/common/AttendanceTimerDisplay';
+import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
@@ -33,6 +35,7 @@ const CourseDetail: FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [weeklyFolders, setWeeklyFolders] = useState<WeeklyContent[]>([]);
+  const { startTimer, resetTimer } = useAttendanceTimer();
 
   // 파일 아이콘 선택 함수
   const getFileIcon = (fileName: string) => {
@@ -116,6 +119,8 @@ const CourseDetail: FC = () => {
 
     if (courseId) {
       loadCourseContents();
+      resetTimer(); // 기존 타이머 무조건 초기화
+      startTimer(courseId); // 새로 시작
     }
   }, [courseId]);
 
@@ -157,7 +162,7 @@ const CourseDetail: FC = () => {
           <div className="p-3 bg-blue-50 rounded-lg">
             <BookOutlined className="text-2xl text-blue-500" />
           </div>
-          <div>
+          <div className="flex-1">
             <Title level={2} className="!mb-1">{courseId?.replace(/_/g, ' ')}</Title>
             <Space className="text-gray-500">
               <Space>
@@ -166,6 +171,7 @@ const CourseDetail: FC = () => {
               </Space>
             </Space>
           </div>
+          <AttendanceTimerDisplay currentCourseId={courseId} />
         </div>
       </Card>
 

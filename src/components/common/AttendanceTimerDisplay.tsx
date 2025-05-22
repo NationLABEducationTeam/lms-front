@@ -1,21 +1,41 @@
 import React from 'react';
 import { Badge, Space, Tooltip } from 'antd';
 import { Clock } from 'lucide-react';
-import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
 
 interface AttendanceTimerDisplayProps {
   showTitle?: boolean;
+  currentCourseId?: string;
 }
 
 /**
- * 오프라인 출석 타이머 컴포넌트
- * 현재 타이머가 실행 중인지 여부와 경과 시간을 표시합니다.
- * 모든 페이지에서 동일하게 사용되어 타이머가 실행 중일 때 진행 상황을 확인할 수 있습니다.
+ * 오프라인 출석 타이머 컴포넌트 (localStorage 직접 참조)
  */
-const AttendanceTimerDisplay: React.FC<AttendanceTimerDisplayProps> = ({ showTitle = true }) => {
-  const { isTimerRunning, formattedTime, courseId } = useAttendanceTimer();
+const AttendanceTimerDisplay: React.FC<AttendanceTimerDisplayProps> = ({ showTitle = true, currentCourseId }) => {
+  // localStorage에서 직접 읽기
+  const timerRaw = localStorage.getItem('offline_attendance_timer');
+  let timerState: { isRunning: boolean; courseId: string; elapsedTime: number } | null = null;
+  if (timerRaw) {
+    try {
+      timerState = JSON.parse(timerRaw);
+    } catch {}
+  }
 
-  if (!isTimerRunning) return null;
+  // 1초마다 강제 리렌더
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+  React.useEffect(() => {
+    const interval = setInterval(() => forceUpdate(), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!timerState || !timerState.isRunning || (currentCourseId && timerState.courseId !== currentCourseId)) return null;
+
+  // 시간 포맷팅 함수
+  const formatTime = (seconds: number): string => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
     <Tooltip title="오프라인 출석 중입니다">
@@ -24,7 +44,7 @@ const AttendanceTimerDisplay: React.FC<AttendanceTimerDisplayProps> = ({ showTit
         <Badge status="processing" color="green" />
         <Space size={4}>
           <Clock className="h-4 w-4 text-green-600" />
-          <span className="text-green-600 font-medium">{formattedTime}</span>
+          <span className="text-green-600 font-medium">{formatTime(timerState.elapsedTime)}</span>
         </Space>
       </Space>
     </Tooltip>

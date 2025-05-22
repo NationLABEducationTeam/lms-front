@@ -5,7 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { getEnrolledCourses } from '@/services/api/courses';
 import { attendanceApi, getOfflineCode } from '@/services/api/attendance';
 import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
-import AttendanceTimerDisplay from '@/components/common/AttendanceTimerDisplay';
 import { getQnaPosts } from '@/services/api/qna';
 import { getNotices } from '@/services/api/notices';
 import { getCommunityPosts } from '@/services/api/community';
@@ -285,11 +284,6 @@ const StudentDashboard: FC = () => {
           <div className="flex flex-col md:flex-row justify-between gap-8">
             {/* 프로필 및 인사말 */}
             <div className="flex items-start gap-6">
-              {/* 오프라인 출석 타이머 표시 */}
-              <div className="mb-4 bg-white shadow-sm rounded-full px-4 py-2">
-                <AttendanceTimerDisplay />
-              </div>
-              
               <div className="relative">
                 <div className="absolute -inset-0.5 bg-gradient-to-br from-dashboard-gradient-from to-dashboard-gradient-to rounded-full blur opacity-30"></div>
                 <Avatar 
@@ -640,9 +634,6 @@ const StudentDashboard: FC = () => {
                 <TabPane 
                   tab={
                     <div className="flex items-center space-x-4">
-                      <div className="mr-4">
-                        <AttendanceTimerDisplay />
-                      </div>
                       <div className="w-8 h-8 rounded-full bg-cyan-50 flex items-center justify-center">
                         <TeamOutlined className="text-dashboard-info" />
                       </div>
