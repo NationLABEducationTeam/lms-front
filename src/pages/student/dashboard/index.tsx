@@ -8,7 +8,7 @@ import { useAttendanceTimer } from '@/hooks/useAttendanceTimer';
 import { getQnaPosts } from '@/services/api/qna';
 import { getNotices } from '@/services/api/notices';
 import { getCommunityPosts } from '@/services/api/community';
-import { useGetStudentGradesQuery, useGetAllAssignmentsQuery, Assignment, NewStudentGrades } from '@/services/api/studentApi';
+import { useGetStudentGradesQuery, useGetAllAssignmentsQuery, Assignment, NewStudentGrades, getStudentGrades, useGetCourseAssignmentsQuery } from '@/services/api/studentApi';
 import { Course } from '@/types/course';
 import { QnaPost } from '@/types/qna';
 import { Notice } from '@/types/notice';
@@ -66,13 +66,24 @@ const StudentDashboard: FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+  const [loadingCourses, setLoadingCourses] = useState(true);
+  const [coursesError, setCoursesError] = useState<string | null>(null);
+
+  // 개별 데이터 상태
   const [attendanceRecords, setAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [attendanceLoading, setAttendanceLoading] = useState(false);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  const [gradeLoading, setGradeLoading] = useState(false);
+  const [gradeError, setGradeError] = useState<string | null>(null);
+
+  // 기타 데이터(탭 이동 시 fetch)
   const [qnaPosts, setQnaPosts] = useState<QnaPost[]>([]);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [offlineModalVisible, setOfflineModalVisible] = useState(false);
   const [offlineCode, setOfflineCode] = useState('');
   const [offlineError, setOfflineError] = useState('');
@@ -86,32 +97,34 @@ const StudentDashboard: FC = () => {
     courseId: timerCourseId
   } = useAttendanceTimer();
 
-  // 성적 데이터 불러오기
-  const { data: gradeData, isLoading: isGradeLoading, error: gradeError } = useGetStudentGradesQuery(selectedCourseId, {
-    skip: !selectedCourseId
-  });
+  const [gradeData, setGradeData] = useState<NewStudentGrades | null>(null);
+
+  // RTK Query 관련 주석 처리 또는 제거
+  // const { data: gradeData, isLoading: isGradeLoading, error: gradeError } = useGetStudentGradesQuery(selectedCourseId, {
+  //   skip: !selectedCourseId
+  // });
 
   useEffect(() => {
     // API 응답 구조 로깅
-    console.log('성적 데이터 응답:', gradeData);
-  }, [gradeData]);
+    // console.log('성적 데이터 응답:', gradeData);
+  }, []);
 
-  // 과제 목록 불러오기
-  const { data: assignments = [], isLoading: isLoadingAssignments, error: assignmentsError } = useGetAllAssignmentsQuery();
+  // RTK Query 관련 주석 처리 또는 제거
+  // const { data: assignments = [], isLoading: isLoadingAssignments, error: assignmentsError } = useGetAllAssignmentsQuery();
 
   useEffect(() => {
     console.log('대시보드 데이터 상태:', {
       과제목록: {
-        로딩중: isLoadingAssignments,
-        에러: assignmentsError ? JSON.stringify(assignmentsError) : null,
-        데이터: assignments,
-        개수: assignments?.length || 0
+        로딩중: false,
+        에러: null,
+        데이터: [],
+        개수: 0
       },
       성적정보: {
         과목ID: selectedCourseId,
-        로딩중: isGradeLoading,
+        로딩중: gradeLoading,
         에러: gradeError ? JSON.stringify(gradeError) : null,
-        데이터: gradeData
+        데이터: []
       }
     });
     
@@ -153,10 +166,14 @@ const StudentDashboard: FC = () => {
     fetchDashboardData();
   }, [user]);
 
-  console.log('원본 과제 목록 데이터:', assignments);
   
+  // useGetCourseAssignmentsQuery 이후에 upcomingAssignments 선언
+  const { data: assignments = [], isLoading: assignmentsLoading, error: assignmentsError } = useGetCourseAssignmentsQuery(selectedCourseId, {
+    skip: !selectedCourseId
+  });
+
   // 과제 목록이 있으면 필터링, 없으면 빈 배열 반환
-  const upcomingAssignments = assignments && assignments.length > 0
+  const upcomingAssignments: Assignment[] = assignments && assignments.length > 0
     ? assignments
         .filter(assignment => 
           assignment.status === '진행중' || 
@@ -166,7 +183,6 @@ const StudentDashboard: FC = () => {
         .slice(0, 5)
     : [];
   
-  console.log('필터링된 과제 목록:', upcomingAssignments);
 
   // 과제 타입에 따른 아이콘 반환
   const getAssignmentIcon = (type: string) => {
@@ -264,6 +280,18 @@ const StudentDashboard: FC = () => {
       setOfflineError('코드 확인 중 오류가 발생했습니다.');
     }
   };
+
+  useEffect(() => {
+    if (!selectedCourseId) return;
+
+    // 성적 데이터 fetch
+    setGradeLoading(true);
+    setGradeError(null);
+    getStudentGrades(selectedCourseId)
+      .then(data => setGradeData(data))
+      .catch(() => setGradeError('성적 데이터를 불러오지 못했습니다.'))
+      .finally(() => setGradeLoading(false));
+  }, [selectedCourseId]);
 
   if (loading) {
     return (
@@ -399,7 +427,7 @@ const StudentDashboard: FC = () => {
 
               {/* 카드 내용 */}
               <div className="p-5">
-                {isLoadingAssignments ? (
+                {assignmentsLoading ? (
                   <div className="flex justify-center items-center py-8">
                     <Spin size="large" />
                   </div>
@@ -730,7 +758,7 @@ const StudentDashboard: FC = () => {
 
                 {/* 카드 내용 */}
                 <div className="p-5">
-                  {isGradeLoading ? (
+                  {gradeLoading ? (
                     <div className="flex justify-center items-center p-10">
                       <Spin size="large" />
                     </div>
@@ -747,10 +775,10 @@ const StudentDashboard: FC = () => {
                       <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
                         <div className="flex justify-between items-center mb-3">
                           <h4 className="text-lg font-semibold text-dashboard-primary">
-                            {gradeData.course?.title || "강의 정보"}
+                            {gradeData?.course?.title || "강의 정보"}
                           </h4>
                           <div className="px-3 py-1 rounded-full bg-blue-100 text-blue-700 text-sm font-medium">
-                            총 {gradeData.course?.weeks_count || 0}주차
+                            총 {gradeData?.course?.weeks_count || 0}주차
                           </div>
                         </div>
                         
@@ -758,20 +786,20 @@ const StudentDashboard: FC = () => {
                           <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
                             <div className="text-xs text-dashboard-text-secondary mb-1">출석 반영</div>
                             <div className="font-bold text-dashboard-primary">
-                              {gradeData.course?.attendance_weight || 0}%
+                              {gradeData?.course?.attendance_weight || 0}%
                             </div>
                           </div>
                           <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
                             <div className="text-xs text-dashboard-text-secondary mb-1">과제 반영</div>
                             <div className="font-bold text-dashboard-primary">
-                              {gradeData.course?.assignment_weight || 0}%
+                              {gradeData?.course?.assignment_weight || 0}%
                             </div>
                           </div>
                           {(gradeData?.course?.exam_count || 0) > 0 && (
                             <div className="text-center p-2 rounded-lg bg-white/60 shadow-sm">
                               <div className="text-xs text-dashboard-text-secondary mb-1">시험 반영</div>
                               <div className="font-bold text-dashboard-primary">
-                                {gradeData.course?.exam_weight || 0}%
+                                {gradeData?.course?.exam_weight || 0}%
                               </div>
                             </div>
                           )}
@@ -783,11 +811,11 @@ const StudentDashboard: FC = () => {
                         <div className="flex justify-between items-center mb-2">
                           <div className="text-dashboard-text-secondary font-medium">총점</div>
                           <div className="text-2xl font-bold text-dashboard-gradient-from">
-                            {gradeData.grades?.total_score || 0}점
+                            {gradeData?.grades?.total_score || 0}점
                           </div>
                         </div>
                         <Progress 
-                          percent={gradeData.grades?.total_score || 0} 
+                          percent={gradeData?.grades?.total_score || 0} 
                           status="active"
                           strokeColor={{
                             '0%': '#3F5CF7',
@@ -813,19 +841,19 @@ const StudentDashboard: FC = () => {
                             <div>
                               <div className="text-sm text-dashboard-text-secondary mb-1">진도률</div>
                               <div className="text-xl font-semibold text-dashboard-success">
-                                {gradeData.grades?.attendance?.rate || 0}%
+                                {gradeData?.grades?.attendance?.rate || 0}%
                               </div>
                             </div>
                             <div>
                               <div className="text-sm text-dashboard-text-secondary mb-1">진도 점수</div>
                               <div className="text-xl font-semibold text-dashboard-text-primary">
-                                {gradeData.grades?.attendance?.score || 0}점
+                                {gradeData?.grades?.attendance?.score || 0}점
                               </div>
                             </div>
                           </div>
                           
                           <div className="mt-3 text-xs text-dashboard-text-secondary">
-                            총 세션: {gradeData.grades?.attendance?.totalSessions || 0}회
+                            총 세션: {gradeData?.grades?.attendance?.totalSessions || 0}회
                           </div>
                         </div>
 
@@ -885,8 +913,7 @@ const StudentDashboard: FC = () => {
                             </div>
                             
                             <div className="mt-3 text-xs text-dashboard-text-secondary">
-                              진행 상황: {gradeData?.grades?.exams ? 
-                                gradeData.grades.exams.filter(e => e.isCompleted === true).length : 0}/{gradeData?.course?.exam_count || 0} 완료
+                              진행 상황: {gradeData?.grades?.exams?.filter(e => e.isCompleted === true).length ?? 0}/{gradeData?.course?.exam_count || 0} 완료
                             </div>
                           </div>
                         )}
@@ -920,8 +947,7 @@ const StudentDashboard: FC = () => {
                           </button>
                         </div>
 
-                        {(!gradeData?.grades?.assignments?.length && 
-                          ((gradeData?.course?.exam_count || 0) === 0 || !gradeData?.grades?.exams?.length)) ? (
+                        {(!gradeData?.grades?.assignments?.length && ((gradeData?.course?.exam_count || 0) === 0 || !gradeData?.grades?.exams?.length)) ? (
                           <Empty 
                             image={Empty.PRESENTED_IMAGE_SIMPLE} 
                             description="성적 항목이 없습니다"
@@ -934,8 +960,8 @@ const StudentDashboard: FC = () => {
                               ...(gradeData?.grades?.assignments || []),
                               ...((gradeData?.course?.exam_count || 0) > 0 && (gradeData?.grades?.exams?.length || 0) > 0 ? (gradeData?.grades?.exams || []) : [])
                             ]
-                              .filter(item => item) // 항목이 유효한 경우만 포함
-                              .filter(item => !(item.type === 'EXAM' && (gradeData?.course?.exam_count || 0) === 0)) // exam_count가 0인 경우 시험 항목 제외
+                              .filter(item => item)
+                              .filter(item => !(item.type === 'EXAM' && (gradeData?.course?.exam_count || 0) === 0))
                               .sort((a, b) => {
                                 const dateA = a.dueDate ? new Date(a.dueDate).getTime() : 0;
                                 const dateB = b.dueDate ? new Date(b.dueDate).getTime() : 0;
@@ -949,7 +975,7 @@ const StudentDashboard: FC = () => {
                                 >
                                   {/* 과제 아이콘 */}
                                   <div className={`w-6 h-6 rounded-full flex-shrink-0 
-                                    ${item.type === 'ASSIGNMENT' ? 'bg-blue-50' : 'bg-purple-50'}`}
+                                    {item.type === 'ASSIGNMENT' ? 'bg-blue-50' : 'bg-purple-50'}`}
                                   >
                                     {item.type === 'ASSIGNMENT' ? (
                                       <FileTextOutlined className="text-dashboard-primary text-xs" />
@@ -964,10 +990,10 @@ const StudentDashboard: FC = () => {
                                       {item.title}
                                     </h4>
                                     <div className="text-sm text-dashboard-text-secondary truncate">
-                                      {item.course_title}
+                                      {item.score}
                                     </div>
                                     <div className={`text-sm mt-1
-                                      ${item.isCompleted ? 'text-green-600' : 'text-dashboard-text-secondary'}`}
+                                      {item.isCompleted ? 'text-green-600' : 'text-dashboard-text-secondary'}`}
                                     >
                                       {item.dueDate ? formatDate(item.dueDate) : '마감일 없음'}
                                     </div>
@@ -995,7 +1021,7 @@ const StudentDashboard: FC = () => {
 
                 {/* 카드 내용 */}
                 <div className="p-5">
-                  {isLoadingAssignments ? (
+                  {assignmentsLoading ? (
                     <div className="flex justify-center items-center py-6">
                       <Spin />
                     </div>

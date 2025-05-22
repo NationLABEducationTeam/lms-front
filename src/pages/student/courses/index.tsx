@@ -1405,7 +1405,7 @@ const StudentCoursesPage: FC = () => {
             <Card className="mb-8 shadow-sm hover:shadow-md transition-all">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6">
                 <Space size="large" className="flex-1">
-                  <Select
+                  {/* <Select
                     style={{ width: 300 }}
                     value={selectedCourse?.id}
                     onChange={handleCourseSelect}
@@ -1416,15 +1416,15 @@ const StudentCoursesPage: FC = () => {
                       </div>
                     )}
                   onDropdownVisibleChange={(visible: boolean) => setIsDropdownOpen(visible)}
-                >
-                  <Button type="primary" className="mr-2">
+                > */}
+                  {/* <Button type="primary" className="mr-2">
                     <Space>
                       {selectedCourse?.title || '과목 선택'}
                       <ChevronDown className="w-4 h-4" />
                     </Space>
-                  </Button>
+                  </Button> */}
                     
-                  {courses.map(course => (
+                  {/* {courses.map(course => (
                     <Select.Option key={course.id} value={course.id} label={course.title}>
                       <Space>
                         <div>
@@ -1432,8 +1432,8 @@ const StudentCoursesPage: FC = () => {
                         </div>
                       </Space>
                     </Select.Option>
-                  ))}
-                  </Select>
+                  ))} */}
+                  {/* </Select> */}
 
                   <Space className="ml-4">
                     <Tag color="blue" className="px-3 py-1 text-sm">
