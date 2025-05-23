@@ -38,7 +38,8 @@ import {
   Select,
   Statistic,
   Divider,
-  Alert
+  Alert,
+  Modal
 } from 'antd';
 import { toast as sonnerToast } from 'sonner';
 import { toast, ToastContainer } from 'react-toastify';
@@ -515,6 +516,8 @@ const StudentCoursesPage: FC = () => {
   const [openWeeks, setOpenWeeks] = useState<string[]>([]);
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<{ url: string; title: string } | null>(null);
+  const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
+  const [selectedPdf, setSelectedPdf] = useState<{ url: string; title: string } | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
   const [communityPosts, setCommunityPosts] = useState<CommunityPost[]>([]);
   const [qnaPosts, setQnaPosts] = useState<QnaPost[]>([]);
@@ -1268,39 +1271,114 @@ const StudentCoursesPage: FC = () => {
           <ul className="space-y-1">
             {items.map((item, index) => (
               <li key={index}>
-                <button
-                  onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber)}
-                  className={cn(
-                    "w-full flex items-center p-2 rounded-lg group",
-                    item.downloadable 
-                      ? "hover:bg-gray-50" 
-                      : "opacity-75 cursor-not-allowed bg-gray-50"
-                  )}
-                >
-                  <div className="flex items-center gap-3 flex-1">
-                    {getFileIcon(item.fileName)}
-                    <div className="flex flex-col">
-                      <span className={cn(
-                        "text-sm",
-                        item.downloadable ? "text-gray-700" : "text-gray-400"
-                      )}>
-                        {item.fileName}
-                      </span>
-                      {!item.downloadable && (
-                        <span className="text-xs text-red-500 flex items-center gap-1">
-                          <Lock className="w-3 h-3" />
-                          다운로드 제한됨
-                        </span>
+                {/* PDF 파일인 경우 드롭다운 메뉴 제공 */}
+                {item.fileName.toLowerCase().endsWith('.pdf') ? (
+                  <Dropdown
+                    overlay={
+                      <Menu
+                        onClick={({ key }) => {
+                          if (key === 'webview') {
+                            // PDF 뷰어 모달로 열기
+                            if (item.downloadUrl) {
+                              setSelectedPdf({
+                                url: item.downloadUrl,
+                                title: item.fileName
+                              });
+                              setPdfViewerOpen(true);
+                            } else {
+                              sonnerToast.error('PDF URL이 유효하지 않습니다.');
+                            }
+                          } else if (key === 'download') {
+                            // PDF 다운로드
+                            handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber);
+                          }
+                        }}
+                      >
+                        <Menu.Item key="webview" icon={<Play className="w-4 h-4" />}>
+                          웹에서 보기
+                        </Menu.Item>
+                        <Menu.Item key="download" icon={<Download className="w-4 h-4" />}>
+                          다운로드
+                        </Menu.Item>
+                      </Menu>
+                    }
+                    trigger={['click']}
+                    disabled={!item.downloadable}
+                  >
+                    <button
+                      className={cn(
+                        "w-full flex items-center p-2 rounded-lg group",
+                        item.downloadable 
+                          ? "hover:bg-gray-50 cursor-pointer" 
+                          : "opacity-75 cursor-not-allowed bg-gray-50"
                       )}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        {getFileIcon(item.fileName)}
+                        <div className="flex flex-col">
+                          <span className={cn(
+                            "text-sm",
+                            item.downloadable ? "text-gray-700" : "text-gray-400"
+                          )}>
+                            {item.fileName}
+                          </span>
+                          {!item.downloadable && (
+                            <span className="text-xs text-red-500 flex items-center gap-1">
+                              <Lock className="w-3 h-3" />
+                              다운로드 제한됨
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={cn(
+                          "text-xs",
+                          item.downloadable ? "text-gray-500" : "text-gray-400"
+                        )}>
+                          {formatFileSize(item.size)}
+                        </span>
+                        {item.downloadable && (
+                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        )}
+                      </div>
+                    </button>
+                  </Dropdown>
+                ) : (
+                  /* 일반 파일은 기존 방식 */
+                  <button
+                    onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber)}
+                    className={cn(
+                      "w-full flex items-center p-2 rounded-lg group",
+                      item.downloadable 
+                        ? "hover:bg-gray-50" 
+                        : "opacity-75 cursor-not-allowed bg-gray-50"
+                    )}
+                  >
+                    <div className="flex items-center gap-3 flex-1">
+                      {getFileIcon(item.fileName)}
+                      <div className="flex flex-col">
+                        <span className={cn(
+                          "text-sm",
+                          item.downloadable ? "text-gray-700" : "text-gray-400"
+                        )}>
+                          {item.fileName}
+                        </span>
+                        {!item.downloadable && (
+                          <span className="text-xs text-red-500 flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            다운로드 제한됨
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                  <span className={cn(
-                    "text-xs",
-                    item.downloadable ? "text-gray-500" : "text-gray-400"
-                  )}>
-                    {formatFileSize(item.size)}
-                  </span>
-                </button>
+                    <span className={cn(
+                      "text-xs",
+                      item.downloadable ? "text-gray-500" : "text-gray-400"
+                    )}>
+                      {formatFileSize(item.size)}
+                    </span>
+                  </button>
+                )}
               </li>
             ))}
           </ul>
@@ -1316,6 +1394,7 @@ const StudentCoursesPage: FC = () => {
   };
 
   return (
+    <>
     <Layout className="min-h-screen bg-gray-50">
       <Content className="max-w-7xl mx-auto px-6 py-10">
         {loading ? (
@@ -1386,6 +1465,37 @@ const StudentCoursesPage: FC = () => {
           </>
         ) : (
           <>
+            {/* OFFLINE 모드 타이머 표시 */}
+            {selectedCourse?.classmode === 'OFFLINE' && 
+             isTimerRunning && 
+             timerCourseId === selectedCourse?.id && (
+              <Card className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                      <Clock className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="text-lg font-semibold text-green-800">
+                        출석 시간 측정 중
+                      </div>
+                      <div className="text-sm text-green-600">
+                        {selectedCourse?.title} - 오프라인 수업
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-3xl font-bold text-green-700 font-mono">
+                      {formattedTime}
+                    </div>
+                    <div className="text-sm text-green-600">
+                      현재 웹사이트 상주 시간
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* 강의 선택 헤더 */}
             <Card className="mb-8 shadow-sm hover:shadow-md transition-all">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6">
@@ -1873,6 +1983,64 @@ const StudentCoursesPage: FC = () => {
         )}
       </Content>
     </Layout>
+
+    {/* PDF 뷰어 모달 */}
+    <Modal
+      title={
+        <div className="flex items-center gap-2">
+          <FileText className="w-5 h-5 text-red-500" />
+          <span>{selectedPdf?.title || 'PDF 문서'}</span>
+        </div>
+      }
+      open={pdfViewerOpen}
+      onCancel={() => {
+        setPdfViewerOpen(false);
+        setSelectedPdf(null);
+      }}
+      width="90%"
+      style={{ top: 20 }}
+      bodyStyle={{ height: '80vh', padding: 0 }}
+      footer={[
+        <Button 
+          key="download" 
+          icon={<Download className="w-4 h-4" />}
+          onClick={() => {
+            if (selectedPdf?.url && selectedPdf?.title) {
+              const link = document.createElement('a');
+              link.href = selectedPdf.url;
+              link.download = selectedPdf.title;
+              link.click();
+            }
+          }}
+        >
+          다운로드
+        </Button>,
+        <Button 
+          key="close" 
+          onClick={() => {
+            setPdfViewerOpen(false);
+            setSelectedPdf(null);
+          }}
+        >
+          닫기
+        </Button>
+      ]}
+    >
+      {selectedPdf?.url && (
+        <div className="w-full h-full">
+          {/* Google Docs Viewer를 통한 PDF 임베딩 */}
+          <iframe
+            src={`https://docs.google.com/viewer?url=${encodeURIComponent(selectedPdf.url)}&embedded=true`}
+            width="100%"
+            height="100%"
+            frameBorder="0"
+            style={{ border: 'none' }}
+            title={`PDF Viewer - ${selectedPdf.title || 'PDF 문서'}`}
+          />
+        </div>
+      )}
+    </Modal>
+    </>
   );
 };
 
