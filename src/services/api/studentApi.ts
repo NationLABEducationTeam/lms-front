@@ -301,7 +301,7 @@ export const studentApi = createApi({
         return response;
       },
       keepUnusedDataFor: 300, // 5분간 캐시 유지
-      providesTags: (result, error, courseId) => [{ type: 'StudentGrades', id: courseId }],
+      providesTags: (_result, _error, courseId) => [{ type: 'StudentGrades', id: courseId }],
     }),
     
     // 모든 과제/퀴즈 목록 조회 - 캐싱 최적화
@@ -420,7 +420,7 @@ export const studentApi = createApi({
         }
       },
       keepUnusedDataFor: 300, // 5분간 캐시 유지
-      providesTags: (result, error, courseId) => [{ type: 'Assignment', id: courseId }],
+      providesTags: (_result, _error, courseId) => [{ type: 'Assignment', id: courseId }],
     }),
     
     // 특정 과제/퀴즈 상세 정보 조회 - 캐싱 최적화

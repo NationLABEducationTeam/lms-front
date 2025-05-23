@@ -8,11 +8,8 @@ const Popover = PopoverPrimitive.Root
 const PopoverTrigger = PopoverPrimitive.Trigger
 
 // 커스텀 Portal 컴포넌트 추가
-const PopoverPortal = ({
-  className,
-  ...props
-}: PopoverPrimitive.PopoverPortalProps & { className?: string }) => (
-  <PopoverPrimitive.Portal className={cn(className)} {...props} />
+const PopoverPortal = (props: PopoverPrimitive.PopoverPortalProps) => (
+  <PopoverPrimitive.Portal {...props} />
 )
 PopoverPortal.displayName = PopoverPrimitive.Portal.displayName
 

@@ -32,7 +32,7 @@ const EditCourse: FC = () => {
         description: data.description,
         main_category_id: {
           id: categoryId,
-          name: CATEGORY_MAPPING[categoryId],
+          name: CATEGORY_MAPPING[categoryId as keyof typeof CATEGORY_MAPPING],
           sub_categories: []
         },
         sub_category_id: data.sub_category_id,

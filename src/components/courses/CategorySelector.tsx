@@ -48,7 +48,7 @@ export const CategorySelector: React.FC<CategorySelectorProps> = ({
       const categoryId = value as MainCategoryId;
       onMainChange({
         id: categoryId,
-        name: CATEGORY_MAPPING[categoryId],
+        name: CATEGORY_MAPPING[categoryId as keyof typeof CATEGORY_MAPPING],
         sub_categories: []
       });
     }

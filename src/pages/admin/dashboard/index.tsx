@@ -52,9 +52,9 @@ const Skeleton: FC<{ className?: string }> = ({ className }) => (
 
 // 간단한 DropdownMenu 구현 (ui 컴포넌트가 없는 경우)
 const DropdownMenu = ({ children }: { children: React.ReactNode }) => children;
-const DropdownMenuTrigger = ({ asChild, onClick, children }: { asChild?: boolean, onClick?: (e: React.MouseEvent) => void, children: React.ReactNode }) => 
+const DropdownMenuTrigger = ({ onClick, children }: { onClick?: (e: React.MouseEvent) => void, children: React.ReactNode }) => 
   <div onClick={onClick}>{children}</div>;
-const DropdownMenuContent = ({ align, children }: { align?: string, children: React.ReactNode }) => 
+const DropdownMenuContent = ({ children }: { children: React.ReactNode }) => 
   <div className="fixed right-4 z-50 mt-8 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
     {children}
   </div>;
@@ -184,7 +184,7 @@ const ActionCard: FC<ActionCardProps> = ({
           </div>
           {actions && (
             <DropdownMenu>
-              <DropdownMenuTrigger asChild onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <DropdownMenuTrigger onClick={(e: React.MouseEvent) => e.stopPropagation()}>
                 <Button variant="ghost" size="icon" className="h-8 w-8 relative z-50">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -204,7 +204,7 @@ const ActionCard: FC<ActionCardProps> = ({
                   </svg>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+              <DropdownMenuContent>
                 {actions.map((action, index) => (
                   <DropdownMenuItem 
                     key={index} 

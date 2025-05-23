@@ -10,7 +10,7 @@ const OUTPUT_PREFIX = 'certificates/';
 // S3 직접 접근 API
 export const certificateApi = createApi({
   reducerPath: 'certificateApi',
-  baseQuery: async (args, api, extraOptions) => {
+  baseQuery: async (args) => {
     console.log('S3 직접 접근 API 호출:', args);
     return { data: null };
   },

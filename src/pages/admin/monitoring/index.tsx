@@ -406,7 +406,6 @@ interface ParticipantWithStatus {
 interface SessionTimelineProps {
   timelineData?: ParticipantWithStatus['timeline_data'];
   sessions?: ParticipantWithStatus['sessions'];
-  totalDuration: number;
   isActive: boolean;
   attendanceRate?: number;
 }
@@ -414,8 +413,7 @@ interface SessionTimelineProps {
 // 세션 타임라인 컴포넌트 완전히 다시 작성
 const SessionTimeline: FC<SessionTimelineProps> = ({ 
   timelineData, 
-  sessions, 
-  totalDuration, 
+  sessions,
   isActive,
   attendanceRate: providedAttendanceRate 
 }) => {
@@ -883,7 +881,6 @@ const MonitoringPage: FC = () => {
                               <SessionTimeline
                                 timelineData={participant.timeline_data}
                                 sessions={participant.sessions}
-                                totalDuration={meeting.duration}
                                 isActive={participant.status === 'active'}
                                 attendanceRate={participant.attendance_rate}
                               />
