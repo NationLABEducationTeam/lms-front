@@ -7,10 +7,13 @@ import axios from 'axios';
 
 // 과제 및 시험 항목 인터페이스
 export interface AssignmentItem {
-  id: string;
+  id?: string;
+  item_id?: string;
+  item_type?: 'ASSIGNMENT' | 'EXAM';
+  item_name?: string;
   course_id: string;
   course_title: string;
-  title: string;
+  title?: string;
   description?: string;
   due_date: string;
   status: 'pending' | 'completed' | 'overdue';
@@ -18,8 +21,9 @@ export interface AssignmentItem {
   max_score?: number;
   submission_date?: string;
   feedback?: string;
-  week_number: number;
-  type: 'ASSIGNMENT' | 'EXAM';
+  week_number?: number;
+  type?: 'ASSIGNMENT' | 'EXAM';
+  is_completed?: boolean;
 }
 
 // 새로운 성적 API 응답 구조에 맞는 타입 정의
@@ -234,6 +238,8 @@ export const studentApi = createApi({
   reducerPath: 'studentApi',
   baseQuery: baseQueryWithReauth,
   tagTypes: ['StudentAssignments', 'StudentGrades', 'Assignment', 'Students'],
+  // 전역 캐싱 설정 - 10분간 캐시 유지
+  keepUnusedDataFor: 600,
   endpoints: (builder) => ({
     // 학생의 과제 및 시험 목록 조회
     getStudentAssignments: builder.query<StudentAssignmentsResponse['data'], void>({
@@ -272,199 +278,152 @@ export const studentApi = createApi({
           };
         }
       },
+      keepUnusedDataFor: 300, // 5분간 캐시 유지
       providesTags: ['StudentAssignments']
     }),
     
-    // 학생 성적 조회 API - 반환 타입 수정
+    // 학생 성적 조회 API - 캐싱 최적화
     getStudentGrades: builder.query<NewStudentGrades, string>({
-      queryFn: async (courseId, _api, _options, baseQuery) => {
-        try {
-          console.log('학생 성적 조회 시작 - API URL:', getApiUrl(`/courses/${courseId}/my-grades`));
-          
-          // 실제 API 호출
-          const result = await baseQuery(`/courses/${courseId}/my-grades`);
-          
-          console.log('학생 성적 API 응답 원본:', result);
-          
-          // 에러가 있는 경우
-          if (result.error) {
-            console.error('성적 조회 실패 (API 에러):', result.error);
-            
-            // 성적 API가 동작하지 않을 경우 모의 데이터 반환
-            console.log('모의 성적 데이터를 반환합니다.');
-            // 새로운 구조에 맞는 모의 데이터
-            const mockData: NewStudentGrades = {
-              course: {
-                title: 'AWS SAP 2달 합격반',
-                attendance_weight: 20,
-                assignment_weight: 50,
-                exam_weight: 30,
-                weeks_count: 8,
-                assignment_count: 4,
-                exam_count: 0 // 시험이 없는 경우로 변경
-              },
-              grades: {
-                attendance: {
-                  rate: 90,
-                  score: 18,
-                  sessions: [],
-                  totalSessions: '8'
-                },
-                assignments: [
-                  {
-                    id: '61',
-                    title: 'EC2 생성 후 로드밸런싱 적용하기',
-                    type: 'ASSIGNMENT',
-                    maxScore: 100,
-                    score: 85,
-                    dueDate: '2025-03-19',
-                    status: 'completed'
-                  }
-                ],
-                exams: [], // 시험 배열 비움
-                assignment_score: 42.5,
-                exam_score: 0, // 시험 점수 0
-                assignment_completion_rate: 25,
-                exam_completion_rate: 0, // 시험 완료율 0
-                progress_rate: 28,
-                total_score: 81.5
-              }
-            };
-            return { data: mockData };
-          }
-          
-          // 응답이 성공인 경우
-          const response = result.data as StudentGradesResponse;
-          console.log('학생 성적 API 응답 데이터:', response);
-          
-          if (!response.success || !response.data) {
-            console.error('성적 정보 조회 실패:', response.message || '데이터 없음');
-            // 기본 빈 데이터 구조 반환
-            const emptyData: NewStudentGrades = {
-              course: {
-                title: '',
-                attendance_weight: 0,
-                assignment_weight: 0,
-                exam_weight: 0,
-                weeks_count: 0,
-                assignment_count: 0,
-                exam_count: 0
-              },
-              grades: {
-                attendance: {
-                  rate: 0,
-                  score: 0,
-                  sessions: [],
-                  totalSessions: '0'
-                },
-                assignments: [],
-                exams: [],
-                assignment_score: 0,
-                exam_score: 0,
-                assignment_completion_rate: 0,
-                exam_completion_rate: 0,
-                progress_rate: 0,
-                total_score: 0
-              }
-            };
-            return { data: emptyData };
-          }
-          
-          // API 응답 데이터 전처리: exam_count가 0이면 exams 배열을 비웁니다
-          const processedData = {...response.data} as NewStudentGrades;
-          if (processedData.course && processedData.course.exam_count === 0) {
-            if (processedData.grades) {
-              processedData.grades.exams = [];
-              processedData.grades.exam_score = 0;
-              processedData.grades.exam_completion_rate = 0;
-            }
-          }
-          
-          return { data: processedData };
-        } catch (error) {
-          console.error('성적 조회 중 오류 발생:', error);
-          return { error: { status: 500, data: '성적 정보를 불러오는데 실패했습니다.' } };
+      query: (courseId) => ({
+        url: `/courses/${courseId}/my-grades`,
+        method: 'GET',
+      }),
+      transformResponse: (response: any) => {
+        console.log('RTK Query 성적 API 응답:', response);
+        
+        // 백엔드 응답 구조: { success: true, data: {...} }
+        if (response.success && response.data) {
+          console.log('RTK Query 성적 실제 데이터:', response.data);
+          return response.data;
         }
+        
+        // 응답 구조가 다를 경우 그대로 반환
+        return response;
       },
-      providesTags: (result, _error, courseId) => 
-        result ? [{ type: 'StudentGrades', id: courseId }] : []
+      keepUnusedDataFor: 300, // 5분간 캐시 유지
+      providesTags: (result, error, courseId) => [{ type: 'StudentGrades', id: courseId }],
     }),
     
-    // 새로 추가: 모든 과제/퀴즈 목록 조회
+    // 모든 과제/퀴즈 목록 조회 - 캐싱 최적화
     getAllAssignments: builder.query<Assignment[], void>({
       queryFn: async (_arg, _api, _options, baseQuery) => {
         try {
-          console.log('모든 과제 목록 API 요청 시작 - 전체 URL:', getApiUrl('/assignments/my'));
+          // 현재 로그인한 사용자의 ID 가져오기
+          const currentUser = await getCurrentUser();
+          const studentId = currentUser.userId;
           
-          // 실제 API 호출
-          const result = await baseQuery('/assignments/my');
+          // API 요청 실행 - students 라우터 사용
+          const result = await baseQuery(`/students/${studentId}/assignments`);
           
-          console.log('getAllAssignments API 응답 원본:', result);
+          if (result.error) {
+            console.error('과제 목록 조회 실패:', result.error);
+            return { error: result.error };
+          }
           
-          // 에러가 있는 경우
-          if ('error' in result) {
-            console.error('과제 목록 조회 실패 (API 에러):', result.error);
+          const response = result.data as StudentAssignmentsResponse;
+          console.log('학생 과제 API 응답:', response);
+          
+          if (!response.success || !response.data) {
+            console.error('과제 목록 조회 실패:', response.message);
             return { data: [] };
           }
           
-          // API 응답을 적절한 타입으로 변환
-          interface ApiResponse {
-            success?: boolean;
-            message?: string;
-            data?: any;
-          }
+          // assignments와 exams를 합쳐서 Assignment[] 형태로 변환
+          const allAssignments: Assignment[] = [
+            ...response.data.assignments.pending,
+            ...response.data.assignments.overdue, 
+            ...response.data.assignments.completed,
+            ...response.data.exams.pending,
+            ...response.data.exams.overdue,
+            ...response.data.exams.completed
+          ].map(item => ({
+            item_id: item.item_id || item.id || '',
+            item_type: item.item_type || item.type || 'ASSIGNMENT',
+            title: item.item_name || item.title || '',
+            due_date: item.due_date,
+            course_id: item.course_id,
+            course_title: item.course_title,
+            score: item.score || 0,
+            is_completed: item.is_completed || false,
+            status: item.status || '진행중'
+          } as Assignment));
           
-          const responseData = result.data as ApiResponse;
-          
-          if (!responseData) {
-            console.error('과제 목록 조회 실패 (응답 오류): 응답 없음');
-            return { data: [] };
-          }
-          
-          // 백엔드 직접 응답인 경우 (응답 형식: data 프로퍼티 없이 바로 배열)
-          if (Array.isArray(responseData)) {
-            console.log(`${responseData.length}개의 과제/퀴즈 데이터를 받았습니다:`, responseData);
-            return { data: responseData };
-          }
-          
-          // 표준 API 응답 형식인 경우 (응답 형식: { success, data: [] })
-          if (!responseData.data) {
-            console.error('과제 목록 조회 실패 (응답 오류): 데이터 없음', responseData);
-            return { data: [] };
-          }
-          
-          // 데이터 배열 추출
-          const assignments = Array.isArray(responseData.data) 
-            ? responseData.data 
-            : [];
-          
-          console.log(`${assignments.length}개의 과제/퀴즈 데이터를 받았습니다:`, assignments);
-          return { data: assignments };
+          return { data: allAssignments };
         } catch (error) {
-          console.error('getAllAssignments API 호출 오류:', error);
-          return { data: [] };
+          console.error('과제 목록 조회 중 오류 발생:', error);
+          return { 
+            error: { 
+              status: 500, 
+              data: error instanceof Error ? error.message : '과제 목록을 불러오는데 실패했습니다.'
+            } as FetchBaseQueryError
+          };
         }
       },
-      providesTags: ['Assignment']
+      keepUnusedDataFor: 300, // 5분간 캐시 유지
+      providesTags: ['Assignment'],
     }),
     
-    // 새로 추가: 특정 과목의 과제/퀴즈 목록 조회
+    // 특정 과목의 과제/퀴즈 목록 조회 - 캐싱 최적화
     getCourseAssignments: builder.query<Assignment[], string>({
-      query: (courseId) => `/assignments/course/${courseId}`,
-      transformResponse: (response: AssignmentResponse) => {
-        console.log('과목별 과제 목록 API 응답:', response);
-        
-        if (!response.success || !response.data) {
-          console.error('과목별 과제 목록 조회 실패:', response.message || '데이터 없음');
-          return [];
+      queryFn: async (courseId, _api, _options, baseQuery) => {
+        try {
+          // 현재 로그인한 사용자의 ID 가져오기
+          const currentUser = await getCurrentUser();
+          const studentId = currentUser.userId;
+          
+          // 전체 과제 목록을 가져온 후 courseId로 필터링
+          const result = await baseQuery(`/students/${studentId}/assignments`);
+          
+          if (result.error) {
+            console.error('과제 목록 조회 실패:', result.error);
+            return { error: result.error };
+          }
+          
+          const response = result.data as StudentAssignmentsResponse;
+          
+          if (!response.success || !response.data) {
+            console.error('과제 목록 조회 실패:', response.message);
+            return { data: [] };
+          }
+          
+          // assignments와 exams를 합쳐서 특정 courseId만 필터링
+          const courseAssignments: Assignment[] = [
+            ...response.data.assignments.pending,
+            ...response.data.assignments.overdue, 
+            ...response.data.assignments.completed,
+            ...response.data.exams.pending,
+            ...response.data.exams.overdue,
+            ...response.data.exams.completed
+          ]
+          .filter(item => item.course_id === courseId) // courseId로 필터링
+          .map(item => ({
+            item_id: item.item_id || item.id || '',
+            item_type: item.item_type || item.type || 'ASSIGNMENT',
+            title: item.item_name || item.title || '',
+            due_date: item.due_date,
+            course_id: item.course_id,
+            course_title: item.course_title,
+            score: item.score || 0,
+            is_completed: item.is_completed || false,
+            status: item.status || '진행중'
+          } as Assignment));
+          
+          return { data: courseAssignments };
+        } catch (error) {
+          console.error('특정 과목 과제 목록 조회 중 오류 발생:', error);
+          return { 
+            error: { 
+              status: 500, 
+              data: error instanceof Error ? error.message : '과제 목록을 불러오는데 실패했습니다.'
+            } as FetchBaseQueryError
+          };
         }
-        
-        return response.data as Assignment[];
       },
-      providesTags: (_result, _error, courseId) => [{ type: 'Assignment', id: courseId }]
+      keepUnusedDataFor: 300, // 5분간 캐시 유지
+      providesTags: (result, error, courseId) => [{ type: 'Assignment', id: courseId }],
     }),
     
-    // 새로 추가: 특정 과제/퀴즈 상세 정보 조회
+    // 특정 과제/퀴즈 상세 정보 조회 - 캐싱 최적화
     getAssignmentDetail: builder.query<Assignment, string>({
       query: (assignmentId) => `/assignments/${assignmentId}`,
       transformResponse: (response: AssignmentResponse) => {
@@ -477,10 +436,11 @@ export const studentApi = createApi({
         
         return response.data as Assignment;
       },
+      keepUnusedDataFor: 600, // 10분간 캐시 유지 (상세 정보는 더 오래 캐시)
       providesTags: (_result, _error, assignmentId) => [{ type: 'Assignment', id: assignmentId }]
     }),
     
-    // 새로 추가: 과제 제출 API (퀴즈 점수 제출 지원)
+    // 과제 제출 API (퀴즈 점수 제출 지원) - 캐시 무효화 최적화
     submitAssignment: builder.mutation<SubmitAssignmentResponse, {assignmentId: string; submissionData: SubmissionData}>({
       query: ({assignmentId, submissionData}) => {
         // 퀴즈인 경우 간단한 형식으로 점수만 전송
@@ -502,14 +462,16 @@ export const studentApi = createApi({
         }
         return response;
       },
+      // 제출 후 관련 캐시 무효화 - 선택적 무효화로 성능 개선
       invalidatesTags: (_result, _error, {assignmentId}) => [
         { type: 'Assignment', id: assignmentId },
-        'Assignment',
-        'StudentGrades'
+        'Assignment', // 전체 과제 목록도 갱신
+        'StudentGrades', // 성적 정보도 갱신
+        'StudentAssignments' // 과제 목록도 갱신
       ]
     }),
     
-    // 새로 추가: 과제 업로드 URL 요청 API
+    // 과제 업로드 URL 요청 API - 캐싱 불필요
     getAssignmentUploadUrls: builder.mutation<UploadUrlResponse, {assignmentId: string; files: {name: string; type: string; size: number}[]}>({
       query: ({assignmentId, files}) => ({
         url: `/assignments/${assignmentId}/upload-urls`,
@@ -518,7 +480,7 @@ export const studentApi = createApi({
       })
     }),
     
-    // 기존 과제 제출 API (기존 호환성 유지)
+    // 기존 과제 제출 API (기존 호환성 유지) - 캐시 무효화 최적화
     submitAssignmentLegacy: builder.mutation<
       { success: boolean; message: string }, 
       { assignmentId: string; files?: File[]; content?: string }
@@ -561,12 +523,14 @@ export const studentApi = createApi({
           };
         }
       },
-      invalidatesTags: ['StudentAssignments', 'Assignment']
+      // 제출 후 관련 캐시 무효화
+      invalidatesTags: ['StudentAssignments', 'Assignment', 'StudentGrades']
     }),
 
-    // 학생 목록 조회
+    // 학생 목록 조회 - 캐싱 최적화
     getStudents: builder.query<StudentsResponse, void>({
       query: () => '/admin/students',
+      keepUnusedDataFor: 600, // 10분간 캐시 유지
       providesTags: ['Students']
     }),
   })
@@ -586,19 +550,36 @@ export const {
 
 export const getStudentGrades = async (courseId: string): Promise<NewStudentGrades> => {
   try {
-    const response = await axios.get(getApiUrl(`/student/grade/${courseId}`));
+    const response = await axios.get(getApiUrl(`/courses/${courseId}/my-grades`), {
+      headers: {
+        Authorization: `Bearer ${(await fetchAuthSession()).tokens?.idToken?.toString()}`
+      }
+    });
     
     if (response.status === 200 && response.data) {
-      // API 응답 데이터 전처리: exam_count가 0이면 exams 배열을 비우고 관련 점수를 0으로 설정
-      const processedData = {...response.data} as NewStudentGrades;
-      if (processedData.course && processedData.course.exam_count === 0) {
-        if (processedData.grades) {
-          processedData.grades.exams = [];
-          processedData.grades.exam_score = 0;
-          processedData.grades.exam_completion_rate = 0;
+      console.log('성적 API 전체 응답:', response.data);
+      
+      // 백엔드 응답 구조: { success: true, data: {...} }
+      if (response.data.success && response.data.data) {
+        const gradeData = response.data.data;
+        console.log('성적 실제 데이터:', gradeData);
+        
+        // API 응답 데이터 전처리: exam_count가 0이면 exams 배열을 비우고 관련 점수를 0으로 설정
+        const processedData = {...gradeData} as NewStudentGrades;
+        if (processedData.course && processedData.course.exam_count === 0) {
+          if (processedData.grades) {
+            processedData.grades.exams = [];
+            processedData.grades.exam_score = 0;
+            processedData.grades.exam_completion_rate = 0;
+          }
         }
+        
+        console.log('처리된 성적 데이터:', processedData);
+        return processedData;
+      } else {
+        console.error('API 응답 구조가 예상과 다름:', response.data);
+        throw new Error('성적 정보 응답 구조가 올바르지 않습니다.');
       }
-      return processedData;
     } else {
       throw new Error('성적 정보 조회 실패');
     }

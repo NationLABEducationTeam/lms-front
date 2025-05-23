@@ -55,6 +55,7 @@ import { useGetAllNotesQuery } from '@/services/api/courseApi';
 import { Note } from '@/types/course';
 import { getApiUrl } from '@/config/api';
 import { useGetStudentAssignmentsQuery, useGetCourseAssignmentsQuery } from '@/services/api/studentApi';
+import { downloadFile } from '@/utils/fileDownload';
 
 const { Header, Sider, Content } = Layout;
 const { Title, Text, Paragraph } = Typography;
@@ -644,34 +645,18 @@ const StudentCoursesPage: FC = () => {
       return;
     }
 
-    // 일반 파일은 다운로드
+    // 일반 파일은 다운로드 - 유틸리티 함수 사용
     if (!downloadUrl) {
       sonnerToast.error('다운로드 URL이 유효하지 않습니다.');
       return;
     }
 
-    try {
-      const response = await fetch(downloadUrl);
-      if (!response.ok) throw new Error('Download failed');
-      
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      const decodedFileName = decodeURIComponent(fileName);
-      a.download = decodedFileName;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Download error:', error);
-      sonnerToast.error('파일 다운로드에 실패했습니다.');
-      // 다운로드 실패 시 downloadUrl이 있다면 새 탭에서 열기 시도
-      if (downloadUrl) {
-        window.open(downloadUrl, '_blank');
+    await downloadFile(downloadUrl, {
+      fileName,
+      onError: (error) => {
+        console.error('파일 다운로드 실패:', error);
       }
-    }
+    });
   };
 
   // 게시판 데이터 로딩

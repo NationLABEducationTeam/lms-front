@@ -9,7 +9,6 @@ import StudentDashboard from './pages/student/dashboard';
 import StudentLanding from './pages/student';
 import AuthForm from './components/auth/AuthForm';
 import VerifyEmail from './components/auth/VerifyEmail';
-import InstructorPage from './pages/instructor/index';
 import AdminDashboard from './pages/admin/dashboard';
 import AdminNotices from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
@@ -147,9 +146,6 @@ const App = () => {
             </Route>
 
             {/* Protected Instructor Routes */}
-            <Route element={<ProtectedRoute allowedRoles={[UserRole.INSTRUCTOR]} />}>
-              <Route path="/instructor" element={<InstructorPage />} />
-            </Route>
           </Route>
         </Routes>
         <ToastContainer
