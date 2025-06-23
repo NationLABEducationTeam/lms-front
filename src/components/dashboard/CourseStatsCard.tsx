@@ -67,7 +67,7 @@ const CourseStatsCard: FC<CourseStatsCardProps> = memo(({
       }, 5 * 60 * 1000);
       
     } catch (err) {
-      console.error('성적 데이터 로드 실패:', err);
+      console.error('성적 데이터 로드 실패패패패:', err);
       setError('성적 데이터를 불러오지 못했습니다.');
     } finally {
       setLoading(false);
