@@ -339,17 +339,8 @@ const StudentsPage: FC = () => {
   const fetchStudentNotes = async (studentId: string) => {
     try {
       setLoadingNotes(true);
-      const response = await getStudentNotes(studentId);
-      if (response.success) {
-        setStudentNotes(response.data.notes);
-      } else {
-        toast.error(
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>학생 노트를 불러오는데 실패했습니다.</span>
-          </div>
-        );
-      }
+      const notes = await getStudentNotes(studentId);
+      setStudentNotes(notes);
     } catch (error) {
       console.error('노트 조회 오류:', error);
       toast.error(
@@ -368,27 +359,16 @@ const StudentsPage: FC = () => {
     if (!selectedStudent || !newNoteContent.trim()) return;
     
     try {
-      const response = await addStudentNote(selectedStudent.cognito_user_id, {
-        content: newNoteContent.trim()
-      });
+      const note = await addStudentNote(selectedStudent.cognito_user_id, newNoteContent.trim());
       
-      if (response.success) {
-        toast.success(
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4" />
-            <span>노트가 추가되었습니다.</span>
-          </div>
-        );
-        setStudentNotes(prev => [response.data.note, ...prev]);
-        setNewNoteContent('');
-      } else {
-        toast.error(
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>노트 추가에 실패했습니다.</span>
-          </div>
-        );
-      }
+      toast.success(
+        <div className="flex items-center gap-2">
+          <Check className="w-4 h-4" />
+          <span>노트가 추가되었습니다.</span>
+        </div>
+      );
+      setStudentNotes(prev => [note, ...prev]);
+      setNewNoteContent('');
     } catch (error) {
       console.error('노트 추가 오류:', error);
       toast.error(
@@ -417,34 +397,21 @@ const StudentsPage: FC = () => {
     if (!selectedStudent || !editNoteContent.trim()) return;
     
     try {
-      const response = await updateStudentNote(
-        selectedStudent.cognito_user_id,
-        noteId,
-        { content: editNoteContent.trim() }
-      );
+      const updatedNote = await updateStudentNote(noteId, editNoteContent.trim());
       
-      if (response.success) {
-        toast.success(
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4" />
-            <span>노트가 수정되었습니다.</span>
-          </div>
-        );
-        setStudentNotes(prev => 
-          prev.map(note => 
-            note.id === noteId ? response.data.note : note
-          )
-        );
-        setEditingNoteId(null);
-        setEditNoteContent('');
-      } else {
-        toast.error(
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>노트 수정에 실패했습니다.</span>
-          </div>
-        );
-      }
+      toast.success(
+        <div className="flex items-center gap-2">
+          <Check className="w-4 h-4" />
+          <span>노트가 수정되었습니다.</span>
+        </div>
+      );
+      setStudentNotes(prev => 
+        prev.map(note => 
+          note.id === noteId ? updatedNote : note
+        )
+      );
+      setEditingNoteId(null);
+      setEditNoteContent('');
     } catch (error) {
       console.error('노트 수정 오류:', error);
       toast.error(
@@ -506,27 +473,15 @@ const StudentsPage: FC = () => {
     if (!selectedStudent) return;
     
     try {
-      const response = await deleteStudentNote(
-        selectedStudent.cognito_user_id,
-        noteId
-      );
+      await deleteStudentNote(noteId);
       
-      if (response.success) {
-        toast.success(
-          <div className="flex items-center gap-2">
-            <Check className="w-4 h-4" />
-            <span>노트가 삭제되었습니다.</span>
-          </div>
-        );
-        setStudentNotes(prev => prev.filter(note => note.id !== noteId));
-      } else {
-        toast.error(
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            <span>노트 삭제에 실패했습니다.</span>
-          </div>
-        );
-      }
+      toast.success(
+        <div className="flex items-center gap-2">
+          <Check className="w-4 h-4" />
+          <span>노트가 삭제되었습니다.</span>
+        </div>
+      );
+      setStudentNotes(prev => prev.filter(note => note.id !== noteId));
     } catch (error) {
       console.error('노트 삭제 오류:', error);
       toast.error(
@@ -575,10 +530,8 @@ const StudentsPage: FC = () => {
       await Promise.all(
         students.map(async (student) => {
           try {
-            const response = await getStudentNotes(student.cognito_user_id);
-            if (response.success) {
-              notesCountMap[student.cognito_user_id] = response.data.notes.length;
-            }
+            const notes = await getStudentNotes(student.cognito_user_id);
+            notesCountMap[student.cognito_user_id] = notes.length;
           } catch (error) {
             console.error(`노트 조회 오류 (${student.student_name}):`, error);
             notesCountMap[student.cognito_user_id] = 0;

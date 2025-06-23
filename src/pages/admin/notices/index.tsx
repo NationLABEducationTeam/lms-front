@@ -1,10 +1,9 @@
-import { FC, useEffect, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
-import { Badge } from '@/components/common/ui/badge';
-import { Plus, AlertCircle, Search } from 'lucide-react';
+import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import { Notice } from '@/types/notice';
-import { getNotices } from '@/services/api/notices';
+import { getNotices, deleteNotice } from '@/services/api/notices';
 import { toast } from 'sonner';
 import { Input } from '@/components/common/ui/input';
 import { useGetPublicCoursesQuery } from '@/services/api/courseApi';
@@ -14,172 +13,270 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/common/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/common/ui/table';
+import { getQnaPosts, deleteQnaPost } from '@/services/api/qna';
+import { getCommunityPosts } from '@/services/api/community';
+import { QnaPost } from '@/types/qna';
+import { CommunityPost } from '@/types/community';
 
-const NoticeList: FC = () => {
+type Post = Notice | QnaPost | CommunityPost;
+
+// Type guards to check post type
+function isNotice(post: Post): post is Notice {
+    return 'metadata' in post && 'isImportant' in post.metadata;
+}
+
+function isQnaPost(post: Post): post is QnaPost {
+    return 'metadata' in post && 'status' in post.metadata && !isNotice(post);
+}
+
+function isCommunityPost(post: Post): post is CommunityPost {
+    return 'metadata' in post && !isNotice(post) && !isQnaPost(post);
+}
+
+// Helper functions to safely access properties from different post types
+const getPostId = (post: Post): string => {
+    if ('metadata' in post) return post.metadata.id;
+    return (post as any).id;
+};
+const getPostTitle = (post: Post): string => {
+    if ('content' in post) return post.content.title;
+    return (post as any).title;
+};
+const getAuthor = (post: Post): string => {
+    if ('metadata' in post) return post.metadata.author;
+    return (post as any).author || '관리자';
+};
+const getCreatedAt = (post: Post): string => {
+    if ('metadata' in post) return post.metadata.createdAt;
+    return (post as any).createdAt;
+};
+const getViews = (post: Post): number | string => {
+    if ('metadata' in post) return post.metadata.viewCount;
+    return (post as any).views ?? '-';
+};
+
+const boardConfig = {
+  notice: {
+    title: '공지사항 관리',
+    description: '공지사항을 관리하고 새 소식을 전달합니다.',
+    fetch: getNotices,
+    delete: deleteNotice,
+    createPath: '/admin/notices/create',
+    detailPath: (id: string) => `/admin/notices/${id}`,
+  },
+  qna: {
+    title: 'Q&A 관리',
+    description: '학생들의 질문에 답변하고 관리합니다.',
+    fetch: getQnaPosts,
+    delete: deleteQnaPost,
+    createPath: null,
+    detailPath: (id: string) => `/admin/qna/${id}`,
+  },
+  community: {
+    title: '커뮤니티 관리',
+    description: '자유게시판의 게시글을 관리합니다.',
+    fetch: getCommunityPosts,
+    delete: null, // 커뮤니티 글은 관리자가 임의 삭제하지 않을 수 있음
+    createPath: null,
+    detailPath: (id: string) => `/admin/community/${id}`,
+  },
+};
+
+interface AdminBoardProps {
+  boardType: 'notice' | 'qna' | 'community';
+}
+
+const AdminBoard: FC<AdminBoardProps> = ({ boardType }) => {
   const navigate = useNavigate();
-  const [notices, setNotices] = useState<Notice[]>([]);
-  const [filteredNotices, setFilteredNotices] = useState<Notice[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
-  // 강의 목록 가져오기
   const { data: courses = [] } = useGetPublicCoursesQuery();
 
+  const currentConfig = boardConfig[boardType];
+
   useEffect(() => {
-    const fetchNotices = async () => {
+    const fetchPosts = async () => {
+      setLoading(true);
       try {
-        const noticeList = await getNotices();
-        setNotices(noticeList || []);
-        setFilteredNotices(noticeList || []);
+        const data = await currentConfig.fetch();
+        setPosts(data || []);
       } catch (error) {
-        console.error('공지사항 목록 조회 실패:', error);
-        toast.error('공지사항 목록을 불러오는데 실패했습니다.');
-        setNotices([]);
-        setFilteredNotices([]);
+        console.error('게시글을 불러오는 데 실패했습니다.', error);
+        toast.error('게시글 목록을 불러오는 데 실패했습니다.');
+        setPosts([]);
       } finally {
         setLoading(false);
       }
     };
+    fetchPosts();
+  }, [boardType, currentConfig]);
 
-    fetchNotices();
-  }, []);
-
-  // 검색어와 과목 필터에 따라 공지사항을 필터링
-  useEffect(() => {
-    let filtered = [...notices];
-    
-    // 검색어로 필터링
-    if (searchTerm) {
-      filtered = filtered.filter(notice => 
-        notice.content.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        notice.content.summary?.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const handleDelete = async (id: string) => {
+    if (!currentConfig.delete) return;
+    if (window.confirm('정말로 이 게시글을 삭제하시겠습니까?')) {
+      try {
+        await currentConfig.delete(id);
+        setPosts(posts.filter((post) => getPostId(post) !== id));
+        toast.success('게시글이 성공적으로 삭제되었습니다.');
+      } catch (error) {
+        console.error('게시글 삭제에 실패했습니다.', error);
+        toast.error('게시글 삭제에 실패했습니다.');
+      }
     }
-    
-    // 과목으로 필터링
-    if (selectedCourseId) {
-      filtered = filtered.filter(notice => 
-        notice.metadata.courseId === selectedCourseId
-      );
-    }
-    
-    setFilteredNotices(filtered);
-  }, [notices, searchTerm, selectedCourseId]);
-
-  const handleCourseChange = (courseId: string) => {
-    setSelectedCourseId(courseId === 'all' ? null : courseId);
   };
 
+  const filteredPosts = posts.filter(post => {
+    const titleMatch = getPostTitle(post).toLowerCase().includes(searchTerm.toLowerCase());
+    
+    // 공지사항이고 과목 필터가 선택된 경우
+    if (boardType === 'notice' && selectedCourseId) {
+        if (isNotice(post)) {
+            return titleMatch && post.metadata.courseId === selectedCourseId;
+        }
+        return false;
+    }
+    
+    return titleMatch;
+  });
+
   return (
-    <div className="p-4 sm:p-6 md:p-8">
+    <div className="min-h-screen p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">공지사항 관리</h1>
-          <Button
-            onClick={() => navigate('/admin/notices/create')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            새 공지사항
-          </Button>
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">{currentConfig.title}</h1>
+          <p className="text-gray-600 mt-1">{currentConfig.description}</p>
         </div>
 
-        {/* 검색 및 필터링 UI */}
-        <div className="bg-white/5 p-4 rounded-lg mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="relative flex-1">
-            <Input
-              type="text"
-              placeholder="제목 또는 내용으로 검색"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 bg-white/5 border-white/10 text-white w-full"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-          </div>
-          
-          <div className="min-w-[200px]">
-            <Select onValueChange={handleCourseChange} defaultValue="all">
-              <SelectTrigger className="bg-white/5 border-white/10 text-white">
-                <SelectValue placeholder="모든 과목" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 text-white">
-                <SelectItem value="all">모든 과목</SelectItem>
-                {courses.map(course => (
-                  <SelectItem key={course.id} value={course.id}>
-                    {course.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <div className="bg-white rounded-lg p-6">
+          <div className="flex justify-between items-center mb-6">
+            <div className="flex items-center gap-4">
+              <div className="relative w-full max-w-sm">
+                <Input
+                  type="text"
+                  placeholder="제목으로 검색"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 bg-white border-gray-200 text-gray-900 placeholder:text-gray-500"
+                />
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-500" />
+              </div>
+            
+              {boardType === 'notice' && (
+                <Select onValueChange={(value) => setSelectedCourseId(value === 'all' ? null : value)}>
+                  <SelectTrigger className="w-[200px] bg-white border-gray-200 text-gray-900">
+                    <SelectValue placeholder="모든 과목" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white text-gray-900">
+                    <SelectItem value="all">모든 과목</SelectItem>
+                    {courses.map(course => (
+                      <SelectItem key={course.id} value={course.id}>{course.title}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
 
-        <div className="bg-white rounded-xl p-6 shadow-lg">
-          {loading ? (
-            <div className="text-center py-4">로딩 중...</div>
-          ) : filteredNotices.length === 0 ? (
-            <div className="text-center py-4 text-gray-400">
-              {searchTerm || selectedCourseId ? '검색 결과가 없습니다.' : '등록된 공지사항이 없습니다.'}
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredNotices.map((notice) => (
-                <div
-                  key={notice.metadata.id}
-                  className="p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-                  onClick={() => navigate(`/admin/notices/${notice.metadata.id}`)}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        {notice.metadata.isImportant && (
-                          <AlertCircle className="w-4 h-4 text-red-500" />
-                        )}
-                        <h3 className="text-lg font-medium">{notice.content.title}</h3>
-                      </div>
-                      {notice.content.summary && (
-                        <p className="text-sm text-gray-300 mb-2">{notice.content.summary}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <Badge className="bg-blue-500/30">
-                          {notice.metadata.category}
-                        </Badge>
-                        {notice.metadata.courseName && (
-                          <Badge className="bg-green-500/30">
-                            과목: {notice.metadata.courseName}
-                          </Badge>
-                        )}
-                        {notice.metadata.tags.map(tag => (
-                          <Badge key={tag} className="bg-gray-500/30">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-400 mb-1">
-                        {new Date(notice.metadata.createdAt).toLocaleDateString('ko-KR')}
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        조회수: {notice.metadata.viewCount}
-                      </div>
-                    </div>
-                  </div>
-                  {notice.attachments.length > 0 && (
-                    <div className="mt-2 text-sm text-gray-400">
-                      첨부파일: {notice.attachments.length}개
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
+            {currentConfig.createPath && (
+              <Button onClick={() => navigate(currentConfig.createPath!)} className="bg-white hover:bg-gray-100 text-gray-900 border border-gray-300">
+                <Plus className="w-4 h-4 mr-2" />
+                새 글 작성
+              </Button>
+            )}
+          </div>
+
+          <div className="overflow-hidden rounded-lg border border-gray-200">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50 border-gray-200">
+                  <TableHead className="text-gray-600">제목</TableHead>
+                  <TableHead className="text-gray-600">작성자</TableHead>
+                  <TableHead className="text-gray-600">작성일</TableHead>
+                  <TableHead className="text-gray-600">조회수</TableHead>
+                  <TableHead className="text-gray-600">관리</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-10 text-gray-500">
+                      로딩 중...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredPosts.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-10 text-gray-500">
+                      게시글이 없습니다.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredPosts.map((post) => {
+                    const postId = getPostId(post);
+                    return (
+                      <TableRow key={postId} className="hover:bg-gray-50 border-gray-200">
+                        <TableCell className="font-medium text-gray-900">
+                          {currentConfig.detailPath ? (
+                            <span
+                              onClick={() => navigate(currentConfig.detailPath!(postId))}
+                              className="cursor-pointer hover:underline"
+                            >
+                              {getPostTitle(post)}
+                            </span>
+                          ) : (
+                            getPostTitle(post)
+                          )}
+                        </TableCell>
+                        <TableCell className="text-gray-600">{getAuthor(post)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {new Date(getCreatedAt(post)).toLocaleDateString('ko-KR')}
+                        </TableCell>
+                        <TableCell className="text-gray-600">{getViews(post)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {currentConfig.detailPath && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => navigate(currentConfig.detailPath!(postId))}
+                                className="text-gray-500 hover:text-gray-800"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            )}
+                            {currentConfig.delete && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDelete(postId)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default NoticeList; 
+export default AdminBoard;

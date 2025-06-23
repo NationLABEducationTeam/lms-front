@@ -10,7 +10,7 @@ import { createNotice } from '@/services/api/notices';
 import { toast } from 'sonner';
 import RichTextEditor from '@/components/common/editor/RichTextEditor';
 import { Badge } from '@/components/common/ui/badge';
-import { X, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useGetPublicCoursesQuery } from '@/services/api/courseApi';
 import {
   Select,
@@ -18,7 +18,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@/components/common/ui/select";
 
 const NOTICE_CATEGORIES: NoticeCategory[] = ['일반', '학사', '장학', '취업', '행사', '기타'];
 
@@ -38,7 +38,6 @@ const CreateNotice: FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newTag, setNewTag] = useState('');
   
-  // 강의 목록 가져오기
   const { data: courses = [], isLoading: coursesLoading } = useGetPublicCoursesQuery();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,40 +93,40 @@ const CreateNotice: FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-black text-white p-4 sm:p-6 md:p-8">
+    <div className="p-4 sm:p-6 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 shadow-lg border border-white/20">
-          <h1 className="text-2xl font-bold mb-6">공지사항 작성</h1>
+        <div className="bg-white rounded-lg shadow-md p-6 sm:p-8">
+          <h1 className="text-2xl font-bold text-gray-900 mb-6">공지사항 작성</h1>
           
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-medium mb-2">제목</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">제목</label>
               <Input
                 type="text"
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                className="w-full bg-white/5"
+                className="w-full"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">요약</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">요약</label>
               <Textarea
                 value={formData.summary}
                 onChange={(e) => setFormData({ ...formData, summary: e.target.value })}
-                className="w-full bg-white/5 h-20"
+                className="w-full h-20"
                 placeholder="공지사항의 주요 내용을 간단히 요약해주세요."
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">관련 과목 (선택사항)</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">관련 과목 (선택사항)</label>
               <Select onValueChange={handleCourseChange} defaultValue="none">
-                <SelectTrigger className="w-full bg-white/5 border-white/10 text-white">
-                  <SelectValue placeholder="관련 과목 선택 (선택사항)" />
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="관련 과목 선택" />
                 </SelectTrigger>
-                <SelectContent className="bg-blue-900 text-white">
+                <SelectContent>
                   <SelectItem value="none">관련 과목 없음</SelectItem>
                   {coursesLoading ? (
                     <SelectItem value="loading" disabled>로딩 중...</SelectItem>
@@ -143,20 +142,24 @@ const CreateNotice: FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">카테고리</label>
-              <select
+              <label className="block text-sm font-medium text-gray-700 mb-2">카테고리</label>
+              <Select
                 value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                className="w-full bg-white/5 rounded-md border border-white/10 px-3 py-2"
+                onValueChange={(value) => setFormData({ ...formData, category: value })}
               >
-                {NOTICE_CATEGORIES.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="카테고리 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {NOTICE_CATEGORIES.map(category => (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">태그</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">태그</label>
               <div className="space-y-2">
                 <Input
                   type="text"
@@ -164,11 +167,10 @@ const CreateNotice: FC = () => {
                   onChange={(e) => setNewTag(e.target.value)}
                   onKeyDown={addTag}
                   placeholder="태그를 입력하고 Enter를 눌러주세요"
-                  className="w-full bg-white/5"
                 />
                 <div className="flex flex-wrap gap-2">
                   {formData.tags?.map(tag => (
-                    <Badge key={tag} className="bg-blue-500/50 text-white px-2 py-1 rounded flex items-center gap-1">
+                    <Badge key={tag} variant="secondary" className="px-2 py-1 rounded flex items-center gap-1">
                       {tag}
                       <X
                         className="w-3 h-3 cursor-pointer"
@@ -185,11 +187,11 @@ const CreateNotice: FC = () => {
                 checked={formData.isImportant}
                 onCheckedChange={(checked) => setFormData({ ...formData, isImportant: checked })}
               />
-              <label className="text-sm font-medium">중요 공지사항</label>
+              <label className="text-sm font-medium text-gray-700">중요 공지사항</label>
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">내용</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">내용</label>
               <RichTextEditor
                 content={formData.content}
                 onChange={(content) => setFormData({ ...formData, content: content })}
@@ -197,12 +199,12 @@ const CreateNotice: FC = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">첨부파일</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">첨부파일</label>
               <FileUpload onUpload={handleFileUpload} />
               {formData.attachments && formData.attachments.length > 0 && (
                 <div className="mt-2 space-y-1">
                   {Array.from(formData.attachments).map((file, index) => (
-                    <div key={index} className="text-sm text-gray-300">
+                    <div key={index} className="text-sm text-gray-600">
                       {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
                     </div>
                   ))}
@@ -210,19 +212,17 @@ const CreateNotice: FC = () => {
               )}
             </div>
 
-            <div className="flex justify-end gap-4">
+            <div className="flex justify-end gap-4 pt-4 border-t">
               <Button
                 type="button"
                 variant="outline"
                 onClick={() => navigate('/admin/notices')}
-                className="bg-white/10 hover:bg-white/20"
               >
                 취소
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-blue-600 hover:bg-blue-700"
               >
                 {isSubmitting ? '등록 중...' : '등록하기'}
               </Button>
@@ -234,4 +234,4 @@ const CreateNotice: FC = () => {
   );
 };
 
-export default CreateNotice; 
+export default CreateNotice;

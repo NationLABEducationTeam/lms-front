@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/common/ui/button';
 import { Plus, Search, Trash2, Edit2, BookOpen, Users, Calendar, AlertCircle } from 'lucide-react';
@@ -8,6 +8,7 @@ import * as AlertDialog from '@radix-ui/react-alert-dialog';
 import { Card } from '@/components/common/ui/card';
 import { Input } from '@/components/common/ui/input';
 import { useGetPublicCoursesQuery, useDeleteCourseMutation, useToggleCourseStatusMutation } from '@/services/api/courseApi';
+import { getCourseEnrollments } from '@/services/api/enrollments';
 import { toast } from 'sonner';
 import { Badge } from '@/components/common/ui/badge';
 import { Switch } from '@/components/common/ui/switch';
@@ -23,6 +24,38 @@ const AdminCourses: FC = () => {
   const { data: courses = [], isLoading, error } = useGetPublicCoursesQuery();
   const [deleteCourse, { isLoading: isDeleting }] = useDeleteCourseMutation();
   const [toggleStatus] = useToggleCourseStatusMutation();
+
+  const EnrollmentCount: FC<{ courseId: string }> = ({ courseId }) => {
+    const [count, setCount] = useState<number | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchCount = async () => {
+        try {
+          const response = await getCourseEnrollments(courseId);
+          if (response.success && response.data) {
+            setCount(response.data.enrollments.length);
+          } else {
+            // This case might not be hit if the function throws on error, but good practice.
+            setCount(0);
+          }
+        } catch (error) {
+          console.error(`Failed to fetch enrollment count for course ${courseId}`, error);
+          setCount(0);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchCount();
+    }, [courseId]);
+
+    if (loading) {
+      return <span className="text-sm text-gray-500">불러오는 중...</span>;
+    }
+
+    return <span>{count ?? 0}명 수강 중</span>;
+  };
 
   const handleStatusToggle = async (courseId: string, currentStatus: CourseStatus) => {
     try {
@@ -209,7 +242,7 @@ const AdminCourses: FC = () => {
                     <div className="flex items-center gap-6 mt-4">
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Users className="w-4 h-4" />
-                        <span>{course.enrolled_count || 0}명 수강 중</span>
+                        <EnrollmentCount courseId={course.id} />
                       </div>
                       <div className="flex items-center gap-2 text-sm text-gray-500">
                         <Calendar className="w-4 h-4" />

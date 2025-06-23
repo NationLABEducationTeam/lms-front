@@ -45,6 +45,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 
+// '최근 활동' 데이터 타입을 정의합니다.
+interface RecentActivity {
+  id: number;
+  icon: React.ElementType;
+  iconColor: string;
+  bgColor: string;
+  text: string;
+  time: string;
+  link: string;
+}
+
 // 임시 Skeleton 컴포넌트 (ui 컴포넌트가 없는 경우)
 const Skeleton: FC<{ className?: string }> = ({ className }) => (
   <div className={`animate-pulse bg-gray-200 rounded ${className || ''}`} />
@@ -296,8 +307,6 @@ const QuickAction: FC<QuickActionProps> = ({ icon, label, onClick, color }) => (
 const AdminDashboard: FC = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState<DBUser[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<DBUser[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notices, setNotices] = useState<Notice[]>([]);
@@ -305,9 +314,9 @@ const AdminDashboard: FC = () => {
   const [noticesError, setNoticesError] = useState<string | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('recent');
   const [refreshing, setRefreshing] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
 
   // 데이터 페칭 함수
   const fetchUsers = async () => {
@@ -315,7 +324,6 @@ const AdminDashboard: FC = () => {
       setLoading(true);
       const userData = await getAllUsers();
       setUsers(userData.users);
-      setFilteredUsers(userData.users);
       setError(null);
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -352,30 +360,24 @@ const AdminDashboard: FC = () => {
     }
   };
 
+  const fetchRecentActivities = async () => {
+    // TODO: 추후 API 연동을 통해 실제 최근 활동 데이터를 가져옵니다.
+    // 예: const data = await getRecentActivities();
+    // setRecentActivities(data);
+    
+    // 현재는 비어 있는 상태로 둡니다.
+    setRecentActivities([]);
+  };
+
   // 페이지 로드시 데이터 패치
   useEffect(() => {
     Promise.all([
       fetchUsers(),
       fetchCourses(),
-      fetchNotices()
+      fetchNotices(),
+      fetchRecentActivities(),
     ]);
   }, []);
-
-  // 사용자 검색 필터링
-  useEffect(() => {
-    if (!searchTerm.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const searchTermLower = searchTerm.toLowerCase();
-    const filtered = users.filter(user => 
-      user.email.toLowerCase().includes(searchTermLower) ||
-      user.name?.toLowerCase().includes(searchTermLower) ||
-      user.given_name?.toLowerCase().includes(searchTermLower)
-    );
-    setFilteredUsers(filtered);
-  }, [searchTerm, users]);
 
   // 데이터 새로고침
   const handleRefresh = async () => {
@@ -384,7 +386,8 @@ const AdminDashboard: FC = () => {
       await Promise.all([
         fetchUsers(),
         fetchCourses(),
-        fetchNotices()
+        fetchNotices(),
+        fetchRecentActivities(),
       ]);
     } catch (error) {
       console.error('Error refreshing data:', error);
@@ -623,68 +626,37 @@ const AdminDashboard: FC = () => {
           />
         </div>
 
-        {/* 탭 컨텐츠 섹션 */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <Tabs defaultValue={activeTab} onValueChange={setActiveTab} className="w-full">
-            <div className="px-6 pt-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="recent">최근 활동</TabsTrigger>
-                <TabsTrigger value="users">사용자 관리</TabsTrigger>
-                <TabsTrigger value="notices">공지사항</TabsTrigger>
-              </TabsList>
-            </div>
-            <TabsContent value="recent" className="p-6 focus:outline-none">
-              <h3 className="text-lg font-semibold mb-4">최근 활동</h3>
+        {/* 최근 활동 섹션 */}
+        <div className="bg-white rounded-lg shadow-sm p-6 mt-8">
+            <h3 className="text-lg font-semibold mb-4">최근 활동</h3>
+            {recentActivities.length > 0 ? (
               <div className="space-y-4">
-                <div className="flex items-center border-b pb-4">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-600 mr-4">
-                    <PlusCircle className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">새로운 강의 '클라우드 컴퓨팅 기초'가 생성되었습니다.</p>
-                    <p className="text-xs text-gray-500">10분 전</p>
+                {recentActivities.map((activity) => (
+                  <div key={activity.id} className="flex items-center border-b pb-4 last:border-b-0">
+                    <span className={`flex items-center justify-center w-10 h-10 rounded-full ${activity.bgColor} ${activity.iconColor} mr-4`}>
+                      <activity.icon className="w-5 h-5" />
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{activity.text}</p>
+                      <p className="text-xs text-gray-500">{activity.time}</p>
+                    </div>
+                    <button 
+                      onClick={() => navigate(activity.link)} 
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      보기
+                    </button>
                   </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    보기
-                  </button>
-                </div>
-                <div className="flex items-center border-b pb-4">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-600 mr-4">
-                    <UserPlus className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">5명의 학생이 새롭게 등록되었습니다.</p>
-                    <p className="text-xs text-gray-500">2시간 전</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    보기
-                  </button>
-                </div>
-                <div className="flex items-center border-b pb-4">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 text-purple-600 mr-4">
-                    <CheckCircle className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">김민지 학생이 '파이썬 기초' 강의를 완료했습니다.</p>
-                    <p className="text-xs text-gray-500">3시간 전</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    보기
-                  </button>
-                </div>
-                <div className="flex items-center">
-                  <span className="flex items-center justify-center w-10 h-10 rounded-full bg-amber-100 text-amber-600 mr-4">
-                    <FileText className="w-5 h-5" />
-                  </span>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">새로운 공지사항이 등록되었습니다.</p>
-                    <p className="text-xs text-gray-500">5시간 전</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-800 text-sm">
-                    보기
-                  </button>
-                </div>
+                ))}
               </div>
+            ) : (
+              <div className="text-center py-10">
+                <Activity className="mx-auto h-12 w-12 text-gray-400" />
+                <h3 className="mt-2 text-sm font-medium text-gray-900">최근 활동 내역이 없습니다.</h3>
+                <p className="mt-1 text-sm text-gray-500">새로운 활동이 생기면 여기에 표시됩니다.</p>
+              </div>
+            )}
+            {recentActivities.length > 0 && (
               <div className="mt-4 text-center">
                 <Button 
                   variant="link" 
@@ -694,187 +666,7 @@ const AdminDashboard: FC = () => {
                   모든 활동 보기
                 </Button>
               </div>
-            </TabsContent>
-
-            <TabsContent value="users" className="focus:outline-none">
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold">사용자 관리</h3>
-                  <div className="relative w-64">
-                    <Input
-                      type="text"
-                      placeholder="이름 또는 이메일로 검색"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
-                    <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                  </div>
-                </div>
-                <div className="flex items-center text-sm text-gray-500 mb-4">
-                  <span className="mr-4">
-                    총 사용자: <strong>{users.length}</strong>명
-                  </span>
-                  <span className="mr-4">
-                    관리자: <strong>{users.filter(u => u.role === 'ADMIN').length}</strong>명
-                  </span>
-                  <span className="mr-4">
-                    강사: <strong>{users.filter(u => u.role === 'INSTRUCTOR').length}</strong>명
-                  </span>
-                  <span>
-                    학생: <strong>{users.filter(u => u.role === 'STUDENT').length}</strong>명
-                  </span>
-                </div>
-              </div>
-
-              <div className="overflow-hidden">
-                {loading ? (
-                  <div className="p-6">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="flex items-center py-3 border-b">
-                        <Skeleton className="h-10 w-10 rounded-full mr-3" />
-                        <div className="flex-1">
-                          <Skeleton className="h-4 w-32 mb-2" />
-                          <Skeleton className="h-3 w-48" />
-                        </div>
-                        <Skeleton className="h-6 w-16" />
-                      </div>
-                    ))}
-                  </div>
-                ) : error ? (
-                  <div className="text-red-600 bg-red-50 p-4">
-                    {error}
-                  </div>
-                ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-gray-50">
-                        <TableHead>이름</TableHead>
-                        <TableHead>이메일</TableHead>
-                        <TableHead>역할</TableHead>
-                        <TableHead>가입일</TableHead>
-                        <TableHead className="text-right">작업</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUsers.slice(0, 5).map((user) => (
-                        <TableRow key={user.cognito_user_id} className="hover:bg-gray-50">
-                          <TableCell className="font-medium">{user.given_name || user.name || '이름 없음'}</TableCell>
-                          <TableCell>{user.email}</TableCell>
-                          <TableCell>
-                            <Badge className={
-                              user.role === 'ADMIN' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 
-                              user.role === 'INSTRUCTOR' ? 'bg-purple-100 text-purple-800 hover:bg-purple-200' : 
-                              'bg-blue-100 text-blue-800 hover:bg-blue-200'
-                            }>
-                              {user.role === 'ADMIN' ? '관리자' : 
-                              user.role === 'INSTRUCTOR' ? '강사' : '학생'}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-gray-500">
-                            {format(new Date(user.created_at), 'yyyy.MM.dd', { locale: ko })}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button 
-                              variant="ghost" 
-                              size="sm"
-                              onClick={() => navigate(`/admin/users/${user.cognito_user_id}`)}
-                              className="text-blue-600 hover:text-blue-800"
-                            >
-                              상세보기
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                )}
-
-                <div className="p-4 text-center">
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate('/admin/users')}
-                  >
-                    사용자 목록 더보기
-                  </Button>
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="notices" className="focus:outline-none">
-              <div className="p-6 border-b">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">최근 공지사항</h3>
-                  <Button 
-                    variant="outline"
-                    onClick={() => navigate('/admin/notices/create')}
-                    className="text-sm"
-                  >
-                    <PlusCircle className="w-4 h-4 mr-2" />
-                    새 공지사항
-                  </Button>
-                </div>
-              </div>
-              
-              {noticesLoading ? (
-                <div className="p-6">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="py-4 border-b last:border-0">
-                      <Skeleton className="h-5 w-3/4 mb-2" />
-                      <Skeleton className="h-4 w-1/2 mb-1" />
-                      <Skeleton className="h-4 w-1/4" />
-                    </div>
-                  ))}
-                </div>
-              ) : noticesError ? (
-                <div className="text-red-600 bg-red-50 p-4">
-                  {noticesError}
-                </div>
-              ) : (
-                <div className="divide-y">
-                  {notices.slice(0, 5).map((notice) => (
-                    <div key={notice.metadata.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start mb-2">
-                        <h4 className="font-medium text-gray-900">{notice.content.title}</h4>
-                        <Badge className={
-                          notice.metadata.status === 'active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }>
-                          {notice.metadata.status === 'active' ? '게시됨' : '임시저장'}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-gray-500 line-clamp-2 mb-2">
-                        {notice.content.content}
-                      </p>
-                      <div className="flex justify-between items-center text-xs text-gray-500">
-                        <span>
-                          작성일: {format(new Date(notice.metadata.createdAt), 'yyyy.MM.dd HH:mm', { locale: ko })}
-                        </span>
-                        <Button 
-                          variant="link" 
-                          size="sm" 
-                          className="text-blue-600 p-0 h-auto"
-                          onClick={() => navigate(`/admin/notices/${notice.metadata.id}`)}
-                        >
-                          자세히 보기
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="p-4 text-center">
-                <Button 
-                  variant="outline"
-                  onClick={() => navigate('/admin/notices')}
-                >
-                  모든 공지사항 보기
-                </Button>
-              </div>
-            </TabsContent>
-          </Tabs>
+            )}
         </div>
       </div>
     </div>

@@ -295,20 +295,87 @@ export interface StudentNote {
   course_id?: string;
   created_at: string;
   updated_at: string;
+  created_by: string;
   admin?: {
     name: string;
     email: string;
   };
 }
 
+// 학생 상세 정보 인터페이스
+export interface StudentDetail {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  profile_image?: string;
+  created_at: string;
+  last_login?: string;
+  enrolled_courses: {
+    course_id: string;
+    course_title: string;
+    instructor_name: string;
+    enrollment_status: 'ACTIVE' | 'DROPPED';
+    progress_status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'DROPPED';
+    progress?: number;
+    enrolled_at: string;
+    last_accessed_at?: string;
+  }[];
+  grades?: {
+    id: string;
+    course_title: string;
+    item_title: string;
+    score: number;
+    max_score: number;
+    status: 'COMPLETED' | 'PENDING';
+    submitted_at?: string;
+  }[];
+  assignments?: {
+    id: string;
+    course_title: string;
+    title: string;
+    due_date: string;
+    submitted_at?: string;
+    status: 'COMPLETED' | 'PENDING' | 'OVERDUE';
+    score?: number;
+    max_score?: number;
+  }[];
+}
+
+// 학생 상세 정보 조회
+export const getStudentDetail = async (studentId: string): Promise<StudentDetail> => {
+  try {
+    const session = await fetchAuthSession();
+    const token = session.tokens?.accessToken?.toString();
+    
+    if (!token) {
+      throw new Error('인증 토큰이 없습니다.');
+    }
+
+    const response = await fetch(getApiUrl(`/admin/students/${studentId}`), {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || '학생 정보를 불러오는데 실패했습니다.');
+    }
+
+    const result = await response.json();
+    return result.data;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`학생 정보를 불러오는 중 오류가 발생했습니다: ${error.message}`);
+    }
+    throw new Error('학생 정보를 불러오는 중 알 수 없는 오류가 발생했습니다.');
+  }
+};
+
 // 특정 학생의 모든 노트 조회
-export const getStudentNotes = async (studentId: string): Promise<{
-  success: boolean;
-  data: {
-    notes: StudentNote[];
-    total: number;
-  };
-}> => {
+export const getStudentNotes = async (studentId: string): Promise<StudentNote[]> => {
   try {
     const session = await fetchAuthSession();
     const token = session.tokens?.accessToken?.toString();
@@ -329,7 +396,8 @@ export const getStudentNotes = async (studentId: string): Promise<{
       throw new Error(errorData.message || '학생 노트를 불러오는데 실패했습니다.');
     }
 
-    return await response.json();
+    const result = await response.json();
+    return result.data.notes;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`학생 노트를 불러오는 중 오류가 발생했습니다: ${error.message}`);
@@ -341,14 +409,8 @@ export const getStudentNotes = async (studentId: string): Promise<{
 // 학생 노트 추가
 export const addStudentNote = async (
   studentId: string, 
-  data: { content: string; course_id?: string }
-): Promise<{
-  success: boolean;
-  message: string;
-  data: {
-    note: StudentNote;
-  };
-}> => {
+  content: string
+): Promise<StudentNote> => {
   try {
     const session = await fetchAuthSession();
     const token = session.tokens?.accessToken?.toString();
@@ -363,7 +425,7 @@ export const addStudentNote = async (
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ content }),
     });
 
     if (!response.ok) {
@@ -371,7 +433,8 @@ export const addStudentNote = async (
       throw new Error(errorData.message || '학생 노트 추가에 실패했습니다.');
     }
 
-    return await response.json();
+    const result = await response.json();
+    return result.data.note;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`학생 노트 추가 중 오류가 발생했습니다: ${error.message}`);
@@ -382,16 +445,9 @@ export const addStudentNote = async (
 
 // 학생 노트 수정
 export const updateStudentNote = async (
-  studentId: string,
   noteId: string,
-  data: { content: string }
-): Promise<{
-  success: boolean;
-  message: string;
-  data: {
-    note: StudentNote;
-  };
-}> => {
+  content: string
+): Promise<StudentNote> => {
   try {
     const session = await fetchAuthSession();
     const token = session.tokens?.accessToken?.toString();
@@ -400,13 +456,13 @@ export const updateStudentNote = async (
       throw new Error('인증 토큰이 없습니다.');
     }
 
-    const response = await fetch(getApiUrl(`/admin/enrollments/students/${studentId}/notes/${noteId}`), {
+    const response = await fetch(getApiUrl(`/admin/notes/${noteId}`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ content }),
     });
 
     if (!response.ok) {
@@ -414,7 +470,8 @@ export const updateStudentNote = async (
       throw new Error(errorData.message || '학생 노트 수정에 실패했습니다.');
     }
 
-    return await response.json();
+    const result = await response.json();
+    return result.data.note;
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`학생 노트 수정 중 오류가 발생했습니다: ${error.message}`);
@@ -425,12 +482,8 @@ export const updateStudentNote = async (
 
 // 학생 노트 삭제
 export const deleteStudentNote = async (
-  studentId: string,
   noteId: string
-): Promise<{
-  success: boolean;
-  message: string;
-}> => {
+): Promise<void> => {
   try {
     const session = await fetchAuthSession();
     const token = session.tokens?.accessToken?.toString();
@@ -439,7 +492,7 @@ export const deleteStudentNote = async (
       throw new Error('인증 토큰이 없습니다.');
     }
 
-    const response = await fetch(getApiUrl(`/admin/enrollments/students/${studentId}/notes/${noteId}`), {
+    const response = await fetch(getApiUrl(`/admin/notes/${noteId}`), {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`
@@ -450,8 +503,6 @@ export const deleteStudentNote = async (
       const errorData = await response.json();
       throw new Error(errorData.message || '학생 노트 삭제에 실패했습니다.');
     }
-
-    return await response.json();
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`학생 노트 삭제 중 오류가 발생했습니다: ${error.message}`);

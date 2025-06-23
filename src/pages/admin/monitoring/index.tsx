@@ -413,7 +413,7 @@ interface SessionTimelineProps {
 // 세션 타임라인 컴포넌트 완전히 다시 작성
 const SessionTimeline: FC<SessionTimelineProps> = ({ 
   timelineData, 
-  sessions,
+  sessions, 
   isActive,
   attendanceRate: providedAttendanceRate 
 }) => {

@@ -1271,78 +1271,72 @@ const StudentCoursesPage: FC = () => {
           <ul className="space-y-1">
             {items.map((item, index) => (
               <li key={index}>
-                {/* PDF 파일인 경우 드롭다운 메뉴 제공 */}
+                {/* PDF 파일인 경우 두 개의 버튼 제공 */}
                 {item.fileName.toLowerCase().endsWith('.pdf') ? (
-                  <Dropdown
-                    overlay={
-                      <Menu
-                        onClick={({ key }) => {
-                          if (key === 'webview') {
-                            // PDF 뷰어 모달로 열기
-                            if (item.downloadUrl) {
-                              setSelectedPdf({
-                                url: item.downloadUrl,
-                                title: item.fileName
-                              });
-                              setPdfViewerOpen(true);
-                            } else {
-                              sonnerToast.error('PDF URL이 유효하지 않습니다.');
-                            }
-                          } else if (key === 'download') {
-                            // PDF 다운로드
-                            handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber);
-                          }
-                        }}
-                      >
-                        <Menu.Item key="webview" icon={<Play className="w-4 h-4" />}>
-                          웹에서 보기
-                        </Menu.Item>
-                        <Menu.Item key="download" icon={<Download className="w-4 h-4" />}>
-                          다운로드
-                        </Menu.Item>
-                      </Menu>
-                    }
-                    trigger={['click']}
-                    disabled={!item.downloadable}
-                  >
-                    <button
-                      className={cn(
-                        "w-full flex items-center p-2 rounded-lg group",
-                        item.downloadable 
-                          ? "hover:bg-gray-50 cursor-pointer" 
-                          : "opacity-75 cursor-not-allowed bg-gray-50"
-                      )}
-                    >
-                      <div className="flex items-center gap-3 flex-1">
-                        {getFileIcon(item.fileName)}
-                        <div className="flex flex-col">
-                          <span className={cn(
-                            "text-sm",
-                            item.downloadable ? "text-gray-700" : "text-gray-400"
-                          )}>
-                            {item.fileName}
-                          </span>
-                          {!item.downloadable && (
-                            <span className="text-xs text-red-500 flex items-center gap-1">
-                              <Lock className="w-3 h-3" />
-                              다운로드 제한됨
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
+                  <div className={cn(
+                    "flex items-center p-2 rounded-lg",
+                    item.downloadable 
+                      ? "hover:bg-gray-50" 
+                      : "opacity-75 bg-gray-50"
+                  )}>
+                    <div className="flex items-center gap-3 flex-1">
+                      {getFileIcon(item.fileName)}
+                      <div className="flex flex-col">
                         <span className={cn(
-                          "text-xs",
-                          item.downloadable ? "text-gray-500" : "text-gray-400"
+                          "text-sm",
+                          item.downloadable ? "text-gray-700" : "text-gray-400"
                         )}>
-                          {formatFileSize(item.size)}
+                          {item.fileName}
                         </span>
-                        {item.downloadable && (
-                          <ChevronDown className="w-4 h-4 text-gray-400" />
+                        {!item.downloadable && (
+                          <span className="text-xs text-red-500 flex items-center gap-1">
+                            <Lock className="w-3 h-3" />
+                            다운로드 제한됨
+                          </span>
                         )}
                       </div>
-                    </button>
-                  </Dropdown>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={cn(
+                        "text-xs mr-2",
+                        item.downloadable ? "text-gray-500" : "text-gray-400"
+                      )}>
+                        {formatFileSize(item.size)}
+                      </span>
+                      {item.downloadable && (
+                        <>
+                          <Button
+                            size="small"
+                            type="text"
+                            icon={<Play className="w-4 h-4" />}
+                            onClick={() => {
+                              if (item.downloadUrl) {
+                                setSelectedPdf({
+                                  url: item.downloadUrl,
+                                  title: item.fileName
+                                });
+                                setPdfViewerOpen(true);
+                              } else {
+                                sonnerToast.error('PDF URL이 유효하지 않습니다.');
+                              }
+                            }}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          >
+                            웹 뷰로 보기
+                          </Button>
+                          <Button
+                            size="small"
+                            type="text"
+                            icon={<Download className="w-4 h-4" />}
+                            onClick={() => handleFileClick(item.downloadUrl, item.fileName, item.streamingUrl, weekNumber)}
+                            className="text-gray-600 hover:text-gray-700 hover:bg-gray-100"
+                          >
+                            다운로드
+                          </Button>
+                        </>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   /* 일반 파일은 기존 방식 */
                   <button

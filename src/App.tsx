@@ -10,16 +10,15 @@ import StudentLanding from './pages/student';
 import AuthForm from './components/auth/AuthForm';
 import VerifyEmail from './components/auth/VerifyEmail';
 import AdminDashboard from './pages/admin/dashboard';
-import AdminNotices from './pages/admin/notices';
+import AdminBoard from './pages/admin/notices';
 import AdminNoticeCreate from './pages/admin/notices/create';
-import AdminNoticeDetail from './pages/admin/notices/detail';
+import AdminPostDetail from "./pages/admin/notices/post-detail";
 import AdminCourses from '@/pages/admin/courses';
 import AdminStudents from './pages/admin/students';
-import AdminSystem from './pages/admin/system';
+import AdminStudentDetail from './pages/admin/students/detail';
 import AdminStatistics from './pages/admin/statistics';
 import AdminCertificates from './pages/admin/certificates';
 import AdminBoards from './pages/admin/boards';
-import AdminReviews from './pages/admin/reviews';
 import AdminMonitoring from './pages/admin/monitoring';
 import NoticeList from './pages/student/board/NoticeList';
 import NoticeDetail from './pages/student/board/NoticeDetail';
@@ -93,9 +92,9 @@ const App = () => {
           <Route element={<ProtectedRoute allowedRoles={[UserRole.ADMIN]} />}>
             <Route element={<AdminLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
-              <Route path="/admin/notices" element={<AdminNotices />} />
+              <Route path="/admin/notices" element={<AdminBoard boardType="notice" />} />
               <Route path="/admin/notices/create" element={<AdminNoticeCreate />} />
-              <Route path="/admin/notices/:id" element={<AdminNoticeDetail />} />
+              <Route path="/admin/notices/:id" element={<AdminPostDetail />} />
               <Route path="/admin/courses" element={<AdminCourses />} />
               <Route path="/admin/courses/create" element={<CreateCourse />} />
               <Route path="/admin/courses/:id" element={<CourseDetail />} />
@@ -106,12 +105,15 @@ const App = () => {
               <Route path="/admin/courses/assignments/submissions/:assignmentId" element={<SubmissionsPage />} />
               <Route path="/admin/courses/assignments/submission/:submissionId" element={<SubmissionDetailPage />} />
               <Route path="/admin/students" element={<AdminStudents />} />
+              <Route path="/admin/students/:studentId" element={<AdminStudentDetail />} />
               <Route path="/admin/monitoring" element={<AdminMonitoring />} />
-              <Route path="/admin/system" element={<AdminSystem />} />
               <Route path="/admin/statistics" element={<AdminStatistics />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />
               <Route path="/admin/boards" element={<AdminBoards />} />
-              <Route path="/admin/reviews" element={<AdminReviews />} />
+              <Route path="/admin/qna" element={<AdminBoard boardType="qna" />} />
+              <Route path="/admin/qna/:id" element={<AdminPostDetail />} />
+              <Route path="/admin/community" element={<AdminBoard boardType="community" />} />
+              <Route path="/admin/community/:id" element={<AdminPostDetail />} />
             </Route>
           </Route>
 

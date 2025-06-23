@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useState, useEffect } from 'react';
 import { Card } from '@/components/common/ui/card';
 import {
   BarChart,
@@ -15,32 +15,26 @@ import {
   Cell,
 } from 'recharts';
 
-const data = [
-  { name: '1월', value: 120 },
-  { name: '2월', value: 150 },
-  { name: '3월', value: 180 },
-  { name: '4월', value: 220 },
-  { name: '5월', value: 280 },
-  { name: '6월', value: 350 },
-];
-
-const courseData = [
-  { name: 'AWS', students: 150 },
-  { name: 'Azure', students: 120 },
-  { name: 'GCP', students: 90 },
-  { name: 'DevOps', students: 180 },
-  { name: 'Kubernetes', students: 130 },
-];
-
-const completionData = [
-  { name: '수료', value: 75 },
-  { name: '진행중', value: 20 },
-  { name: '중도포기', value: 5 },
-];
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
-
 const AdminStatistics: FC = () => {
+  // 나중에 API에서 받아올 데이터에 대한 State (현재는 빈 배열)
+  const [monthlyData, setMonthlyData] = useState([]);
+  const [courseData, setCourseData] = useState([]);
+  const [completionData, setCompletionData] = useState([]);
+  
+  // useEffect(() => {
+  //   // 나중에 이곳에서 API를 호출하여 데이터를 가져옵니다.
+  //   // 예:
+  //   // const fetchData = async () => {
+  //   //   const stats = await getAdminStatistics();
+  //   //   setMonthlyData(stats.monthly);
+  //   //   setCourseData(stats.byCourse);
+  //   //   setCompletionData(stats.completion);
+  //   // };
+  //   // fetchData();
+  // }, []);
+
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
+
   return (
     <div className="p-4 sm:p-6 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -52,56 +46,68 @@ const AdminStatistics: FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">월별 수강생 추이</h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={data}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
+            <div className="h-80 flex items-center justify-center text-gray-500">
+              {monthlyData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={monthlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" stroke="#6b7280" />
+                    <YAxis stroke="#6b7280" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <p>데이터가 없습니다.</p>
+              )}
             </div>
           </Card>
 
           <Card className="bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">강의별 수강생 수</h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={courseData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" stroke="#6b7280" />
-                  <YAxis stroke="#6b7280" />
-                  <Tooltip />
-                  <Bar dataKey="students" fill="#3b82f6" />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="h-80 flex items-center justify-center text-gray-500">
+              {courseData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={courseData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" stroke="#6b7280" />
+                    <YAxis stroke="#6b7280" />
+                    <Tooltip />
+                    <Bar dataKey="students" fill="#3b82f6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <p>데이터가 없습니다.</p>
+              )}
             </div>
           </Card>
 
           <Card className="bg-white p-6">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">수료 현황</h2>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={completionData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {completionData.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="h-80 flex items-center justify-center text-gray-500">
+              {completionData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={completionData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {completionData.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <p>데이터가 없습니다.</p>
+              )}
             </div>
           </Card>
 
@@ -110,19 +116,19 @@ const AdminStatistics: FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">총 수강생 수</span>
-                <span className="text-lg font-semibold text-gray-900">2명</span>
+                <span className="text-lg font-semibold text-gray-900">0명</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">이번 달 신규 수강생</span>
-                <span className="text-lg font-semibold text-gray-900">2명</span>
+                <span className="text-lg font-semibold text-gray-900">0명</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">수료율</span>
-                <span className="text-lg font-semibold text-gray-900">- %</span>
+                <span className="text-lg font-semibold text-gray-900">0%</span>
               </div>
               <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
                 <span className="text-gray-600">평균 수강 기간</span>
-                <span className="text-lg font-semibold text-gray-900"> - 개월</span>
+                <span className="text-lg font-semibold text-gray-900">-</span>
               </div>
             </div>
           </Card>

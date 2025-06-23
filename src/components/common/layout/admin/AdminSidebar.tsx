@@ -3,7 +3,6 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   BookOpen,
   Users,
-  Settings,
   BarChart2,
   Award,
   Bell,
@@ -17,12 +16,11 @@ const menuItems = [
   { icon: BookOpen, label: '강의 관리', path: '/admin/courses' },
   { icon: Users, label: '수강생 관리', path: '/admin/students' },
   { icon: Video, label: '수업 모니터링', path: '/admin/monitoring' },
-  { icon: Settings, label: '시스템 관리', path: '/admin/system' },
   { icon: BarChart2, label: '통계', path: '/admin/statistics' },
   { icon: Award, label: '수료 관리', path: '/admin/certificates' },
   { icon: Bell, label: '공지사항', path: '/admin/notices' },
-  { icon: MessageSquare, label: '게시판 관리', path: '/admin/boards' },
-  { icon: Star, label: '강의 후기 관리', path: '/admin/reviews' },
+  { icon: MessageSquare, label: '커뮤니티', path: '/admin/community' },
+  { icon: Users, label: 'Q&A', path: '/admin/qna' },
 ];
 
 const AdminSidebar: FC = () => {
@@ -30,26 +28,28 @@ const AdminSidebar: FC = () => {
   const location = useLocation();
 
   return (
-    <aside className="w-64 bg-white border-r h-full">
-      <div className="pt-6 px-4">
-        <nav className="space-y-3">
+    <aside className="w-64 bg-gray-900 border-r border-gray-700 flex flex-col">
+      <div className="flex-1">
+        <nav>
           {menuItems.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = location.pathname.startsWith(item.path);
             
             return (
               <button
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={cn(
-                  "flex items-center gap-3 w-full px-5 py-3 text-sm rounded-lg transition-colors",
+                  "flex w-full py-6 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-300 hover:bg-gray-700 hover:text-white"
                 )}
               >
-                <Icon className="h-5 w-5" />
-                {item.label}
+                <div className="flex items-center gap-3 px-5">
+                  <Icon className="h-5 w-5" />
+                  {item.label}
+                </div>
               </button>
             );
           })}

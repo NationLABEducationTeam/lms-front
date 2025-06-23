@@ -1071,71 +1071,50 @@ const CreateCourse: FC = () => {
                     강의 구성 설정
                   </h3>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
-                      <Label htmlFor="weeksCount" className="flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-orange-600" />
-                        <span>차수 수</span>
-                      </Label>
+                      <Label htmlFor="weeksCount" className="text-base">총 차수</Label>
                       <div className="flex items-center">
                         <Input
                           id="weeksCount"
                           type="number"
                           min="1"
-                          max="52"
                           value={weeksCount}
                           onChange={(e) => setWeeksCount(e.target.value)}
                           className="w-full"
                         />
-                        <span className="ml-2 text-gray-500">차수</span>
+                        <span className="ml-2 text-gray-500 shrink-0">차수</span>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        강의의 총 차수를 입력하세요. (기본값: 16차수)
-                      </p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label htmlFor="assignmentCount" className="flex items-center gap-2">
-                        <FileCheck className="w-5 h-5 text-blue-600" />
-                        <span>과제 개수</span>
-                      </Label>
+                      <Label htmlFor="assignmentCount" className="text-base">과제 수</Label>
                       <div className="flex items-center">
                         <Input
                           id="assignmentCount"
                           type="number"
                           min="0"
-                          max="20"
                           value={assignmentCount}
                           onChange={(e) => setAssignmentCount(e.target.value)}
                           className="w-full"
                         />
-                        <span className="ml-2 text-gray-500">개</span>
+                        <span className="ml-2 text-gray-500 shrink-0">개</span>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        강의에 포함될 과제 개수를 입력하세요. (기본값: 1개)
-                      </p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <Label htmlFor="examCount" className="flex items-center gap-2">
-                        <BookCheck className="w-5 h-5 text-purple-600" />
-                        <span>시험 개수</span>
-                      </Label>
+                      <Label htmlFor="examCount" className="text-base">시험 수</Label>
                       <div className="flex items-center">
                         <Input
                           id="examCount"
                           type="number"
                           min="0"
-                          max="10"
                           value={examCount}
                           onChange={(e) => setExamCount(e.target.value)}
                           className="w-full"
                         />
-                        <span className="ml-2 text-gray-500">개</span>
+                        <span className="ml-2 text-gray-500 shrink-0">개</span>
                       </div>
-                      <p className="text-xs text-gray-500">
-                        강의에 포함될 시험 개수를 입력하세요. (기본값: 1개)
-                      </p>
                     </div>
                   </div>
                 </div>
