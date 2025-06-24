@@ -20,6 +20,9 @@ import AdminStatistics from './pages/admin/statistics';
 import AdminCertificates from './pages/admin/certificates';
 import AdminBoards from './pages/admin/boards';
 import AdminMonitoring from './pages/admin/monitoring';
+import AdminReviewsPage from './pages/admin/reviews';
+import AdminCreateReviewPage from './pages/admin/reviews/create';
+import AdminReviewResultsPage from './pages/admin/reviews/results';
 import NoticeList from './pages/student/board/NoticeList';
 import NoticeDetail from './pages/student/board/NoticeDetail';
 import CommunityList from './pages/student/board/CommunityList';
@@ -109,6 +112,9 @@ const App = () => {
               <Route path="/admin/monitoring" element={<AdminMonitoring />} />
               <Route path="/admin/statistics" element={<AdminStatistics />} />
               <Route path="/admin/certificates" element={<AdminCertificates />} />
+              <Route path="/admin/reviews" element={<AdminReviewsPage />} />
+              <Route path="/admin/reviews/create" element={<AdminCreateReviewPage />} />
+              <Route path="/admin/reviews/:reviewId/results" element={<AdminReviewResultsPage />} />
               <Route path="/admin/boards" element={<AdminBoards />} />
               <Route path="/admin/qna" element={<AdminBoard boardType="qna" />} />
               <Route path="/admin/qna/:id" element={<AdminPostDetail />} />
