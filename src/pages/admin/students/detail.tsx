@@ -471,7 +471,7 @@ const AdminStudentDetail: FC = () => {
                         </TableCell>
                                                  <TableCell>
                            {assignment.score !== null && assignment.max_score !== undefined && assignment.max_score !== null ? (
-                             <GradeDisplay score={assignment.score} maxScore={assignment.max_score} />
+                             <GradeDisplay score={assignment.score ?? 0} maxScore={assignment.max_score} />
                            ) : '-'}
                          </TableCell>
                       </TableRow>

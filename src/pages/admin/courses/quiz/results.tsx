@@ -2,7 +2,7 @@ import { FC, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { Card } from '@/components/common/ui/card';
 import { Input } from '@/components/common/ui/input';
-import { Select } from '@/components/common/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/ui/select';
 import { Button } from '@/components/common/ui/button';
 import { Search, Download, ArrowUpDown, BarChart2 } from 'lucide-react';
 
@@ -150,13 +150,17 @@ const QuizResults: FC = () => {
           </div>
           <Select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="w-48"
+            onValueChange={(value: string) => setSortBy(value)}
           >
-            <option value="score">점수순</option>
-            <option value="submittedAt">제출시간순</option>
-            <option value="timeSpent">소요시간순</option>
-            <option value="attempts">시도횟수순</option>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="정렬 기준" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="score">점수순</SelectItem>
+              <SelectItem value="submittedAt">제출시간순</SelectItem>
+              <SelectItem value="timeSpent">소요시간순</SelectItem>
+              <SelectItem value="attempts">시도횟수순</SelectItem>
+            </SelectContent>
           </Select>
           <Button
             variant="outline"

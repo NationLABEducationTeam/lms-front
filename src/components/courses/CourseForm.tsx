@@ -5,7 +5,7 @@ import * as z from 'zod';
 import { Button } from '@/components/common/ui/button';
 import { Input } from '@/components/common/ui/input';
 import { Textarea } from '@/components/common/ui/textarea';
-import { Select } from '@/components/common/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/common/ui/select';
 import { useListCategoriesQuery } from '@/services/api/courseApi';
 import { CourseLevel, CourseStatus, MainCategory, CourseType } from '@/types/course';
 import { CreateCourseRequest } from '@/services/api/courseApi';
@@ -103,15 +103,23 @@ export const CourseForm: FC<CourseFormProps> = ({
           <Select
             {...register('main_category_id')}
             disabled={isCategoriesLoading}
-            error={errors.main_category_id?.message}
+            onValueChange={(value) => setValue('main_category_id', value, { shouldValidate: true })}
+            value={watch('main_category_id')}
           >
-            <option value="">카테고리 선택</option>
-            {categories.map((category) => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
+            <SelectTrigger>
+              <SelectValue placeholder="카테고리 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          {errors.main_category_id && (
+            <p className="mt-1 text-sm text-red-600">{errors.main_category_id.message}</p>
+          )}
         </div>
 
         <div>
@@ -132,17 +140,29 @@ export const CourseForm: FC<CourseFormProps> = ({
           <label className="block text-sm font-medium text-gray-700 mb-1">
             난이도
           </label>
-          <Select {...register('level')} error={errors.level?.message}>
-            {Object.entries(CourseLevel).map(([key, value]) => (
-              <option key={key} value={value}>
-                {key === 'BEGINNER'
-                  ? '초급'
-                  : key === 'INTERMEDIATE'
-                  ? '중급'
-                  : '고급'}
-              </option>
-            ))}
+          <Select 
+            {...register('level')}
+            onValueChange={(value) => setValue('level', value as CourseLevel, { shouldValidate: true })}
+            value={watch('level')}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="난이도 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              {Object.entries(CourseLevel).map(([key, value]) => (
+                <SelectItem key={key} value={value}>
+                  {key === 'BEGINNER'
+                    ? '초급'
+                    : key === 'INTERMEDIATE'
+                    ? '중급'
+                    : '고급'}
+                </SelectItem>
+              ))}
+            </SelectContent>
           </Select>
+          {errors.level && (
+            <p className="mt-1 text-sm text-red-600">{errors.level.message}</p>
+          )}
         </div>
 
         <div>
@@ -239,17 +259,29 @@ export const CourseForm: FC<CourseFormProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-1">
               상태
             </label>
-            <Select {...register('status')} error={errors.status?.message}>
-              {Object.entries(CourseStatus).map(([key, value]) => (
-                <option key={key} value={value}>
-                  {key === 'DRAFT'
-                    ? '임시저장'
-                    : key === 'PUBLISHED'
-                    ? '공개'
-                    : '비공개'}
-                </option>
-              ))}
+            <Select 
+              {...register('status')}
+              onValueChange={(value) => setValue('status', value as CourseStatus, { shouldValidate: true })}
+              value={watch('status')}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="상태 선택" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(CourseStatus).map(([key, value]) => (
+                  <SelectItem key={key} value={value}>
+                    {key === 'DRAFT'
+                      ? '임시저장'
+                      : key === 'PUBLISHED'
+                      ? '공개'
+                      : '비공개'}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
+            {errors.status && (
+              <p className="mt-1 text-sm text-red-600">{errors.status.message}</p>
+            )}
           </div>
 
           <div>
