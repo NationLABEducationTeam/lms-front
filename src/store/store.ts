@@ -9,6 +9,7 @@ import { courseApi } from '@/services/api/courseApi';
 import { zoomApi } from '@/services/api/zoomApi';
 import { studentApi } from '@/services/api/studentApi';
 import { adminApi } from '@/services/api/adminApi';
+import { reviewApi } from '@/services/api/reviewApi';
 
 interface CoursesState {
   categories: S3Structure[];
@@ -29,6 +30,7 @@ export interface RootState {
   [zoomApi.reducerPath]: ReturnType<typeof zoomApi.reducer>;
   [studentApi.reducerPath]: ReturnType<typeof studentApi.reducer>;
   [adminApi.reducerPath]: ReturnType<typeof adminApi.reducer>;
+  [reviewApi.reducerPath]: ReturnType<typeof reviewApi.reducer>;
 }
 
 export const store = configureStore({
@@ -39,13 +41,15 @@ export const store = configureStore({
     [zoomApi.reducerPath]: zoomApi.reducer,
     [studentApi.reducerPath]: studentApi.reducer,
     [adminApi.reducerPath]: adminApi.reducer,
+    [reviewApi.reducerPath]: reviewApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       courseApi.middleware, 
       zoomApi.middleware,
       studentApi.middleware,
-      adminApi.middleware
+      adminApi.middleware,
+      reviewApi.middleware
     ),
 });
 

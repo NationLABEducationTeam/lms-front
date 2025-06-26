@@ -1,5 +1,5 @@
 import React, { FC } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -56,6 +56,7 @@ import WishlistPage from './pages/student/wishlist';
 import CartPage from './pages/student/cart';
 import PendingCoursesPage from './pages/student/pending-courses';
 import CourseEnrollmentsPage from './pages/admin/courses/[id]/enrollments';
+import StudentReviewFormPage from './pages/student/reviews/[id]';
 
 // Vite 환경 변수 타입 확장
 declare global {
@@ -127,31 +128,33 @@ const App = () => {
           <Route element={<RootLayout />}>
             {/* Public Routes */}
             <Route path="/" element={<StudentLanding />} />
-            <Route path="/courses" element={<StudentCoursesPage />} />
-            <Route path="/courses/:id" element={<CourseDetailPage />} />
+            <Route path="courses" element={<StudentCoursesPage />} />
+            <Route path="courses/:id" element={<CourseDetailPage />} />
             
             {/* Protected Student Routes */}
             <Route element={<ProtectedRoute allowedRoles={[UserRole.STUDENT]} />}>
-              <Route path="/dashboard" element={<StudentDashboard />} />
-              <Route path="/mycourse" element={<StudentCoursesPage />} />
-              <Route path="/mycourse/:courseId" element={<StudentCoursesPage />} />
-              <Route path="/mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
-              <Route path="/mycourse/:courseId/quiz/:quizFileName" element={<QuizPage />} />
-              <Route path="/mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
-              <Route path="/student/wishlist" element={<WishlistPage />} />
-              <Route path="/student/cart" element={<CartPage />} />
-              <Route path="/notices" element={<NoticeList />} />
-              <Route path="/notices/:id" element={<NoticeDetail />} />
-              <Route path="/community" element={<CommunityList />} />
-              <Route path="/community/create" element={<CommunityCreate />} />
-              <Route path="/community/:id" element={<CommunityDetail />} />
-              <Route path="/qna" element={<QnaList />} />
-              <Route path="/qna/create" element={<QnaCreate />} />
-              <Route path="/qna/:id" element={<QnaDetail />} />
-              <Route path="/assignments" element={<AssignmentListPage />} />
-              <Route path="/assignments/:id" element={<AssignmentDetailPage />} />
-              <Route path="/pending-courses" element={<PendingCoursesPage />} />
+              <Route path="dashboard" element={<StudentDashboard />} />
+              <Route path="mycourse" element={<StudentCoursesPage />} />
+              <Route path="mycourse/:courseId" element={<StudentCoursesPage />} />
+              <Route path="mycourse/:courseId/week/:weekId/quiz" element={<QuizPage />} />
+              <Route path="mycourse/:courseId/quiz/:quizFileName" element={<QuizPage />} />
+              <Route path="mycourse/:courseId/week/:weekId/video/:videoId" element={<VideoPlayerPage />} />
+              <Route path="student/wishlist" element={<WishlistPage />} />
+              <Route path="student/cart" element={<CartPage />} />
+              <Route path="notices" element={<NoticeList />} />
+              <Route path="notices/:id" element={<NoticeDetail />} />
+              <Route path="community" element={<CommunityList />} />
+              <Route path="community/create" element={<CommunityCreate />} />
+              <Route path="community/:id" element={<CommunityDetail />} />
+              <Route path="qna" element={<QnaList />} />
+              <Route path="qna/create" element={<QnaCreate />} />
+              <Route path="qna/:id" element={<QnaDetail />} />
+              <Route path="assignments" element={<AssignmentListPage />} />
+              <Route path="assignments/:id" element={<AssignmentDetailPage />} />
+              <Route path="pending-courses" element={<PendingCoursesPage />} />
             </Route>
+            
+            <Route path="reviews/:id" element={<StudentReviewFormPage />} />
 
             {/* Protected Instructor Routes */}
           </Route>

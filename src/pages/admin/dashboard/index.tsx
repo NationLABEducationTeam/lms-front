@@ -400,11 +400,11 @@ const AdminDashboard: FC = () => {
   const stats = [
     {
       title: '총 방문자 수',
-      value: '58',
+      value: '-',
       icon: Eye,
-      helpText: '지난 주 대비 14% 증가',
-      trend: 'up' as const,
-      trendValue: '14%',
+      helpText: '-',
+      trend: 'neutral' as const,
+      trendValue: '',
       isLoading: false,
     },
     {
@@ -425,11 +425,11 @@ const AdminDashboard: FC = () => {
     },
     {
       title: '활성도',
-      value: '32',
+      value: '-',
       icon: Activity,
-      helpText: '오늘의 활동',
-      trend: 'down' as const,
-      trendValue: '8%',
+      helpText: '오늘의 활동',  
+      trend: 'neutral' as const,
+      trendValue: '',
       isLoading: false,
     },
   ];

@@ -1,7 +1,6 @@
 import { ReactNode } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdminHeader from './AdminHeader';
-import AdminFooter from './AdminFooter';
 import AdminSidebar from './AdminSidebar';
 
 interface AdminLayoutProps {
@@ -10,15 +9,14 @@ interface AdminLayoutProps {
 
 const AdminLayout = ({ children }: AdminLayoutProps) => {
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col bg-gray-100">
       <AdminHeader />
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         <AdminSidebar />
-        <main className="flex-1 p-8 bg-gray-50">
+        <main className="flex-1 overflow-y-auto">
           {children || <Outlet />}
         </main>
       </div>
-      <AdminFooter />
     </div>
   );
 };

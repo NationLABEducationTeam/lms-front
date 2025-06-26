@@ -1,191 +1,275 @@
-import { FC } from 'react';
+import { FC, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/common/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/common/ui/card';
 import { Button } from '@/components/common/ui/button';
-import { Progress } from '@/components/common/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/common/ui/table';
-import { ArrowLeft, Users, Star, MessageSquare } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui/tabs';
+import { ArrowLeft, Users, Star, MessageSquare, AlertCircle, Loader2, MessageSquareText, User } from 'lucide-react';
+import { useGetReviewTemplateQuery, useGetReviewResponsesQuery, ReviewQuestion } from '@/services/api/reviewApi';
+import { cn } from '@/lib/utils';
 
-// 더미 데이터
-const DUMMY_REVIEW_DETAILS = {
-  id: 'review-001',
-  title: 'MSA 기반 대규모 커머스 프로젝트 과정 후기',
-  targetRespondents: 150,
-  totalResponses: 128,
-  overallAverageRating: 3.4,
-  questions: [
-    {
-      id: 'q1', type: 'MULTIPLE_CHOICE', text: '강의 내용의 전반적인 만족도',
-      distribution: [
-        { score: 1, percent: 5 }, { score: 2, percent: 12 }, { score: 3, percent: 23 }, { score: 4, percent: 38 }, { score: 5, percent: 22 }
-      ],
-      average: 3.6
-    },
-    {
-      id: 'q2', type: 'MULTIPLE_CHOICE', text: '강사님의 설명은 명확했나요?',
-      distribution: [
-        { score: 1, percent: 15 }, { score: 2, percent: 25 }, { score: 3, percent: 30 }, { score: 4, percent: 20 }, { score: 5, percent: 10 }
-      ],
-      average: 2.9
-    },
-    {
-      id: 'q3', type: 'MULTIPLE_CHOICE', text: '실습 환경은 쾌적했나요?',
-      distribution: [
-        { score: 1, percent: 8 }, { score: 2, percent: 12 }, { score: 3, percent: 20 }, { score: 4, percent: 35 }, { score: 5, percent: 25 }
-      ],
-      average: 3.6
-    },
-    { id: 'q4', type: 'TEXTAREA', text: '강의에서 가장 좋았던 점은 무엇인가요?' },
-    { id: 'q5', type: 'TEXTAREA', text: '강의에서 아쉬웠던 점이나 개선할 점이 있다면 알려주세요.' },
-  ],
-  textAnswers: [
-      { questionId: 'q4', answer: '실제 MSA 아키텍처를 직접 구축해보는 경험이 가장 좋았습니다.' },
-      { questionId: 'q4', answer: '강사님의 풍부한 실무 경험과 노하우가 큰 도움이 되었습니다.' },
-      { questionId: 'q5', answer: '실습 시간이 조금 더 길었으면 좋겠습니다.' },
-  ],
+const scoreMap: { [key: string]: number } = {
+    '매우 만족': 5,
+    '만족': 4,
+    '보통': 3,
+    '불만족': 2,
+    '매우 불만족': 1,
 };
 
-const getScoreColor = (score: number) => {
-    const colors = [
-        'bg-red-100 text-red-800', // 1
-        'bg-orange-100 text-orange-800', // 2
-        'bg-yellow-100 text-yellow-800', // 3
-        'bg-green-100 text-green-800', // 4
-        'bg-green-200 text-green-800'  // 5
-    ];
-    return colors[score - 1] || 'bg-gray-100';
+// 숫자 문자열도 처리하기 위해 추가
+for (let i = 1; i <= 5; i++) {
+    scoreMap[i.toString()] = i;
+}
+
+const scoreRgbColors: { [key: number]: string } = {
+    1: '239, 68, 68',   // red-500
+    2: '249, 115, 22',  // orange-500
+    3: '234, 179, 8',   // yellow-500
+    4: '132, 204, 22',  // lime-500
+    5: '34, 197, 94',   // green-500
 };
+
+const calculateAnalytics = (questions: ReviewQuestion[], responses: any[]) => {
+    if (!responses || responses.length === 0) {
+        return { ratingQuestions: [], groupedTextAnswers: [], totalResponses: 0, overallAverage: 0, totalTextAnswers: 0 };
+    }
+
+    const ratingQuestions: any[] = [];
+    let totalRatingSum = 0;
+    let totalRatingCount = 0;
+
+    const textAnswerGroups: { [key: string]: { questionId: string; questionText: string; answers: { user: string; answer: string }[] } } = {};
+    questions.forEach(q => {
+        if (q.type === 'TEXT' || q.type === 'TEXTAREA') {
+            textAnswerGroups[q.id!] = { questionId: q.id!, questionText: q.text, answers: [] };
+        }
+    });
+
+    responses.forEach(res => {
+        res.answers.forEach((answerObj: any) => {
+            const question = questions.find(q => q.id === answerObj.questionId);
+            if (!question) return;
+
+            if (question.type === 'MULTIPLE_CHOICE') {
+                const rating = scoreMap[answerObj.answer];
+                if (rating) {
+                    let ratingQuestion = ratingQuestions.find(rq => rq.id === question.id);
+                    if (!ratingQuestion) {
+                        ratingQuestion = { ...question, distributionNum: [0, 0, 0, 0, 0], questionSum: 0, questionResponseCount: 0 };
+                        ratingQuestions.push(ratingQuestion);
+                    }
+                    ratingQuestion.distributionNum[rating - 1]++;
+                    ratingQuestion.questionSum += rating;
+                    ratingQuestion.questionResponseCount++;
+                }
+            } else if ((question.type === 'TEXT' || question.type === 'TEXTAREA') && answerObj.answer) {
+                 textAnswerGroups[question.id!].answers.push({
+                    user: res.userName || res.user_id || '익명',
+                    answer: answerObj.answer,
+                });
+            }
+        });
+    });
+    
+    ratingQuestions.forEach(rq => {
+        rq.average = rq.questionResponseCount > 0 ? rq.questionSum / rq.questionResponseCount : 0;
+        rq.distribution = rq.distributionNum.map((count: number) => 
+            rq.questionResponseCount > 0 ? (count / rq.questionResponseCount) * 100 : 0
+        );
+        totalRatingSum += rq.questionSum;
+        totalRatingCount += rq.questionResponseCount;
+    });
+
+    const overallAverage = totalRatingCount > 0 ? totalRatingSum / totalRatingCount : 0;
+    const groupedTextAnswers = Object.values(textAnswerGroups).filter(group => group.answers.length > 0);
+    const totalTextAnswers = groupedTextAnswers.reduce((acc, group) => acc + group.answers.length, 0);
+
+    return { ratingQuestions, groupedTextAnswers, totalResponses: responses.length, overallAverage, totalTextAnswers };
+};
+
+const AnalyticsCard: FC<{ title: string; value: string | number; icon: React.ReactNode }> = ({ title, value, icon }) => (
+    <Card>
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium">{title}</CardTitle>
+            {icon}
+        </CardHeader>
+        <CardContent>
+            <div className="text-2xl font-bold">{value}</div>
+        </CardContent>
+    </Card>
+);
 
 const AdminReviewResultsPage: FC = () => {
-  const { reviewId } = useParams<{ reviewId: string }>();
-  const navigate = useNavigate();
+    const { reviewId } = useParams<{ reviewId: string }>();
+    const navigate = useNavigate();
 
-  const data = DUMMY_REVIEW_DETAILS;
-  const completionRate = (data.totalResponses / data.targetRespondents) * 100;
-  const ratingQuestions = data.questions.filter(q => q.type === 'MULTIPLE_CHOICE' || q.type === 'RATING');
+    const { data: template, isLoading: isLoadingTemplate, error: errorTemplate } = useGetReviewTemplateQuery(reviewId!, { skip: !reviewId });
+    const { data: responses, isLoading: isLoadingResponses, error: errorResponses } = useGetReviewResponsesQuery(reviewId!, { skip: !reviewId });
 
-  return (
-    <div className="p-8 bg-white min-h-screen">
-      <div className="max-w-7xl mx-auto">
-        {/* 헤더 */}
-        <div className="flex items-center gap-4 mb-8">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate('/admin/reviews')}
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 truncate">{data.title}</h1>
-              <p className="text-gray-500">후기 결과 상세 분석</p>
+    const analytics = useMemo(() => {
+        if (!template || !responses) return { ratingQuestions: [], groupedTextAnswers: [], totalResponses: 0, overallAverage: 0, totalTextAnswers: 0 };
+        return calculateAnalytics(template.questions, responses);
+    }, [template, responses]);
+
+    const isLoading = isLoadingTemplate || isLoadingResponses;
+    const error = errorTemplate || errorResponses;
+    
+    if (isLoading) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex justify-center items-center">
+                <Loader2 className="w-10 h-10 text-blue-600 animate-spin" />
+            </div>
+        );
+    }
+    
+    if (error || !template) {
+        return (
+            <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen flex justify-center items-center">
+                 <Card className="w-full max-w-lg text-center p-6">
+                    <AlertCircle className="w-12 h-12 mx-auto text-red-500" />
+                    <CardHeader>
+                        <CardTitle className="text-xl text-red-600">오류 발생</CardTitle>
+                        <CardDescription>
+                            데이터를 불러오는 중 문제가 발생했거나, 설문이 존재하지 않습니다.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button variant="outline" onClick={() => navigate('/admin/reviews')}>목록으로 돌아가기</Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+    return (
+        <div className="p-4 sm:p-6 lg:p-8 bg-gray-50 min-h-screen">
+            <div className="max-w-5xl mx-auto">
+                <div className="flex items-center gap-4 mb-8">
+                    <Button type="button" variant="ghost" size="icon" onClick={() => navigate('/admin/reviews')}>
+                        <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 truncate">{template.title}</h1>
+                        <p className="text-gray-500 mt-1">후기 결과 상세 분석</p>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <AnalyticsCard
+                        title="총 응답 수"
+                        value={`${analytics.totalResponses} / ${template.targetRespondents || 'N/A'}`}
+                        icon={<Users className="w-5 h-5 text-muted-foreground" />}
+                    />
+                    <AnalyticsCard
+                        title="전체 평균 점수"
+                        value={`${analytics.overallAverage.toFixed(2)} / 5.0`}
+                        icon={<Star className="w-5 h-5 text-muted-foreground" />}
+                    />
+                    <AnalyticsCard
+                        title="주관식 답변 수"
+                        value={`${analytics.totalTextAnswers} 개`}
+                        icon={<MessageSquare className="w-5 h-5 text-muted-foreground" />}
+                    />
+                </div>
+
+                {analytics.ratingQuestions.length > 0 && (
+                    <Card className="mb-8">
+                        <CardHeader>
+                            <CardTitle>만족도 질문 분석</CardTitle>
+                            <CardDescription>각 질문에 대한 1-5점 척도 응답 분포 및 평균 점수입니다.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                        <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-2/5 font-bold">질문</TableHead>
+                                            <TableHead className="text-center font-bold">1점</TableHead>
+                                            <TableHead className="text-center font-bold">2점</TableHead>
+                                            <TableHead className="text-center font-bold">3점</TableHead>
+                                            <TableHead className="text-center font-bold">4점</TableHead>
+                                            <TableHead className="text-center font-bold">5점</TableHead>
+                                            <TableHead className="text-right font-bold">평균</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {analytics.ratingQuestions.map((q) => (
+                                            <TableRow key={q.id}>
+                                                <TableCell className="font-medium">{q.text}</TableCell>
+                                                {q.distribution.map((percent: number, index: number) => (
+                                                    <TableCell 
+                                                        key={index} 
+                                                        className="text-center font-semibold transition-colors"
+                                                        style={{ 
+                                                            backgroundColor: `rgba(${scoreRgbColors[index + 1]}, ${percent / 100})`,
+                                                            color: percent > 45 ? 'white' : 'inherit'
+                                                        }}
+                                                    >
+                                                        {percent.toFixed(0)}%
+                                                    </TableCell>
+                                                ))}
+                                                <TableCell className="text-right font-bold text-lg">{q.average.toFixed(1)}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                        </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {analytics.groupedTextAnswers.length > 0 && (
+                    <Card>
+                        <CardHeader className="text-center">
+                            <CardTitle>주관식 답변 모음</CardTitle>
+                            <CardDescription>질문 탭을 클릭하여 해당 질문에 대한 답변만 모아볼 수 있습니다.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Tabs defaultValue={analytics.groupedTextAnswers[0].questionId} className="w-full">
+                                <TabsList className="grid w-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-1 h-auto rounded-lg bg-blue-50">
+                                    {analytics.groupedTextAnswers.map((group) => (
+                                        <TabsTrigger 
+                                            key={group.questionId} 
+                                            value={group.questionId} 
+                                            className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md rounded-md px-4 py-2 transition-all duration-200"
+                                        >
+                                            <span className="truncate">{group.questionText}</span>
+                                        </TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                {analytics.groupedTextAnswers.map((group) => (
+                                    <TabsContent key={group.questionId} value={group.questionId} className="mt-6">
+                                        <div className="space-y-4 max-h-[500px] overflow-y-auto p-1">
+                                            {group.answers.length > 0 ? (
+                                                group.answers.map((answer, index) => (
+                                                    <div key={index} className="bg-white p-5 rounded-lg shadow-sm border border-gray-100 flex items-start gap-4">
+                                                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+                                                          <MessageSquareText className="w-5 h-5 text-blue-600" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                          <p className="text-gray-800 text-base">{answer.answer}</p>
+                                                          <div className="flex items-center justify-end mt-3 text-gray-500">
+                                                            <User className="w-4 h-4 mr-1.5" />
+                                                            <p className="text-sm font-medium">{answer.user}</p>
+                                                          </div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <div className="text-center py-12 text-gray-500">
+                                                    <p>이 질문에 대한 답변이 없습니다.</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </TabsContent>
+                                ))}
+                            </Tabs>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
-
-        {/* 통계 요약 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">응답률</CardTitle>
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{data.totalResponses} / {data.targetRespondents} 명</div>
-                    <Progress value={completionRate} className="mt-2" />
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">총 평균 점수</CardTitle>
-                    <Star className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{data.overallAverageRating.toFixed(1)} / 5.0</div>
-                    <p className="text-xs text-muted-foreground">모든 만족도/평가 질문 평균</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-sm font-medium">총 주관식 답변</CardTitle>
-                    <MessageSquare className="w-4 h-4 text-muted-foreground" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{data.textAnswers.length} 개</div>
-                </CardContent>
-            </Card>
-        </div>
-
-        {/* 질문별 분석 */}
-        <div className="space-y-6">
-            <Card>
-                <CardHeader>
-                    <CardTitle>만족도 및 평가 질문 분석</CardTitle>
-                    <p className="text-sm text-gray-500 mt-1">
-                        각 질문에 대한 1-5점 척도 응답 분포 및 평균 점수입니다.
-                    </p>
-                </CardHeader>
-                <CardContent>
-                   <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-2/5">질문</TableHead>
-                                    <TableHead className="text-center">1점</TableHead>
-                                    <TableHead className="text-center">2점</TableHead>
-                                    <TableHead className="text-center">3점</TableHead>
-                                    <TableHead className="text-center">4점</TableHead>
-                                    <TableHead className="text-center">5점</TableHead>
-                                    <TableHead className="text-right">평균</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {ratingQuestions.map((q) => (
-                                    <TableRow key={q.id}>
-                                        <TableCell className="font-medium">{q.text}</TableCell>
-                                        {q.distribution?.map(d => (
-                                            <TableCell key={d.score} className="text-center">
-                                                <span className={`inline-block px-2 py-1 rounded-md text-xs font-semibold ${getScoreColor(d.score)}`}>
-                                                    {d.percent}%
-                                                </span>
-                                            </TableCell>
-                                        ))}
-                                        <TableCell className="text-right font-bold">{q.average?.toFixed(1)}</TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                   </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle>주관식 답변</CardTitle></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>질문</TableHead>
-                                <TableHead>답변</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {data.textAnswers.map((answer, index) => (
-                                <TableRow key={index}>
-                                    <TableCell className="font-medium w-1/3">{data.questions.find(q => q.id === answer.questionId)?.text}</TableCell>
-                                    <TableCell>{answer.answer}</TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-        </div>
-
-      </div>
-    </div>
-  );
+    );
 };
 
 export default AdminReviewResultsPage;
