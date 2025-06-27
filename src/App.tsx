@@ -75,17 +75,13 @@ const App = () => {
 
   return (
     <HelmetProvider>
-      <BrowserRouter future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true
-      }}>
+      <BrowserRouter>
         <Routes>
-          {/* Auth Routes - No Layout */}
+          {/* Standalone Pages (No Layout) */}
           <Route path="/auth" element={<AuthForm />} />
           <Route path="/verify-email" element={<VerifyEmail />} />
-
-          {/* Corporate Page - No Layout */}
           <Route path="/corporate" element={<CorporatePage />} />
+          <Route path="/reviews/:id" element={<StudentReviewFormPage />} />
           
           {/* DeepCoding Page - No Layout */}
           <Route path="/deepcoding" element={<DeepCodingPage />} />
@@ -153,10 +149,6 @@ const App = () => {
               <Route path="assignments/:id" element={<AssignmentDetailPage />} />
               <Route path="pending-courses" element={<PendingCoursesPage />} />
             </Route>
-            
-            <Route path="reviews/:id" element={<StudentReviewFormPage />} />
-
-            {/* Protected Instructor Routes */}
           </Route>
         </Routes>
         <ToastContainer

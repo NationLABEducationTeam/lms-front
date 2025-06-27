@@ -126,7 +126,9 @@ const StudentReviewFormPage: FC = () => {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button onClick={() => navigate('/')} className="bg-blue-600 hover:bg-blue-700">홈으로 돌아가기</Button>
+                    <Button onClick={() => window.close()} className="w-full bg-blue-600 hover:bg-blue-700">
+                        창 닫기
+                    </Button>
                 </CardContent>
             </Card>
         </div>
