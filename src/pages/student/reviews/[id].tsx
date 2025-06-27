@@ -245,11 +245,6 @@ const StudentReviewFormPage: FC = () => {
             </CardFooter>
           </form>
         </Card>
-        {!user && (
-            <div className="mt-4 text-center text-sm text-gray-500">
-                답변을 제출하려면 <Button variant="link" className="p-0 h-auto" onClick={() => navigate('/login')}>로그인</Button>이 필요할 수 있습니다.
-            </div>
-        )}
       </div>
     </div>
   );
