@@ -45,25 +45,29 @@ const calculateAnalytics = (questions: ReviewQuestion[], responses: any[]) => {
         }
     });
 
-    responses.forEach(res => {
-        res.answers.forEach((answerObj: any) => {
-            const question = questions.find(q => q.id === answerObj.questionId);
-            if (!question) return;
+    // 질문 ID 맵 생성 (템플릿의 원래 질문 ID와 인덱스를 매핑)
+    const questionIdToIndexMap = new Map(questions.map((q, index) => [q.id, index]));
 
-            if (question.type === 'MULTIPLE_CHOICE') {
+    responses.forEach(res => {
+        res.answers.forEach((answerObj: any, answerIndex: number) => {
+            // 답변의 questionId 대신, 답변의 순서(index)를 사용해 원본 질문을 찾음
+            const originalQuestion = questions[answerIndex];
+            if (!originalQuestion) return;
+
+            if (originalQuestion.type === 'MULTIPLE_CHOICE') {
                 const rating = scoreMap[answerObj.answer];
                 if (rating) {
-                    let ratingQuestion = ratingQuestions.find(rq => rq.id === question.id);
+                    let ratingQuestion = ratingQuestions.find(rq => rq.id === originalQuestion.id);
                     if (!ratingQuestion) {
-                        ratingQuestion = { ...question, distributionNum: [0, 0, 0, 0, 0], questionSum: 0, questionResponseCount: 0 };
+                        ratingQuestion = { ...originalQuestion, distributionNum: [0, 0, 0, 0, 0], questionSum: 0, questionResponseCount: 0 };
                         ratingQuestions.push(ratingQuestion);
                     }
                     ratingQuestion.distributionNum[rating - 1]++;
                     ratingQuestion.questionSum += rating;
                     ratingQuestion.questionResponseCount++;
                 }
-            } else if ((question.type === 'TEXT' || question.type === 'TEXTAREA') && answerObj.answer) {
-                 textAnswerGroups[question.id!].answers.push({
+            } else if ((originalQuestion.type === 'TEXT' || originalQuestion.type === 'TEXTAREA') && answerObj.answer) {
+                 textAnswerGroups[originalQuestion.id!].answers.push({
                     user: res.userName || res.user_id || '익명',
                     answer: answerObj.answer,
                 });

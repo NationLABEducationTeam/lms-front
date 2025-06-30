@@ -23,6 +23,7 @@ import AdminMonitoring from './pages/admin/monitoring';
 import AdminReviewsPage from './pages/admin/reviews';
 import AdminCreateReviewPage from './pages/admin/reviews/create';
 import AdminReviewResultsPage from './pages/admin/reviews/results';
+import AdminEditReviewPage from './pages/admin/reviews/[id]/edit';
 import NoticeList from './pages/student/board/NoticeList';
 import NoticeDetail from './pages/student/board/NoticeDetail';
 import CommunityList from './pages/student/board/CommunityList';
@@ -111,6 +112,7 @@ const App = () => {
               <Route path="/admin/certificates" element={<AdminCertificates />} />
               <Route path="/admin/reviews" element={<AdminReviewsPage />} />
               <Route path="/admin/reviews/create" element={<AdminCreateReviewPage />} />
+              <Route path="/admin/reviews/:id/edit" element={<AdminEditReviewPage />} />
               <Route path="/admin/reviews/:reviewId/results" element={<AdminReviewResultsPage />} />
               <Route path="/admin/boards" element={<AdminBoards />} />
               <Route path="/admin/qna" element={<AdminBoard boardType="qna" />} />
