@@ -4,7 +4,8 @@ import { getApiUrl, API_ENDPOINTS } from '@/config/api';
 export const getAllUsers = async () => {
   try {
     const session = await fetchAuthSession();
-    const token = session.tokens?.idToken?.toString();
+    // accessToken 대신 idToken 사용
+    const token = session.tokens?.idToken?.toString(); 
     
     if (!token) {
       throw new Error('인증 토큰이 없습니다.');
@@ -34,7 +35,8 @@ export const getAllUsers = async () => {
 export const invalidateCache = async (): Promise<void> => {
   try {
     const session = await fetchAuthSession();
-    const token = session.tokens?.idToken?.toString();
+    // accessToken 대신 idToken 사용
+    const token = session.tokens?.idToken?.toString(); 
     
     if (!token) {
       throw new Error('인증 토큰이 없습니다.');
@@ -60,4 +62,4 @@ export const invalidateCache = async (): Promise<void> => {
 export const getStudents = async () => {
   const data = await getAllUsers();
   return data.users;
-}; 
+};
