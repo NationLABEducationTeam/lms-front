@@ -155,7 +155,7 @@ const AdminReviewResultsPage: FC = () => {
             ];
             
             // 질문 순서대로 답변 추가
-            template.questions.forEach((q, qIndex) => {
+            template.questions.forEach((_q, qIndex) => {
                 const answer = res.answers[qIndex];
                 row.push(answer ? answer.answer : '');
             });
