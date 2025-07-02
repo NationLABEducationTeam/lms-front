@@ -4,9 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/common/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/common/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/common/ui/tabs';
-import { ArrowLeft, Users, Star, MessageSquare, AlertCircle, Loader2, MessageSquareText, User } from 'lucide-react';
+import { ArrowLeft, Users, Star, MessageSquare, AlertCircle, Loader2, MessageSquareText, User, Download } from 'lucide-react';
 import { useGetReviewTemplateQuery, useGetReviewResponsesQuery, ReviewQuestion } from '@/services/api/reviewApi';
 import { cn } from '@/lib/utils';
+import * as XLSX from 'xlsx';
+import { toast } from 'sonner';
 
 const scoreMap: { [key: string]: number } = {
     '매우 만족': 5,
@@ -115,6 +117,102 @@ const AdminReviewResultsPage: FC = () => {
         return calculateAnalytics(template.questions, responses);
     }, [template, responses]);
 
+    // 엑셀 다운로드 함수
+    const downloadExcel = () => {
+        if (!template || !responses || responses.length === 0) {
+            toast.error('다운로드할 데이터가 없습니다.');
+            return;
+        }
+
+        // 워크북 생성
+        const wb = XLSX.utils.book_new();
+
+        // 1. 요약 시트 생성
+        const summaryData = [
+            ['설문 제목', template.title],
+            ['설문 설명', template.description || ''],
+            ['목표 응답자 수', template.targetRespondents || 'N/A'],
+            ['실제 응답자 수', responses.length],
+            ['전체 평균 점수', analytics.overallAverage.toFixed(2)],
+            [''],
+            ['생성일', new Date(template.createdAt).toLocaleDateString('ko-KR')],
+            ['수정일', new Date(template.updatedAt).toLocaleDateString('ko-KR')],
+        ];
+        const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+        XLSX.utils.book_append_sheet(wb, summarySheet, '요약');
+
+        // 2. 전체 응답 시트 생성
+        const responseHeaders = ['응답자', '제출 시간'];
+        template.questions.forEach(q => {
+            responseHeaders.push(q.text);
+        });
+
+        const responseData = [responseHeaders];
+        responses.forEach(res => {
+            const row = [
+                res.userName || '익명',
+                new Date(res.submittedAt).toLocaleString('ko-KR')
+            ];
+            
+            // 질문 순서대로 답변 추가
+            template.questions.forEach((q, qIndex) => {
+                const answer = res.answers[qIndex];
+                row.push(answer ? answer.answer : '');
+            });
+            
+            responseData.push(row);
+        });
+
+        const responseSheet = XLSX.utils.aoa_to_sheet(responseData);
+        XLSX.utils.book_append_sheet(wb, responseSheet, '전체 응답');
+
+        // 3. 만족도 분석 시트 (만족도 질문이 있는 경우)
+        if (analytics.ratingQuestions.length > 0) {
+            const ratingHeaders = ['질문', '1점', '2점', '3점', '4점', '5점', '평균'];
+            const ratingData = [ratingHeaders];
+            
+            analytics.ratingQuestions.forEach(q => {
+                const row = [
+                    q.text,
+                    `${q.distributionNum[0]}명 (${q.distribution[0].toFixed(1)}%)`,
+                    `${q.distributionNum[1]}명 (${q.distribution[1].toFixed(1)}%)`,
+                    `${q.distributionNum[2]}명 (${q.distribution[2].toFixed(1)}%)`,
+                    `${q.distributionNum[3]}명 (${q.distribution[3].toFixed(1)}%)`,
+                    `${q.distributionNum[4]}명 (${q.distribution[4].toFixed(1)}%)`,
+                    q.average.toFixed(2)
+                ];
+                ratingData.push(row);
+            });
+            
+            const ratingSheet = XLSX.utils.aoa_to_sheet(ratingData);
+            XLSX.utils.book_append_sheet(wb, ratingSheet, '만족도 분석');
+        }
+
+        // 4. 주관식 답변 시트 (주관식 질문이 있는 경우)
+        if (analytics.groupedTextAnswers.length > 0) {
+            analytics.groupedTextAnswers.forEach((group, index) => {
+                const textData = [
+                    ['질문', group.questionText],
+                    [''],
+                    ['응답자', '답변']
+                ];
+                
+                group.answers.forEach(answer => {
+                    textData.push([answer.user, answer.answer]);
+                });
+                
+                const textSheet = XLSX.utils.aoa_to_sheet(textData);
+                const sheetName = `주관식${index + 1}`;
+                XLSX.utils.book_append_sheet(wb, textSheet, sheetName.substring(0, 31)); // 시트 이름은 31자 제한
+            });
+        }
+
+        // 파일 다운로드
+        const fileName = `${template.title}_응답결과_${new Date().toISOString().split('T')[0]}.xlsx`;
+        XLSX.writeFile(wb, fileName);
+        toast.success('엑셀 파일이 다운로드되었습니다.');
+    };
+
     const isLoading = isLoadingTemplate || isLoadingResponses;
     const error = errorTemplate || errorResponses;
     
@@ -152,10 +250,18 @@ const AdminReviewResultsPage: FC = () => {
                     <Button type="button" variant="ghost" size="icon" onClick={() => navigate('/admin/reviews')}>
                         <ArrowLeft className="w-5 h-5" />
                     </Button>
-                    <div>
+                    <div className="flex-1">
                         <h1 className="text-3xl font-bold text-gray-900 truncate">{template.title}</h1>
                         <p className="text-gray-500 mt-1">후기 결과 상세 분석</p>
                     </div>
+                    <Button 
+                        onClick={downloadExcel}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        disabled={!responses || responses.length === 0}
+                    >
+                        <Download className="w-4 h-4 mr-2" />
+                        엑셀 다운로드
+                    </Button>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
